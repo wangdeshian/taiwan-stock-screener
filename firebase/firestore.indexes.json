@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "stocks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "score", "order": "DESCENDING" },
+        { "fieldPath": "symbol", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

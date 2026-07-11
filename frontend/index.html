@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Taiwan Stock AI Screener</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>台股 AI 選股分析平台</h1>
+        <p>V3 Decision Support System</p>
+      </div>
+      <button id="refreshButton" type="button">更新</button>
+    </header>
+
+    <main>
+      <section class="summary">
+        <div>
+          <span class="label">候選股</span>
+          <strong id="candidateCount">0</strong>
+        </div>
+        <div>
+          <span class="label">最後更新</span>
+          <strong id="latestUpdate">-</strong>
+        </div>
+      </section>
+
+      <section class="toolbar">
+        <input id="searchInput" type="search" placeholder="搜尋代號或名稱" />
+        <button id="searchButton" type="button">搜尋</button>
+      </section>
+
+      <section class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>代號</th>
+              <th>名稱</th>
+              <th>產業</th>
+              <th>總分</th>
+              <th>進場</th>
+              <th>停損</th>
+              <th>目標一</th>
+              <th>RR</th>
+            </tr>
+          </thead>
+          <tbody id="candidateRows"></tbody>
+        </table>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

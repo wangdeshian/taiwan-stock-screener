@@ -1,0 +1,69 @@
+app:
+  name: Taiwan Stock AI Screener
+  version: 3.0.0
+  timezone: Asia/Taipei
+  sample_mode: true
+
+database:
+  url: sqlite:///./data/taiwan_stock_screener.db
+
+api:
+  cors_origins:
+    - http://localhost:5000
+    - http://localhost:5173
+    - http://127.0.0.1:5000
+    - http://127.0.0.1:5173
+
+http:
+  timeout_seconds: 20
+  retries: 3
+  backoff_seconds: 0.6
+
+sources:
+  twse:
+    stock_day_all_url: https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL
+    institutional_url: https://openapi.twse.com.tw/v1/fund/T86
+  tpex:
+    daily_quotes_url: https://www.tpex.org.tw/openapi/v1/tpex_mainboard_quotes
+  finmind:
+    base_url: https://api.finmindtrade.com/api/v4/data
+  mops:
+    monthly_revenue_url: https://mops.twse.com.tw/nas/t21/sii/t21sc03_{year}_{month}.html
+  fred:
+    base_url: https://api.stlouisfed.org/fred/series/observations
+
+thresholds:
+  candidate_score: 85
+  close_above_ma: 20
+  ma20_slope_days: 5
+  ma60_slope_days: 10
+  near_high_lookback_days: 60
+  near_high_pct: 8
+  volume_ma_days: 20
+  volume_ratio: 1.5
+  turnover_min_twd: 500000000
+  institutional_days: 3
+  institutional_buy_ratio_pct: 3
+  revenue_yoy_pct: 15
+  eps_min: 0
+  roe_min_pct: 10
+  risk_reward_min: 2
+
+scoring:
+  trend: 25
+  volume: 15
+  institutional: 20
+  chip: 10
+  fundamental: 15
+  industry: 10
+  risk_reward: 5
+
+trade_plan:
+  atr_stop_multiplier: 1.5
+  first_target_r_multiple: 2
+  second_target_r_multiple: 3
+  fallback_stop_pct: 6
+  max_position_pct: 20
+
+jobs:
+  daily_update_time: "08:00"
