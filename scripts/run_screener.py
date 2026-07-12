@@ -158,13 +158,16 @@ def fetch_history_finmind(symbol: str) -> pd.DataFrame:
         "start_date": start.isoformat(),
         "end_date": end.isoformat(),
     }
-    if FINMIND_TOKEN:
-        params["token"] = FINMIND_TOKEN
+    headers = {"Authorization": f"Bearer {FINMIND_TOKEN}"} if FINMIND_TOKEN else {}
 
     try:
-        response = requests.get(FINMIND_BASE, params=params, timeout=30)
+        response = requests.get(FINMIND_BASE, params=params, headers=headers, timeout=30)
         response.raise_for_status()
-        data = response.json().get("data", [])
+        payload = response.json()
+        if payload.get("status") != 200:
+            print(f"WARN FinMind history error for {symbol}: status={payload.get('status')} msg={payload.get('msg')}")
+            return pd.DataFrame()
+        data = payload.get("data", [])
     except Exception as exc:
         print(f"WARN FinMind history failed for {symbol}: {exc}")
         return pd.DataFrame()
@@ -199,12 +202,16 @@ def fetch_institutional_finmind(symbol: str) -> pd.DataFrame:
         "data_id": symbol,
         "start_date": start.isoformat(),
         "end_date": end.isoformat(),
-        "token": FINMIND_TOKEN,
     }
+    headers = {"Authorization": f"Bearer {FINMIND_TOKEN}"}
     try:
-        response = requests.get(FINMIND_BASE, params=params, timeout=20)
+        response = requests.get(FINMIND_BASE, params=params, headers=headers, timeout=20)
         response.raise_for_status()
-        data = response.json().get("data", [])
+        payload = response.json()
+        if payload.get("status") != 200:
+            print(f"WARN FinMind institutional error for {symbol}: status={payload.get('status')} msg={payload.get('msg')}")
+            return pd.DataFrame()
+        data = payload.get("data", [])
     except Exception as exc:
         print(f"WARN FinMind institutional failed for {symbol}: {exc}")
         return pd.DataFrame()
@@ -213,7 +220,13 @@ def fetch_institutional_finmind(symbol: str) -> pd.DataFrame:
 
     frame = pd.DataFrame(data)
     frame["trade_date"] = pd.to_datetime(frame["date"])
-    frame["buy_sell"] = pd.to_numeric(frame["buy_sell"], errors="coerce").fillna(0)
+    # FinMind 回傳 buy / sell 欄位，需自行計算 buy_sell
+    if "buy_sell" not in frame.columns:
+        frame["buy"] = pd.to_numeric(frame.get("buy", 0), errors="coerce").fillna(0)
+        frame["sell"] = pd.to_numeric(frame.get("sell", 0), errors="coerce").fillna(0)
+        frame["buy_sell"] = frame["buy"] - frame["sell"]
+    else:
+        frame["buy_sell"] = pd.to_numeric(frame["buy_sell"], errors="coerce").fillna(0)
 
     def sum_by_keywords(*keywords: str) -> pd.Series:
         mask = frame["name"].astype(str).apply(lambda value: any(key in value for key in keywords))
