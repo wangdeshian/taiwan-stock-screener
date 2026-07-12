@@ -335,6 +335,9 @@ def run_live_screener() -> dict[str, Any]:
         if FINMIND_TOKEN:
             history = fetch_history_finmind(symbol)
             time.sleep(0.2)
+            if history.empty:
+                print(f"WARN FinMind unavailable for {symbol}; falling back to yfinance")
+                history = fetch_history_yfinance(symbol, market)
         else:
             history = fetch_history_yfinance(symbol, market)
 
