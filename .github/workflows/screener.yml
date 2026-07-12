@@ -5,6 +5,15 @@ on:
     # Taiwan market daily refresh, Monday-Friday, 15:10 Asia/Taipei.
     - cron: "10 7 * * 1-5"
   workflow_dispatch:
+    inputs:
+      force_run:
+        description: "Run even on weekends/non-trading days"
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
 
 permissions:
   contents: write
@@ -30,12 +39,13 @@ jobs:
       - name: Run screener
         env:
           FINMIND_TOKEN: ${{ secrets.FINMIND_TOKEN }}
+          SCREENER_FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.force_run || 'false' }}
         run: python scripts/run_screener.py
 
       - name: Commit generated results
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add frontend/data/results.json
+          git add frontend/data/results.json frontend/data/history.json
           git diff --staged --quiet || git commit -m "chore: update screener results"
           git push

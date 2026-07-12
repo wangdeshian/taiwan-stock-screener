@@ -31,6 +31,8 @@ FINMIND_BASE = "https://api.finmindtrade.com/api/v4/data"
 TOP_N = int(os.environ.get("SCREENER_TOP_N", "60"))
 MAX_OUTPUT = int(os.environ.get("SCREENER_MAX_OUTPUT", "20"))
 OUTPUT = ROOT / "frontend" / "data" / "results.json"
+HISTORY = ROOT / "frontend" / "data" / "history.json"
+MAX_HISTORY_DAYS = 30
 
 
 def safe_float(value: object) -> float:
@@ -381,7 +383,75 @@ def run_live_screener() -> dict[str, Any]:
     }
 
 
+def is_trading_day() -> bool:
+    """Return False on weekends (台灣假日需手動排除，至少排掉週末)."""
+    if os.environ.get("SCREENER_FORCE_RUN", "").lower() in {"1", "true", "yes"}:
+        print("SCREENER_FORCE_RUN enabled, running even on a non-trading day.")
+        return True
+
+    today_tw = datetime.now(TW_TZ)
+    # 0=Monday, 5=Saturday, 6=Sunday
+    if today_tw.weekday() >= 5:
+        print(f"今天是 {['一','二','三','四','五','六','日'][today_tw.weekday()]}，非交易日，跳過篩選。")
+        return False
+    return True
+
+
+def update_history(output: dict[str, Any]) -> None:
+    """Append today's result to a rolling history file (max MAX_HISTORY_DAYS entries)."""
+    # Load existing history
+    if HISTORY.exists():
+        try:
+            entries: list[dict[str, Any]] = json.loads(HISTORY.read_text(encoding="utf-8"))
+        except Exception:
+            entries = []
+    else:
+        entries = []
+
+    today_date = str(output["updated_at"])[:10]  # YYYY-MM-DD
+
+    # Build a compact summary for this run
+    today_entry: dict[str, Any] = {
+        "date": today_date,
+        "updated_at": output["updated_at"],
+        "source": output["source"],
+        "screened_count": output.get("screened_count", 0),
+        "candidate_count": output.get("candidate_count", 0),
+        "score_threshold": output.get("score_threshold", 0),
+        "candidates": [
+            {
+                "symbol": c["symbol"],
+                "name": c["name"],
+                "market": c.get("market", "TWSE"),
+                "industry": c.get("industry"),
+                "total_score": c.get("total_score"),
+                "entry_price": c.get("entry_price"),
+                "stop_loss_price": c.get("stop_loss_price"),
+                "target_price_1": c.get("target_price_1"),
+                "risk_reward_ratio": c.get("risk_reward_ratio"),
+            }
+            for c in output.get("top_candidates", [])
+        ],
+    }
+
+    # Remove any existing entry for today (avoid duplicates on manual re-runs)
+    entries = [e for e in entries if e.get("date") != today_date]
+
+    # Prepend today and keep rolling window
+    entries.insert(0, today_entry)
+    entries = entries[:MAX_HISTORY_DAYS]
+
+    HISTORY.parent.mkdir(parents=True, exist_ok=True)
+    HISTORY.write_text(
+        json.dumps(entries, ensure_ascii=False, indent=2, default=str),
+        encoding="utf-8",
+    )
+    print(f"History updated: {len(entries)} 筆記錄 → {HISTORY}")
+
+
 def main() -> None:
+    if not is_trading_day():
+        return
     output = run_live_screener()
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(
@@ -389,6 +459,7 @@ def main() -> None:
         encoding="utf-8",
     )
     print(f"Wrote {OUTPUT}")
+    update_history(output)
     print(
         json.dumps(
             {

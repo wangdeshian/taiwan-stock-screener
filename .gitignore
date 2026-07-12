@@ -8,6 +8,7 @@ __pycache__/
 data/
 !frontend/data/
 !frontend/data/results.json
+!frontend/data/history.json
 dist/
 build/
 *.egg-info/

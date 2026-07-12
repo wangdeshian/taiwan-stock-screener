@@ -15,42 +15,57 @@
       <button id="refreshButton" type="button">&#26356;&#26032;</button>
     </header>
 
+    <nav class="tab-bar">
+      <button id="tabToday" class="tab-btn active" type="button">&#20170;&#26085;&#25512;&#34222;</button>
+      <button id="tabHistory" class="tab-btn" type="button">&#27511;&#21490;&#35352;&#37636;</button>
+    </nav>
+
     <main>
-      <section class="summary">
-        <div>
-          <span class="label">&#20505;&#36984;&#32929;</span>
-          <strong id="candidateCount">0</strong>
+      <!-- 今日推薦 view -->
+      <div id="todayView">
+        <section class="summary">
+          <div>
+            <span class="label">&#20505;&#36984;&#32929;</span>
+            <strong id="candidateCount">0</strong>
+          </div>
+          <div>
+            <span class="label">&#26368;&#24460;&#26356;&#26032;</span>
+            <strong id="latestUpdate">-</strong>
+          </div>
+        </section>
+
+        <section class="toolbar">
+          <input id="searchInput" type="search" placeholder="&#25628;&#23563;&#20195;&#34399;&#25110;&#21517;&#31281;" />
+          <button id="searchButton" type="button">&#25628;&#23563;</button>
+        </section>
+
+        <section id="notice" class="notice" hidden></section>
+
+        <section class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>&#20195;&#34399;</th>
+                <th>&#21517;&#31281;</th>
+                <th>&#29986;&#26989;</th>
+                <th>&#32317;&#20998;</th>
+                <th>&#36914;&#22580;</th>
+                <th>&#20572;&#25613;</th>
+                <th>&#30446;&#27161;&#19968;</th>
+                <th>RR</th>
+              </tr>
+            </thead>
+            <tbody id="candidateRows"></tbody>
+          </table>
+        </section>
+      </div>
+
+      <!-- 歷史記錄 view -->
+      <div id="historyView" hidden>
+        <div id="historyContent">
+          <p class="empty" style="padding:20px;text-align:center;color:#64748b">讀取中...</p>
         </div>
-        <div>
-          <span class="label">&#26368;&#24460;&#26356;&#26032;</span>
-          <strong id="latestUpdate">-</strong>
-        </div>
-      </section>
-
-      <section class="toolbar">
-        <input id="searchInput" type="search" placeholder="&#25628;&#23563;&#20195;&#34399;&#25110;&#21517;&#31281;" />
-        <button id="searchButton" type="button">&#25628;&#23563;</button>
-      </section>
-
-      <section id="notice" class="notice" hidden></section>
-
-      <section class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>&#20195;&#34399;</th>
-              <th>&#21517;&#31281;</th>
-              <th>&#29986;&#26989;</th>
-              <th>&#32317;&#20998;</th>
-              <th>&#36914;&#22580;</th>
-              <th>&#20572;&#25613;</th>
-              <th>&#30446;&#27161;&#19968;</th>
-              <th>RR</th>
-            </tr>
-          </thead>
-          <tbody id="candidateRows"></tbody>
-        </table>
-      </section>
+      </div>
     </main>
 
     <script src="app.js"></script>
