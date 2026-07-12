@@ -1,0 +1,67 @@
+[
+  {
+    "date": "2026-07-12",
+    "updated_at": "2026-07-12T22:02:19.819234+08:00",
+    "source": "demo",
+    "screened_count": 5,
+    "candidate_count": 5,
+    "score_threshold": 85,
+    "candidates": [
+      {
+        "symbol": "2317",
+        "name": "Hon Hai",
+        "market": "TWSE",
+        "industry": "Electronics",
+        "total_score": 94.75,
+        "entry_price": 266.34,
+        "stop_loss_price": 257.78,
+        "target_price_1": 283.46,
+        "risk_reward_ratio": 2.0
+      },
+      {
+        "symbol": "2330",
+        "name": "TSMC",
+        "market": "TWSE",
+        "industry": "Semiconductor",
+        "total_score": 91.75,
+        "entry_price": 911.52,
+        "stop_loss_price": 883.49,
+        "target_price_1": 967.58,
+        "risk_reward_ratio": 2.0
+      },
+      {
+        "symbol": "2454",
+        "name": "MediaTek",
+        "market": "TWSE",
+        "industry": "Semiconductor",
+        "total_score": 91.75,
+        "entry_price": 1479.2,
+        "stop_loss_price": 1428.54,
+        "target_price_1": 1580.53,
+        "risk_reward_ratio": 2.0
+      },
+      {
+        "symbol": "6488",
+        "name": "GlobalWafers",
+        "market": "TPEx",
+        "industry": "Semiconductor",
+        "total_score": 91.75,
+        "entry_price": 548.26,
+        "stop_loss_price": 529.13,
+        "target_price_1": 586.53,
+        "risk_reward_ratio": 2.0
+      },
+      {
+        "symbol": "2303",
+        "name": "UMC",
+        "market": "TWSE",
+        "industry": "Semiconductor",
+        "total_score": 58.75,
+        "entry_price": 72.72,
+        "stop_loss_price": 70.36,
+        "target_price_1": 77.43,
+        "risk_reward_ratio": 2.0
+      }
+    ]
+  }
+]

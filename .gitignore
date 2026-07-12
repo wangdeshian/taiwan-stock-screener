@@ -6,8 +6,12 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 data/
+!data/
+!data/results.json
+!data/history.json
 !frontend/data/
 !frontend/data/results.json
+!frontend/data/history.json
 dist/
 build/
 *.egg-info/
