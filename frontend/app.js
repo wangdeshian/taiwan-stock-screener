@@ -245,6 +245,10 @@ async function loadData() {
     // Demo 橫幅
     renderDemoBanner(data.source === "demo");
 
+    if (data.selection_note) {
+      setNotice("目前沒有股票達到嚴格門檻，畫面顯示真實資料中的最高分排名。");
+    }
+
     // 法人資料提示
     if (!data.has_institutional_data) {
       setNotice("目前為免費模式（純技術面評分）。在 GitHub Secrets 設定 FINMIND_TOKEN 可啟用法人、基本面評分。");

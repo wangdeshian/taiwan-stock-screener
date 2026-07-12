@@ -324,6 +324,7 @@ def run_live_screener() -> dict[str, Any]:
 
     engine = ScoringEngine()
     threshold = 55 if FINMIND_TOKEN else 42
+    scored_candidates: list[dict[str, Any]] = []
     candidates: list[dict[str, Any]] = []
 
     for index, row in today.iterrows():
@@ -357,20 +358,36 @@ def run_live_screener() -> dict[str, Any]:
             print(f"WARN scoring failed for {symbol}: {exc}")
             continue
 
-        if result.total_score >= threshold:
-            candidates.append(
-                serialize_candidate(
-                    symbol=symbol,
-                    name=name,
-                    market=market,
-                    industry=None,
-                    result=result,
-                    plan=result.trade_plan,
-                )
-            )
+        candidate = serialize_candidate(
+            symbol=symbol,
+            name=name,
+            market=market,
+            industry=None,
+            result=result,
+            plan=result.trade_plan,
+        )
+        scored_candidates.append(candidate)
 
+        if result.total_score >= threshold:
+            candidates.append(candidate)
+
+    scored_candidates.sort(key=lambda item: float(item["total_score"]), reverse=True)
     candidates.sort(key=lambda item: float(item["total_score"]), reverse=True)
     candidates = candidates[:MAX_OUTPUT]
+    if not candidates and scored_candidates:
+        print("WARN no candidates met threshold; publishing relaxed live ranking")
+        candidates = scored_candidates[:MAX_OUTPUT]
+        return {
+            "updated_at": now_tw.isoformat(),
+            "screened_count": len(today),
+            "candidate_count": len(candidates),
+            "has_institutional_data": bool(FINMIND_TOKEN),
+            "score_threshold": threshold,
+            "source": "live_relaxed",
+            "selection_note": "No stocks met the strict threshold; showing the highest live scores.",
+            "top_candidates": candidates,
+        }
+
     if not candidates:
         print("WARN live run produced no candidates; using demo output")
         return demo_output()
