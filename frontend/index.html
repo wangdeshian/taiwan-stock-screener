@@ -9,40 +9,42 @@
   <body>
     <header class="topbar">
       <div>
-        <h1>台股 AI 選股分析平台</h1>
+        <h1>&#21488;&#32929; AI &#36984;&#32929;&#20998;&#26512;&#24179;&#21488;</h1>
         <p>V3 Decision Support System</p>
       </div>
-      <button id="refreshButton" type="button">更新</button>
+      <button id="refreshButton" type="button">&#26356;&#26032;</button>
     </header>
 
     <main>
       <section class="summary">
         <div>
-          <span class="label">候選股</span>
+          <span class="label">&#20505;&#36984;&#32929;</span>
           <strong id="candidateCount">0</strong>
         </div>
         <div>
-          <span class="label">最後更新</span>
+          <span class="label">&#26368;&#24460;&#26356;&#26032;</span>
           <strong id="latestUpdate">-</strong>
         </div>
       </section>
 
       <section class="toolbar">
-        <input id="searchInput" type="search" placeholder="搜尋代號或名稱" />
-        <button id="searchButton" type="button">搜尋</button>
+        <input id="searchInput" type="search" placeholder="&#25628;&#23563;&#20195;&#34399;&#25110;&#21517;&#31281;" />
+        <button id="searchButton" type="button">&#25628;&#23563;</button>
       </section>
+
+      <section id="notice" class="notice" hidden></section>
 
       <section class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>代號</th>
-              <th>名稱</th>
-              <th>產業</th>
-              <th>總分</th>
-              <th>進場</th>
-              <th>停損</th>
-              <th>目標一</th>
+              <th>&#20195;&#34399;</th>
+              <th>&#21517;&#31281;</th>
+              <th>&#29986;&#26989;</th>
+              <th>&#32317;&#20998;</th>
+              <th>&#36914;&#22580;</th>
+              <th>&#20572;&#25613;</th>
+              <th>&#30446;&#27161;&#19968;</th>
               <th>RR</th>
             </tr>
           </thead>

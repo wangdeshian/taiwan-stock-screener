@@ -85,6 +85,18 @@ firebase init hosting
 firebase deploy --only hosting
 ```
 
+## GitHub Pages 發布
+
+已加入 GitHub Pages 自動部署 workflow。推送到 `main` 後會部署 `frontend/`。
+
+預期網址：
+
+```text
+https://wangdeshian.github.io/taiwan-stock-screener/
+```
+
+若 Repository 維持 Private，GitHub Pages 是否可公開瀏覽取決於 GitHub 帳號方案與 Pages 設定。若 Actions 顯示 Pages 尚未啟用，請到 GitHub Repository 的 `Settings -> Pages`，將 Source 設為 `GitHub Actions`。
+
 預設前端會讀取：
 
 ```text
