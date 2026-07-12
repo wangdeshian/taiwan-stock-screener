@@ -255,6 +255,103 @@ def fetch_institutional_finmind(symbol: str) -> pd.DataFrame:
     return result.fillna(0)
 
 
+def fetch_revenue_finmind(symbol: str) -> dict[str, Any] | None:
+    """Fetch monthly revenue and compute YoY growth % for the scoring engine.
+
+    Returns a dict with ``revenue_yoy_pct`` key, or None on failure.
+    """
+    if not FINMIND_TOKEN:
+        return None
+    end = date.today()
+    start = end - timedelta(days=450)  # ~15 months: ensures same-month from prior year
+    params = {
+        "dataset": "TaiwanStockMonthRevenue",
+        "data_id": symbol,
+        "start_date": start.isoformat(),
+        "end_date": end.isoformat(),
+    }
+    try:
+        payload = finmind_get(params, timeout=20)
+        data = payload.get("data", [])
+    except Exception as exc:
+        print(f"WARN FinMind revenue failed for {symbol}: {exc}")
+        return None
+    if not data:
+        return None
+
+    frame = pd.DataFrame(data)
+    for col in ("revenue", "revenue_month", "revenue_year"):
+        frame[col] = pd.to_numeric(frame[col], errors="coerce")
+    frame = frame.dropna(subset=["revenue", "revenue_month", "revenue_year"])
+    frame = frame.sort_values(["revenue_year", "revenue_month"])
+    if len(frame) < 2:
+        return None
+
+    latest = frame.iloc[-1]
+    cur_year = int(latest["revenue_year"])
+    cur_month = int(latest["revenue_month"])
+    cur_revenue = float(latest["revenue"])
+
+    prior_mask = (frame["revenue_year"] == cur_year - 1) & (frame["revenue_month"] == cur_month)
+    prior = frame[prior_mask]
+    if prior.empty:
+        return None
+    prior_revenue = float(prior.iloc[-1]["revenue"])
+    if prior_revenue <= 0:
+        return None
+
+    yoy_pct = (cur_revenue - prior_revenue) / prior_revenue * 100
+    return {"revenue_yoy_pct": round(yoy_pct, 2)}
+
+
+def fetch_financial_finmind(symbol: str) -> dict[str, Any] | None:
+    """Fetch latest quarterly EPS (and ROE if present) from FinMind financial statements.
+
+    Returns a dict with ``eps`` and optionally ``roe_pct`` keys, or None on failure.
+    """
+    if not FINMIND_TOKEN:
+        return None
+    end = date.today()
+    start = end - timedelta(days=730)  # 2 years to capture latest quarterly report
+    params = {
+        "dataset": "TaiwanStockFinancialStatements",
+        "data_id": symbol,
+        "start_date": start.isoformat(),
+        "end_date": end.isoformat(),
+    }
+    try:
+        payload = finmind_get(params, timeout=20)
+        data = payload.get("data", [])
+    except Exception as exc:
+        print(f"WARN FinMind financial statements failed for {symbol}: {exc}")
+        return None
+    if not data:
+        return None
+
+    frame = pd.DataFrame(data)
+    if "type" not in frame.columns or "value" not in frame.columns:
+        return None
+
+    type_upper = frame["type"].astype(str).str.upper()
+    result: dict[str, Any] = {}
+
+    # EPS
+    eps_rows = frame[type_upper == "EPS"].sort_values("date")
+    if not eps_rows.empty:
+        val = pd.to_numeric(eps_rows.iloc[-1]["value"], errors="coerce")
+        if pd.notna(val):
+            result["eps"] = float(val)
+
+    # ROE — may appear as "ROE" or variants
+    roe_rows = frame[type_upper.str.contains("ROE", na=False)].sort_values("date")
+    if not roe_rows.empty:
+        val = pd.to_numeric(roe_rows.iloc[-1]["value"], errors="coerce")
+        if pd.notna(val):
+            result["roe_pct"] = float(val)
+
+    return result if result else None
+
+
 def demo_output() -> dict[str, Any]:
     now_tw = datetime.now(TW_TZ)
     prices = sample_daily_prices()
@@ -365,10 +462,30 @@ def run_live_screener() -> dict[str, Any]:
         try:
             indicators = add_technical_indicators(history)
             institutions = fetch_institutional_finmind(symbol)
+            if FINMIND_TOKEN:
+                time.sleep(0.2)
+
+            # 基本面：月營收 YoY + 季EPS/ROE
+            revenue_row: dict[str, Any] | None = None
+            financial_row: dict[str, Any] | None = None
+            if FINMIND_TOKEN:
+                try:
+                    revenue_row = fetch_revenue_finmind(symbol)
+                    time.sleep(0.15)
+                except Exception as exc:
+                    print(f"WARN revenue fetch failed for {symbol}: {exc}")
+                try:
+                    financial_row = fetch_financial_finmind(symbol)
+                    time.sleep(0.15)
+                except Exception as exc:
+                    print(f"WARN financial fetch failed for {symbol}: {exc}")
+
             result = engine.score(
                 symbol=symbol,
                 indicators=indicators,
                 institutional_rows=institutions if not institutions.empty else None,
+                revenue_row=revenue_row,
+                financial_row=financial_row,
                 industry_rank_pct=0.5,
             )
         except Exception as exc:
