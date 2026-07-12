@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-12T23:38:04.598954+08:00",
+  "updated_at": "2026-07-13T00:21:49.560682+08:00",
   "screened_count": 60,
   "candidate_count": 20,
   "has_institutional_data": true,
@@ -149,11 +149,11 @@
         "obv_accumulation",
         "risk_reward_above_min"
       ],
-      "entry_price": 240.0,
-      "alternate_entry_price": 236.4,
-      "stop_loss_price": 220.29,
-      "target_price_1": 279.43,
-      "target_price_2": 299.14,
+      "entry_price": 235.0,
+      "alternate_entry_price": 231.47,
+      "stop_loss_price": 215.7,
+      "target_price_1": 273.61,
+      "target_price_2": 292.91,
       "risk_reward_ratio": 2.0,
       "suggested_position_pct": 8.0
     },
