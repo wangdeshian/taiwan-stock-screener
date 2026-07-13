@@ -261,6 +261,34 @@ td.close-price {
   background: transparent;
 }
 
+/* Strategy toggle */
+.strategy-bar {
+  display: flex;
+  gap: 8px;
+  padding: 12px 0 0;
+}
+.strategy-btn {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 18px;
+  background: var(--panel);
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.strategy-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.strategy-btn.active {
+  color: #fff;
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
 /* History entries */
 .hist-list {
   display: flex;
