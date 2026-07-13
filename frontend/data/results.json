@@ -5,7 +5,7 @@
   "has_institutional_data": true,
   "has_fugle_data": false,
   "score_threshold": 55,
-  "source": "live",
+  "source": "live_stale",
   "data_sources": [
     "TWSE",
     "TPEx",
@@ -1000,5 +1000,8 @@
       "relative_strength_20d_pct": 46.64,
       "relative_strength_60d_pct": 46.92
     }
-  ]
+  ],
+  "stale": true,
+  "refresh_attempted_at": "2026-07-13T12:06:14.120116+08:00",
+  "selection_note": "本次市場資料源暫時無法完整更新，畫面保留上一版真實篩選結果。"
 }

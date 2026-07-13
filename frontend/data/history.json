@@ -2,7 +2,7 @@
   {
     "date": "2026-07-13",
     "updated_at": "2026-07-13T09:09:36.961856+08:00",
-    "source": "live",
+    "source": "live_stale",
     "data_sources": [
       "TWSE",
       "TPEx",
