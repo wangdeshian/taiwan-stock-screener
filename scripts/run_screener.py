@@ -177,6 +177,33 @@ def fetch_today_universe() -> pd.DataFrame:
     return today.reset_index(drop=True)
 
 
+def fetch_twse_pe_ratios() -> dict[str, float]:
+    """Fetch PE ratios for all TWSE-listed stocks from BWIBBU_ALL endpoint.
+
+    STOCK_DAY_ALL does not carry PE data; BWIBBU_ALL does.
+    Returns a dict mapping stock code → PE ratio (float > 0 only).
+    """
+    url = "https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_ALL"
+    try:
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        result: dict[str, float] = {}
+        for row in response.json():
+            code = str(row.get("Code", "")).strip()
+            pe_str = str(row.get("PEratio", "")).replace(",", "").strip()
+            try:
+                pe = float(pe_str)
+                if code and pe > 0:
+                    result[code] = pe
+            except (ValueError, TypeError):
+                pass
+        print(f"TWSE BWIBBU: fetched PE for {len(result)} stocks")
+        return result
+    except Exception as exc:
+        print(f"WARN TWSE PE ratio fetch failed: {exc}")
+        return {}
+
+
 def fetch_history_yfinance(symbol: str, market: str) -> pd.DataFrame:
     try:
         import yfinance as yf
@@ -468,12 +495,28 @@ def fetch_financial_finmind(symbol: str) -> dict[str, Any] | None:
         if pd.notna(val):
             result["eps"] = float(val)
 
-    # ROE — may appear as "ROE" or variants
-    roe_rows = frame[type_upper.str.contains("ROE", na=False)].sort_values("date")
-    if not roe_rows.empty:
-        val = pd.to_numeric(roe_rows.iloc[-1]["value"], errors="coerce")
-        if pd.notna(val):
-            result["roe_pct"] = float(val)
+    # ROE — lives in TaiwanStockProfitability, not TaiwanStockFinancialStatements
+    try:
+        time.sleep(0.1)
+        params_prof = {
+            "dataset": "TaiwanStockProfitability",
+            "data_id": symbol,
+            "start_date": start.isoformat(),
+            "end_date": end.isoformat(),
+        }
+        payload_prof = finmind_get(params_prof, timeout=20)
+        data_prof = payload_prof.get("data", [])
+        if data_prof:
+            frame_prof = pd.DataFrame(data_prof)
+            frame_prof = frame_prof.sort_values("date")
+            for col in ("ROE", "roe", "roe_a", "ReturnOnEquity"):
+                if col in frame_prof.columns:
+                    val = pd.to_numeric(frame_prof.iloc[-1][col], errors="coerce")
+                    if pd.notna(val):
+                        result["roe_pct"] = float(val)
+                        break
+    except Exception as exc:
+        print(f"WARN FinMind profitability failed for {symbol}: {exc}")
 
     return result if result else None
 
@@ -637,6 +680,8 @@ def run_live_screener() -> dict[str, Any]:
     engine = ScoringEngine()
     threshold = 55 if FINMIND_TOKEN else 42
     benchmark_history = fetch_benchmark_history()
+    # Fetch TWSE PE ratios once (BWIBBU_ALL has PE; STOCK_DAY_ALL does not)
+    twse_pe_map = fetch_twse_pe_ratios()
     scored_candidates: list[dict[str, Any]] = []
     candidates: list[dict[str, Any]] = []
 
@@ -706,6 +751,8 @@ def run_live_screener() -> dict[str, Any]:
             print(f"WARN scoring failed for {symbol}: {exc}")
             continue
 
+        # PE ratio: prefer BWIBBU_ALL (TWSE) over row field (STOCK_DAY_ALL has no PE)
+        pe_ratio_val = twse_pe_map.get(symbol) or round_optional(row.get("pe_ratio"))
         candidate = serialize_candidate(
             symbol=symbol,
             name=name,
@@ -714,7 +761,7 @@ def run_live_screener() -> dict[str, Any]:
             result=result,
             plan=result.trade_plan,
             close=safe_float(row.get("close")),
-            pe_ratio=round_optional(row.get("pe_ratio")),
+            pe_ratio=pe_ratio_val,
             revenue_row=revenue_row,
             financial_row=financial_row,
             strength_metrics=strength_metrics,
@@ -781,7 +828,6 @@ def is_trading_day() -> bool:
 
 def update_history(output: dict[str, Any]) -> None:
     """Append today's result to a rolling history file (max MAX_HISTORY_DAYS entries)."""
-    # Load existing history
     if HISTORY.exists():
         try:
             entries: list[dict[str, Any]] = json.loads(HISTORY.read_text(encoding="utf-8"))
@@ -796,11 +842,12 @@ def update_history(output: dict[str, Any]) -> None:
     today_entry: dict[str, Any] = {
         "date": today_date,
         "updated_at": output["updated_at"],
-        "source": output["source"],
+        "source": output.get("source", "unknown"),
         "data_sources": output.get("data_sources", []),
         "screened_count": output.get("screened_count", 0),
         "candidate_count": output.get("candidate_count", 0),
-        "score_threshold": output.get("score_threshold", 0),
+        "score_threshold": output.get("score_threshold"),
+        "selection_note": output.get("selection_note"),
         "candidates": [
             {
                 "symbol": c["symbol"],
@@ -825,44 +872,37 @@ def update_history(output: dict[str, Any]) -> None:
         ],
     }
 
-    # Remove any existing entry for today (avoid duplicates on manual re-runs)
+    # Replace existing entry for today or prepend
     entries = [e for e in entries if e.get("date") != today_date]
-
-    # Prepend today and keep rolling window
     entries.insert(0, today_entry)
     entries = entries[:MAX_HISTORY_DAYS]
 
-    HISTORY.parent.mkdir(parents=True, exist_ok=True)
-    HISTORY.write_text(
-        json.dumps(entries, ensure_ascii=False, indent=2, default=str),
-        encoding="utf-8",
-    )
-    print(f"History updated: {len(entries)} 筆記錄 → {HISTORY}")
+    HISTORY.write_text(json.dumps(entries, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"History updated: {len(entries)} entries in {HISTORY}")
 
 
 def main() -> None:
     if not is_trading_day():
         return
+
+    print("=== Taiwan Stock AI Screener ===")
+    if FINMIND_TOKEN:
+        print("FinMind token: configured")
+    else:
+        print("FinMind token: NOT configured — using demo/yfinance fallback")
+
+    if FUGLE_API_KEY:
+        print("Fugle API key: configured")
+    else:
+        print("Fugle API key: NOT configured")
+
     output = run_live_screener()
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT.write_text(
-        json.dumps(output, ensure_ascii=False, indent=2, default=str),
-        encoding="utf-8",
-    )
-    print(f"Wrote {OUTPUT}")
+    OUTPUT.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"Output written to {OUTPUT}")
+    print(f"Source: {output.get('source')}  Candidates: {output.get('candidate_count')}")
+
     update_history(output)
-    print(
-        json.dumps(
-            {
-                "updated_at": output["updated_at"],
-                "source": output["source"],
-                "screened_count": output["screened_count"],
-                "candidate_count": output["candidate_count"],
-            },
-            ensure_ascii=False,
-            indent=2,
-        )
-    )
 
 
 if __name__ == "__main__":
