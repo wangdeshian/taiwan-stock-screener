@@ -8,11 +8,61 @@ import pandas as pd
 
 from taiwan_stock_screener.collectors.market_chip import (
     chip_rows_for,
+    fetch_finmind_chip_snapshot,
     load_chip_store,
     parse_snapshot,
     prefilter_left_symbols,
+    refresh_chip_store,
     save_chip_store,
 )
+
+
+def _fake_finmind_fetch(dataset: str, snapshot_date: date) -> list[dict]:
+    """模擬 FinMind 日期模式回傳（週五 2026-07-10 有資料、其他日為假日）。"""
+    if snapshot_date.weekday() >= 5:
+        return []
+    base = {"date": snapshot_date.isoformat()}
+    if dataset == "TaiwanStockMarginPurchaseShortSale":
+        return [
+            {**base, "stock_id": "2330", "MarginPurchaseTodayBalance": 1000, "ShortSaleTodayBalance": 50},
+            {**base, "stock_id": "6188", "MarginPurchaseTodayBalance": 800, "ShortSaleTodayBalance": 20},
+        ]
+    if dataset == "TaiwanDailyShortSaleBalances":
+        return [{**base, "stock_id": "2330", "SBLShortSalesCurrentDayBalance": 700}]
+    if dataset == "TaiwanStockDayTrading":
+        return [{**base, "stock_id": "2330", "Volume": 5000}]
+    if dataset == "TaiwanStockPrice":
+        return [
+            {**base, "stock_id": "2330", "Trading_Volume": 50000},
+            {**base, "stock_id": "6188", "Trading_Volume": 9000},
+        ]
+    return []
+
+
+def test_fetch_finmind_chip_snapshot_merges_datasets() -> None:
+    frame = fetch_finmind_chip_snapshot(_fake_finmind_fetch, date(2026, 7, 10))
+
+    row = frame[frame["symbol"] == "2330"].iloc[0]
+    assert float(row["margin_balance"]) == 1000
+    assert float(row["short_balance"]) == 700  # SBL 優先於融券
+    assert float(row["day_trade_volume"]) == 5000
+    assert float(row["total_volume"]) == 50000
+    # 上櫃股（無 SBL 資料）退回融券餘額
+    tpex_row = frame[frame["symbol"] == "6188"].iloc[0]
+    assert float(tpex_row["margin_balance"]) == 800
+
+
+def test_refresh_chip_store_backfills_recent_trading_days(tmp_path) -> None:
+    path = tmp_path / "chip_history.csv"
+
+    store, sources = refresh_chip_store(path, finmind_fetch=_fake_finmind_fetch, backfill_days=7, max_backfill_dates=5)
+
+    assert sources and sources[0].startswith("FinMind×")
+    assert not store.empty
+    assert store["date"].nunique() >= 3  # 一週內至少 3 個平日
+    # 再跑一次不會重複抓已存在的日期
+    store2, sources2 = refresh_chip_store(path, finmind_fetch=_fake_finmind_fetch, backfill_days=7, max_backfill_dates=5)
+    assert store2["date"].nunique() == store["date"].nunique()
 
 
 def test_parse_snapshot_with_english_openapi_keys() -> None:

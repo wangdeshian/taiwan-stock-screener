@@ -12,38 +12,34 @@ import requests
 # 全市場籌碼快照：左側潛伏策略的「起手式」偵測資料源。
 #
 # 與其對每一檔股票各打數次 FinMind API（全市場約 2000 檔會直接超過額度），
-# 這裡改用交易所的「全市場批次報表」，一次請求取得所有股票的當日餘額：
-#   - MI_MARGN 融資融券餘額
-#   - TWT93U   信用額度總量管制餘額表（含借券賣出餘額）
-#   - TWTB4U   當日沖銷交易標的及成交量值
-# 每日快照累積成滾動歷史檔後，即可對全市場計算 20 日餘額趨勢。
+# 這裡用 FinMind 的「日期模式」（不帶 data_id、只帶日期），一次請求取得
+# 全市場（上市＋上櫃）當日資料：融資融券餘額、借券賣出餘額、當沖統計、
+# 成交量。每個交易日 4 次請求即可回補，累積成滾動歷史檔後就能對全市場
+# 計算 20 日餘額趨勢。無 FinMind token 時退回 TWSE openapi 的最新快照
+# （僅上市、僅融資，且盤後報表尚未發布時日期可能落後一日）。
 
 STORE_COLUMNS = ["date", "symbol", "margin_balance", "short_balance", "day_trade_volume", "total_volume"]
 KEEP_TRADING_DAYS = 45
 
+# FinMind 日期模式 dataset → 欄位對應（欄位名為 FinMind 固定英文名）
+FINMIND_CHIP_DATASETS: dict[str, dict[str, str]] = {
+    "TaiwanStockMarginPurchaseShortSale": {
+        "MarginPurchaseTodayBalance": "margin_balance",
+        "ShortSaleTodayBalance": "margin_short_balance",  # 融券餘額，借券資料缺漏時的替代
+    },
+    "TaiwanDailyShortSaleBalances": {
+        "SBLShortSalesCurrentDayBalance": "short_balance",  # 借券賣出餘額
+    },
+    "TaiwanStockDayTrading": {
+        "Volume": "day_trade_volume",
+    },
+    "TaiwanStockPrice": {
+        "Trading_Volume": "total_volume",
+    },
+}
+
 TWSE_OPENAPI_URLS = {
     "margin": "https://openapi.twse.com.tw/v1/exchangeReport/MI_MARGN",
-    "sbl": "https://openapi.twse.com.tw/v1/exchangeReport/TWT93U",
-    "day_trade": "https://openapi.twse.com.tw/v1/exchangeReport/TWTB4U",
-}
-
-# rwd 端點支援 date 參數，用於回補歷史（openapi 只有最新一日）
-TWSE_RWD_URLS = {
-    "margin": "https://www.twse.com.tw/rwd/zh/marginTrading/MI_MARGN?date={d}&selectType=ALL&response=json",
-    "sbl": "https://www.twse.com.tw/rwd/zh/marginTrading/TWT93U?date={d}&response=json",
-    "day_trade": "https://www.twse.com.tw/rwd/zh/afterTrading/TWTB4U?date={d}&selectType=All&response=json",
-}
-
-# TPEx openapi 端點名稱可能隨版本調整，依序嘗試
-TPEX_OPENAPI_CANDIDATES = {
-    "margin": [
-        "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_margin_balance",
-        "https://www.tpex.org.tw/openapi/v1/margin_balance",
-    ],
-    "day_trade": [
-        "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daytrading",
-        "https://www.tpex.org.tw/openapi/v1/tpex_intraday_trading_statistics",
-    ],
 }
 
 # 各欄位在不同端點/語言下的關鍵字組合（全部小寫比對）
@@ -128,21 +124,6 @@ def parse_snapshot(rows: list[dict[str, Any]], value_targets: list[str]) -> pd.D
     return pd.DataFrame(records)
 
 
-def _rows_from_rwd_payload(payload: dict[str, Any]) -> list[dict[str, Any]]:
-    """rwd 端點回傳 fields+data 陣列（可能多張表），挑出含證券代號的明細表。"""
-    if str(payload.get("stat", "")).upper() != "OK":
-        return []
-    tables = payload.get("tables") or [payload]
-    for table in tables:
-        fields = table.get("fields") or []
-        data = table.get("data") or []
-        if not fields or not data:
-            continue
-        if _pick_field(fields, "symbol"):
-            return [dict(zip(fields, row)) for row in data]
-    return []
-
-
 def _get_json(url: str, timeout: int = 30) -> Any:
     response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=timeout)
     response.raise_for_status()
@@ -150,13 +131,12 @@ def _get_json(url: str, timeout: int = 30) -> Any:
 
 
 def fetch_twse_snapshot_today() -> pd.DataFrame:
-    """TWSE openapi 最新一日全市場籌碼快照。"""
+    """TWSE openapi 最新報表快照（無 token 時的備援，僅上市融資餘額）。
+
+    注意：openapi 只回「最新已發布」的報表，盤後尚未發布時內容是前一交易日。
+    """
     frames: list[pd.DataFrame] = []
-    targets = {
-        "margin": ["margin_balance"],
-        "sbl": ["short_balance"],
-        "day_trade": ["day_trade_volume", "total_volume"],
-    }
+    targets = {"margin": ["margin_balance"]}
     for kind, url in TWSE_OPENAPI_URLS.items():
         try:
             payload = _get_json(url)
@@ -170,48 +150,43 @@ def fetch_twse_snapshot_today() -> pd.DataFrame:
     return _merge_on_symbol(frames)
 
 
-def fetch_twse_snapshot_for(snapshot_date: date) -> pd.DataFrame:
-    """TWSE rwd 指定日期全市場籌碼快照（用於歷史回補）。"""
+def fetch_finmind_chip_snapshot(finmind_fetch: Any, snapshot_date: date) -> pd.DataFrame:
+    """FinMind 日期模式：指定日期一次抓全市場（上市＋上櫃）籌碼資料。
+
+    finmind_fetch(dataset, snapshot_date) 需回傳該 dataset 當日全市場的
+    list[dict]。任一 dataset 失敗只會缺對應欄位，不會整體失敗。
+    """
     frames: list[pd.DataFrame] = []
-    targets = {
-        "margin": ["margin_balance"],
-        "sbl": ["short_balance"],
-        "day_trade": ["day_trade_volume", "total_volume"],
-    }
-    date_text = snapshot_date.strftime("%Y%m%d")
-    for kind, template in TWSE_RWD_URLS.items():
+    for dataset, mapping in FINMIND_CHIP_DATASETS.items():
         try:
-            payload = _get_json(template.format(d=date_text))
-            rows = _rows_from_rwd_payload(payload)
-            frame = parse_snapshot(rows, targets[kind])
-            if not frame.empty:
-                frames.append(frame)
+            rows = finmind_fetch(dataset, snapshot_date)
         except Exception as exc:
-            print(f"WARN TWSE rwd {kind} {date_text} failed: {exc}")
-        time.sleep(0.6)
-    return _merge_on_symbol(frames)
+            print(f"WARN FinMind bulk {dataset} {snapshot_date} failed: {exc}")
+            continue
+        if not rows:
+            continue
+        frame = pd.DataFrame(rows)
+        id_column = "stock_id" if "stock_id" in frame.columns else None
+        if id_column is None:
+            continue
+        out = pd.DataFrame({"symbol": frame[id_column].astype(str).str.strip()})
+        has_value = False
+        for source, target in mapping.items():
+            if source in frame.columns:
+                out[target] = pd.to_numeric(frame[source], errors="coerce")
+                has_value = True
+        if has_value:
+            frames.append(out[out["symbol"].str.len() <= 6].drop_duplicates("symbol"))
+        time.sleep(0.3)
 
-
-def fetch_tpex_snapshot_today() -> pd.DataFrame:
-    """TPEx openapi 最新一日快照（端點名稱不穩定，逐一嘗試）。"""
-    frames: list[pd.DataFrame] = []
-    targets = {
-        "margin": ["margin_balance", "short_balance"],
-        "day_trade": ["day_trade_volume", "total_volume"],
-    }
-    for kind, urls in TPEX_OPENAPI_CANDIDATES.items():
-        for url in urls:
-            try:
-                payload = _get_json(url)
-                rows = payload if isinstance(payload, list) else []
-                frame = parse_snapshot(rows, targets[kind])
-                if not frame.empty:
-                    frames.append(frame)
-                    break
-            except Exception as exc:
-                print(f"WARN TPEx {kind} snapshot failed ({url}): {exc}")
-            time.sleep(0.4)
-    return _merge_on_symbol(frames)
+    merged = _merge_on_symbol(frames)
+    if merged.empty:
+        return merged
+    # 借券賣出餘額缺漏時退回融券餘額
+    if "short_balance" not in merged.columns or merged["short_balance"].isna().all():
+        if "margin_short_balance" in merged.columns:
+            merged["short_balance"] = merged["margin_short_balance"]
+    return merged.drop(columns=["margin_short_balance"], errors="ignore")
 
 
 def _merge_on_symbol(frames: list[pd.DataFrame]) -> pd.DataFrame:
@@ -255,57 +230,65 @@ def _recent_weekdays(days_back: int, until: date | None = None) -> list[date]:
     return sorted(day for day in candidates if day.weekday() < 5)
 
 
+def _is_partial_row_date(store: pd.DataFrame, day_text: str) -> bool:
+    """該日資料是否只有融資欄（舊版 TWSE 備援寫入的殘缺列），可被完整資料覆蓋。"""
+    rows = store[store["date"].astype(str) == day_text]
+    if rows.empty:
+        return False
+    for column in ("short_balance", "day_trade_volume"):
+        if column in rows.columns and pd.to_numeric(rows[column], errors="coerce").notna().any():
+            return False
+    return True
+
+
 def refresh_chip_store(
     path: Path,
     today_volumes: dict[str, float] | None = None,
+    finmind_fetch: Any = None,
     backfill_days: int = 40,
-    max_backfill_requests: int = 30,
+    max_backfill_dates: int = 15,
 ) -> tuple[pd.DataFrame, list[str]]:
     """更新滾動籌碼快照檔並回傳 (store, 成功的資料源列表)。
 
-    1. 以 TWSE rwd 端點回補缺少的歷史交易日（一次最多 max_backfill_requests 天）
-    2. 以 openapi 取得 TWSE / TPEx 最新一日快照
-    3. 修剪至最近 KEEP_TRADING_DAYS 個交易日
+    有 finmind_fetch 時：以 FinMind 日期模式回補最近缺少的交易日
+    （每日 4 次請求，涵蓋上市＋上櫃；當日盤後資料未發布時自動留到下次補）。
+    無 finmind_fetch 時：退回 TWSE openapi 最新快照（僅上市融資餘額）。
+    最後修剪至 KEEP_TRADING_DAYS 個交易日。
     """
     store = load_chip_store(path)
-    existing_dates = set(store["date"].astype(str))
     sources: list[str] = []
     new_frames: list[pd.DataFrame] = []
     today_text = date.today().isoformat()
 
-    # 歷史回補（今天以外的缺日）
-    missing = [
-        day for day in _recent_weekdays(backfill_days)
-        if day.isoformat() not in existing_dates and day.isoformat() != today_text
-    ]
-    consecutive_failures = 0
-    backfilled = 0
-    for day in missing[-max_backfill_requests:]:
-        frame = fetch_twse_snapshot_for(day)
-        if frame.empty:
-            consecutive_failures += 1
-            if consecutive_failures >= 3 and backfilled == 0:
-                print("WARN TWSE rwd backfill unavailable; skipping remaining dates")
-                break
-            continue
+    if finmind_fetch is not None:
+        existing = {
+            day for day in store["date"].astype(str)
+            if not _is_partial_row_date(store, day)
+        }
+        missing = [day for day in _recent_weekdays(backfill_days) if day.isoformat() not in existing]
         consecutive_failures = 0
-        backfilled += 1
-        frame["date"] = day.isoformat()
-        new_frames.append(frame)
-    if backfilled:
-        sources.append(f"TWSE-backfill×{backfilled}")
-
-    # 今日快照
-    twse_today = fetch_twse_snapshot_today()
-    if not twse_today.empty:
-        twse_today["date"] = today_text
-        new_frames.append(twse_today)
-        sources.append("TWSE")
-    tpex_today = fetch_tpex_snapshot_today()
-    if not tpex_today.empty:
-        tpex_today["date"] = today_text
-        new_frames.append(tpex_today)
-        sources.append("TPEx")
+        backfilled = 0
+        for day in missing[-max_backfill_dates:]:
+            frame = fetch_finmind_chip_snapshot(finmind_fetch, day)
+            if frame.empty:
+                consecutive_failures += 1
+                # 連續失敗多為額度用盡或服務中斷，直接停止；單日空資料（假日）不常連續 3 天
+                if consecutive_failures >= 3 and backfilled == 0:
+                    print("WARN FinMind bulk backfill unavailable; skipping remaining dates")
+                    break
+                continue
+            consecutive_failures = 0
+            backfilled += 1
+            frame["date"] = day.isoformat()
+            new_frames.append(frame)
+        if backfilled:
+            sources.append(f"FinMind×{backfilled}")
+    else:
+        twse_today = fetch_twse_snapshot_today()
+        if not twse_today.empty:
+            twse_today["date"] = today_text
+            new_frames.append(twse_today)
+            sources.append("TWSE")
 
     if new_frames:
         combined = pd.concat([store, *new_frames], ignore_index=True, sort=False)
