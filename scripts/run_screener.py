@@ -45,7 +45,9 @@ LEFT_SIDE_ENABLED = os.environ.get("SCREENER_LEFT_SIDE", "1").lower() not in {"0
 # 初選後進入完整評分的檔數上限（每檔需要抓歷史股價與 FinMind 資料）
 LEFT_UNIVERSE_LIMIT = int(os.environ.get("SCREENER_LEFT_UNIVERSE", "50"))
 # 全市場掃描的最低流動性門檻（成交金額，避免完全無量的殭屍股）
-LEFT_MIN_TURNOVER = float(os.environ.get("SCREENER_LEFT_MIN_TURNOVER", "30000000"))
+# 左側找的是「無人問津」的股票，門檻放寬：股價 5 元以上、日成交值 1 千萬以上
+LEFT_MIN_TURNOVER = float(os.environ.get("SCREENER_LEFT_MIN_TURNOVER", "10000000"))
+LEFT_MIN_CLOSE = float(os.environ.get("SCREENER_LEFT_MIN_CLOSE", "5"))
 CHIP_STORE_PATH = ROOT / "frontend" / "data" / "chip_history.csv"
 OUTPUT = ROOT / "frontend" / "data" / "results.json"
 HISTORY = ROOT / "frontend" / "data" / "history.json"
@@ -70,6 +72,22 @@ def finmind_get(params: dict[str, Any], timeout: int = 30) -> dict[str, Any]:
     if str(payload.get("status")) not in ("200", "200.0"):
         raise RuntimeError(f"FinMind API error: status={payload.get('status')} msg={payload.get('msg')}")
     return payload
+
+
+def finmind_fetch_bulk(dataset: str, snapshot_date: date) -> list[dict[str, Any]]:
+    """FinMind 日期模式：不帶 data_id、指定單一日期，一次回傳全市場資料。"""
+    if not FINMIND_TOKEN:
+        return []
+    payload = finmind_get(
+        {
+            "dataset": dataset,
+            "start_date": snapshot_date.isoformat(),
+            "end_date": snapshot_date.isoformat(),
+        },
+        timeout=60,
+    )
+    data = payload.get("data", [])
+    return data if isinstance(data, list) else []
 
 
 def fugle_get(path: str, params: dict[str, Any], timeout: int = 30) -> dict[str, Any]:
@@ -806,28 +824,8 @@ def fetch_financial_finmind(symbol: str) -> dict[str, Any] | None:
         if pd.notna(val):
             result["eps"] = float(val)
 
-    # ROE — lives in TaiwanStockProfitability, not TaiwanStockFinancialStatements
-    try:
-        time.sleep(0.1)
-        params_prof = {
-            "dataset": "TaiwanStockProfitability",
-            "data_id": symbol,
-            "start_date": start.isoformat(),
-            "end_date": end.isoformat(),
-        }
-        payload_prof = finmind_get(params_prof, timeout=20)
-        data_prof = payload_prof.get("data", [])
-        if data_prof:
-            frame_prof = pd.DataFrame(data_prof)
-            frame_prof = frame_prof.sort_values("date")
-            for col in ("ROE", "roe", "roe_a", "ReturnOnEquity"):
-                if col in frame_prof.columns:
-                    val = pd.to_numeric(frame_prof.iloc[-1][col], errors="coerce")
-                    if pd.notna(val):
-                        result["roe_pct"] = float(val)
-                        break
-    except Exception as exc:
-        print(f"WARN FinMind profitability failed for {symbol}: {exc}")
+    # ROE：FinMind 免費版沒有現成的獲利能力 dataset（TaiwanStockProfitability
+    # 不是合法 dataset，會回 422），維持 None，評分引擎會自動略過 ROE 條件。
 
     return result if result else None
 
@@ -888,12 +886,18 @@ def chip_store_summary(store: pd.DataFrame) -> dict[str, int]:
     }
 
 
-def build_left_observation_shortlist(universe: pd.DataFrame, limit: int) -> pd.DataFrame:
+def build_left_observation_shortlist(
+    universe: pd.DataFrame,
+    limit: int,
+    exclude_symbols: set[str] | None = None,
+) -> pd.DataFrame:
     """Fallback shortlist used before chip history has enough days to form trends.
 
     The official left-side signal still comes from the chip funnel. Until that
     rolling store has enough dates, publish a liquid observation pool so the
     dashboard remains useful instead of showing an empty left-side tab.
+    Symbols already covered by the momentum screen are excluded so the two
+    tabs don't show the same hot stocks.
     """
     columns = [
         "symbol",
@@ -909,7 +913,9 @@ def build_left_observation_shortlist(universe: pd.DataFrame, limit: int) -> pd.D
     pool["symbol"] = pool["symbol"].astype(str)
     pool["turnover"] = pd.to_numeric(pool.get("turnover"), errors="coerce").fillna(0)
     pool["close"] = pd.to_numeric(pool.get("close"), errors="coerce").fillna(0)
-    pool = pool[(pool["close"] > 10) & (pool["turnover"] > 0)]
+    pool = pool[(pool["close"] > LEFT_MIN_CLOSE) & (pool["turnover"] > 0)]
+    if exclude_symbols:
+        pool = pool[~pool["symbol"].isin({str(symbol) for symbol in exclude_symbols})]
     if pool.empty:
         return pd.DataFrame(columns=columns)
 
@@ -1162,23 +1168,29 @@ def run_left_side_screener(all_quotes: pd.DataFrame, fundamentals_cache: dict[st
     left_engine = LeftSideScoringEngine()
     thresholds = left_engine.thresholds
 
-    universe = all_quotes[(all_quotes["close"] > 10) & (all_quotes["turnover"] > LEFT_MIN_TURNOVER)]
+    universe = all_quotes[(all_quotes["close"] > LEFT_MIN_CLOSE) & (all_quotes["turnover"] > LEFT_MIN_TURNOVER)]
     payload: dict[str, Any] = {
         "left_side_enabled": True,
         "left_side_threshold": left_engine.candidate_score,
         "left_side_universe_count": int(len(universe)),
         "left_side_candidates": [],
     }
+    # 觀察池備援時排除右側動能已抓取的熱門股，避免兩個分頁重疊
+    momentum_symbols = set(fundamentals_cache.keys())
 
     today_volumes = {str(row["symbol"]): safe_float(row["volume"]) for _, row in all_quotes.iterrows()}
-    store, chip_sources = refresh_chip_store(CHIP_STORE_PATH, today_volumes=today_volumes)
+    store, chip_sources = refresh_chip_store(
+        CHIP_STORE_PATH,
+        today_volumes=today_volumes,
+        finmind_fetch=finmind_fetch_bulk if FINMIND_TOKEN else None,
+    )
     chip_summary = chip_store_summary(store)
     payload["chip_sources"] = chip_sources
     payload["left_side_chip_dates"] = chip_summary["date_count"]
     payload["left_side_chip_rows"] = chip_summary["row_count"]
     payload["left_side_mode"] = "chip_signal"
     if store.empty:
-        shortlist = build_left_observation_shortlist(universe, LEFT_UNIVERSE_LIMIT)
+        shortlist = build_left_observation_shortlist(universe, LEFT_UNIVERSE_LIMIT, exclude_symbols=momentum_symbols)
         payload["left_side_mode"] = "observation_pool"
         payload["left_side_shortlist_count"] = int(len(shortlist))
         payload["left_side_note"] = "全市場籌碼快照暫時無法取得，目前先顯示流動性股票的左側潛伏觀察池。"
@@ -1195,7 +1207,7 @@ def run_left_side_screener(all_quotes: pd.DataFrame, fundamentals_cache: dict[st
         payload["left_side_shortlist_count"] = int(len(shortlist))
 
     if shortlist.empty:
-        shortlist = build_left_observation_shortlist(universe, LEFT_UNIVERSE_LIMIT)
+        shortlist = build_left_observation_shortlist(universe, LEFT_UNIVERSE_LIMIT, exclude_symbols=momentum_symbols)
         payload["left_side_mode"] = "observation_pool"
         payload["left_side_shortlist_count"] = int(len(shortlist))
         payload["left_side_note"] = (

@@ -208,14 +208,31 @@ def test_left_observation_shortlist_keeps_dashboard_populated() -> None:
             {"symbol": "1111", "close": 20, "turnover": 30_000_000},
             {"symbol": "2222", "close": 8, "turnover": 500_000_000},
             {"symbol": "3333", "close": 50, "turnover": 120_000_000},
+            {"symbol": "4444", "close": 3, "turnover": 900_000_000},  # 低於 5 元下限
         ]
     )
 
     result = build_left_observation_shortlist(quotes, limit=2)
 
-    assert list(result["symbol"]) == ["3333", "1111"]
+    assert list(result["symbol"]) == ["2222", "3333"]
     assert result["signal_score"].tolist() == [0.0, 0.0]
     assert "short_balance_change_pct" in result.columns
+
+
+def test_left_observation_shortlist_excludes_momentum_symbols() -> None:
+    from scripts.run_screener import build_left_observation_shortlist
+
+    quotes = pd.DataFrame(
+        [
+            {"symbol": "1111", "close": 20, "turnover": 30_000_000},
+            {"symbol": "2222", "close": 8, "turnover": 500_000_000},
+            {"symbol": "3333", "close": 50, "turnover": 120_000_000},
+        ]
+    )
+
+    result = build_left_observation_shortlist(quotes, limit=3, exclude_symbols={"2222", "3333"})
+
+    assert list(result["symbol"]) == ["1111"]
 
 
 def test_chip_store_summary_handles_missing_optional_columns() -> None:
