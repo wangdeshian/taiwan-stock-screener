@@ -52,6 +52,22 @@ def test_fetch_finmind_chip_snapshot_merges_datasets() -> None:
     assert float(tpex_row["margin_balance"]) == 800
 
 
+def test_refresh_chip_store_falls_back_to_twse_when_finmind_gated(tmp_path, monkeypatch) -> None:
+    import taiwan_stock_screener.collectors.market_chip as market_chip
+
+    def gated_fetch(dataset: str, snapshot_date: date) -> list[dict]:
+        raise RuntimeError("FinMind API failed status=400 msg=Your level is register.")
+
+    fake_twse = pd.DataFrame({"symbol": ["2330"], "margin_balance": [1000.0]})
+    monkeypatch.setattr(market_chip, "fetch_twse_snapshot_today", lambda: fake_twse.copy())
+
+    path = tmp_path / "chip_history.csv"
+    store, sources = refresh_chip_store(path, finmind_fetch=gated_fetch, backfill_days=7, max_backfill_dates=5)
+
+    assert sources == ["TWSE"]
+    assert list(store["symbol"]) == ["2330"]
+
+
 def test_refresh_chip_store_backfills_recent_trading_days(tmp_path) -> None:
     path = tmp_path / "chip_history.csv"
 
