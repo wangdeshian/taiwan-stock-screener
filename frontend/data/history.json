@@ -1,7 +1,7 @@
 [
   {
     "date": "2026-07-13",
-    "updated_at": "2026-07-13T12:31:54.025997+08:00",
+    "updated_at": "2026-07-13T12:59:38.382073+08:00",
     "source": "live",
     "data_sources": [
       "TWSE",
@@ -12,6 +12,7 @@
     "screened_count": 60,
     "candidate_count": 20,
     "score_threshold": 55,
+    "selection_note": null,
     "candidates": [
       {
         "symbol": "3026",
@@ -27,10 +28,10 @@
         "revenue_yoy_pct": 33.35,
         "eps": 2.86,
         "roe_pct": null,
-        "pe_ratio": null,
-        "peg_ratio": 2.63,
-        "relative_strength_20d_pct": 51.52,
-        "relative_strength_60d_pct": 314.5
+        "pe_ratio": 129.51,
+        "peg_ratio": 3.88,
+        "relative_strength_20d_pct": 51.29,
+        "relative_strength_60d_pct": 314.24
       },
       {
         "symbol": "2395",
@@ -46,10 +47,10 @@
         "revenue_yoy_pct": 73.39,
         "eps": 3.85,
         "roe_pct": null,
-        "pe_ratio": null,
-        "peg_ratio": 0.48,
-        "relative_strength_20d_pct": 10.98,
-        "relative_strength_60d_pct": 33.57
+        "pe_ratio": 41.89,
+        "peg_ratio": 0.57,
+        "relative_strength_20d_pct": 10.75,
+        "relative_strength_60d_pct": 33.31
       },
       {
         "symbol": "2645",
@@ -65,10 +66,10 @@
         "revenue_yoy_pct": 10.64,
         "eps": 2.58,
         "roe_pct": null,
-        "pe_ratio": null,
-        "peg_ratio": 2.19,
-        "relative_strength_20d_pct": 37.41,
-        "relative_strength_60d_pct": 35.53
+        "pe_ratio": 36.64,
+        "peg_ratio": 3.44,
+        "relative_strength_20d_pct": 37.18,
+        "relative_strength_60d_pct": 35.27
       },
       {
         "symbol": "2887",
@@ -84,10 +85,10 @@
         "revenue_yoy_pct": 117.88,
         "eps": 0.61,
         "roe_pct": null,
-        "pe_ratio": null,
-        "peg_ratio": 0.13,
-        "relative_strength_20d_pct": 22.49,
-        "relative_strength_60d_pct": 27.31
+        "pe_ratio": 18.06,
+        "peg_ratio": 0.15,
+        "relative_strength_20d_pct": 22.26,
+        "relative_strength_60d_pct": 27.05
       },
       {
         "symbol": "3006",
@@ -103,10 +104,10 @@
         "revenue_yoy_pct": 328.35,
         "eps": 7.22,
         "roe_pct": null,
-        "pe_ratio": null,
-        "peg_ratio": 0.02,
-        "relative_strength_20d_pct": 12.31,
-        "relative_strength_60d_pct": 24.25
+        "pe_ratio": 28.18,
+        "peg_ratio": 0.09,
+        "relative_strength_20d_pct": 12.08,
+        "relative_strength_60d_pct": 23.99
       },
       {
         "symbol": "3034",
@@ -122,10 +123,10 @@
         "revenue_yoy_pct": 18.96,
         "eps": 6.19,
         "roe_pct": null,
-        "pe_ratio": null,
-        "peg_ratio": 1.15,
-        "relative_strength_20d_pct": 8.25,
-        "relative_strength_60d_pct": 12.6
+        "pe_ratio": 22.21,
+        "peg_ratio": 1.17,
+        "relative_strength_20d_pct": 8.02,
+        "relative_strength_60d_pct": 12.34
       },
       {
         "symbol": "2059",
@@ -141,10 +142,10 @@
         "revenue_yoy_pct": 220.52,
         "eps": 36.58,
         "roe_pct": null,
-        "pe_ratio": null,
-        "peg_ratio": 0.26,
-        "relative_strength_20d_pct": 24.49,
-        "relative_strength_60d_pct": 116.07
+        "pe_ratio": 72.72,
+        "peg_ratio": 0.33,
+        "relative_strength_20d_pct": 24.26,
+        "relative_strength_60d_pct": 115.81
       },
       {
         "symbol": "3532",
@@ -160,10 +161,10 @@
         "revenue_yoy_pct": 23.71,
         "eps": -0.18,
         "roe_pct": null,
-        "pe_ratio": null,
-        "peg_ratio": null,
-        "relative_strength_20d_pct": 51.83,
-        "relative_strength_60d_pct": 113.18
+        "pe_ratio": 536.08,
+        "peg_ratio": 22.61,
+        "relative_strength_20d_pct": 51.6,
+        "relative_strength_60d_pct": 112.92
       },
       {
         "symbol": "8046",
@@ -179,10 +180,10 @@
         "revenue_yoy_pct": 50.03,
         "eps": 2.03,
         "roe_pct": null,
-        "pe_ratio": null,
-        "peg_ratio": 2.99,
-        "relative_strength_20d_pct": 38.43,
-        "relative_strength_60d_pct": 64.67
+        "pe_ratio": 257.42,
+        "peg_ratio": 5.15,
+        "relative_strength_20d_pct": 38.2,
+        "relative_strength_60d_pct": 64.41
       },
       {
         "symbol": "6285",
@@ -198,10 +199,10 @@
         "revenue_yoy_pct": 84.37,
         "eps": 2.36,
         "roe_pct": null,
-        "pe_ratio": null,
-        "peg_ratio": 0.33,
-        "relative_strength_20d_pct": -8.54,
-        "relative_strength_60d_pct": -7.12
+        "pe_ratio": 38.42,
+        "peg_ratio": 0.46,
+        "relative_strength_20d_pct": -8.77,
+        "relative_strength_60d_pct": -7.38
       },
       {
         "symbol": "6669",
@@ -217,10 +218,10 @@
         "revenue_yoy_pct": 29.79,
         "eps": 75.95,
         "roe_pct": null,
-        "pe_ratio": null,
-        "peg_ratio": 0.56,
-        "relative_strength_20d_pct": -5.51,
-        "relative_strength_60d_pct": 10.81
+        "pe_ratio": 16.89,
+        "peg_ratio": 0.57,
+        "relative_strength_20d_pct": -5.74,
+        "relative_strength_60d_pct": 10.55
       },
       {
         "symbol": "2379",
@@ -236,10 +237,10 @@
         "revenue_yoy_pct": 20.6,
         "eps": 8.44,
         "roe_pct": null,
-        "pe_ratio": null,
-        "peg_ratio": 1.21,
-        "relative_strength_20d_pct": 25.21,
-        "relative_strength_60d_pct": 36.9
+        "pe_ratio": 30.24,
+        "peg_ratio": 1.47,
+        "relative_strength_20d_pct": 24.98,
+        "relative_strength_60d_pct": 36.64
       },
       {
         "symbol": "8150",
@@ -255,10 +256,10 @@
         "revenue_yoy_pct": 37.23,
         "eps": 0.72,
         "roe_pct": null,
-        "pe_ratio": null,
-        "peg_ratio": 1.09,
-        "relative_strength_20d_pct": 27.48,
-        "relative_strength_60d_pct": 62.3
+        "pe_ratio": 99.15,
+        "peg_ratio": 2.66,
+        "relative_strength_20d_pct": 27.25,
+        "relative_strength_60d_pct": 62.04
       },
       {
         "symbol": "1303",
@@ -274,10 +275,10 @@
         "revenue_yoy_pct": 31.79,
         "eps": 1.8,
         "roe_pct": null,
-        "pe_ratio": null,
-        "peg_ratio": 0.79,
-        "relative_strength_20d_pct": 86.44,
-        "relative_strength_60d_pct": 80.52
+        "pe_ratio": 78.57,
+        "peg_ratio": 2.47,
+        "relative_strength_20d_pct": 86.21,
+        "relative_strength_60d_pct": 80.26
       },
       {
         "symbol": "6446",
@@ -293,10 +294,10 @@
         "revenue_yoy_pct": 94.88,
         "eps": 5.79,
         "roe_pct": null,
-        "pe_ratio": null,
-        "peg_ratio": 0.58,
-        "relative_strength_20d_pct": 25.3,
-        "relative_strength_60d_pct": 76.75
+        "pe_ratio": 80.56,
+        "peg_ratio": 0.85,
+        "relative_strength_20d_pct": 25.07,
+        "relative_strength_60d_pct": 76.49
       },
       {
         "symbol": "2486",
@@ -312,10 +313,10 @@
         "revenue_yoy_pct": 34.71,
         "eps": 0.29,
         "roe_pct": null,
-        "pe_ratio": null,
-        "peg_ratio": 6.43,
-        "relative_strength_20d_pct": 0.26,
-        "relative_strength_60d_pct": 11.84
+        "pe_ratio": 507.84,
+        "peg_ratio": 14.63,
+        "relative_strength_20d_pct": 0.03,
+        "relative_strength_60d_pct": 11.58
       },
       {
         "symbol": "2484",
@@ -331,10 +332,10 @@
         "revenue_yoy_pct": -1.4,
         "eps": 0.33,
         "roe_pct": null,
-        "pe_ratio": null,
+        "pe_ratio": 122.57,
         "peg_ratio": null,
-        "relative_strength_20d_pct": 51.09,
-        "relative_strength_60d_pct": 139.87
+        "relative_strength_20d_pct": 50.86,
+        "relative_strength_60d_pct": 139.61
       },
       {
         "symbol": "2408",
@@ -350,10 +351,10 @@
         "revenue_yoy_pct": 621.34,
         "eps": 8.41,
         "roe_pct": null,
-        "pe_ratio": null,
-        "peg_ratio": 0.02,
-        "relative_strength_20d_pct": 25.76,
-        "relative_strength_60d_pct": 74.54
+        "pe_ratio": 38.99,
+        "peg_ratio": 0.06,
+        "relative_strength_20d_pct": 25.53,
+        "relative_strength_60d_pct": 74.28
       },
       {
         "symbol": "2356",
@@ -369,10 +370,10 @@
         "revenue_yoy_pct": 61.62,
         "eps": 0.68,
         "roe_pct": null,
-        "pe_ratio": null,
-        "peg_ratio": 0.42,
-        "relative_strength_20d_pct": 0.42,
-        "relative_strength_60d_pct": 33.09
+        "pe_ratio": 26.54,
+        "peg_ratio": 0.43,
+        "relative_strength_20d_pct": 0.19,
+        "relative_strength_60d_pct": 32.83
       },
       {
         "symbol": "6213",
@@ -388,10 +389,10 @@
         "revenue_yoy_pct": 47.94,
         "eps": 0.87,
         "roe_pct": null,
-        "pe_ratio": null,
-        "peg_ratio": 2.31,
-        "relative_strength_20d_pct": 46.55,
-        "relative_strength_60d_pct": 48.47
+        "pe_ratio": 94.13,
+        "peg_ratio": 1.96,
+        "relative_strength_20d_pct": 46.32,
+        "relative_strength_60d_pct": 48.21
       }
     ]
   },
