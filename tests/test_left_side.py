@@ -198,3 +198,32 @@ def test_demo_output_includes_left_side_candidates() -> None:
         "margin_balance_change_pct",
     ):
         assert key in top
+
+
+def test_left_observation_shortlist_keeps_dashboard_populated() -> None:
+    from scripts.run_screener import build_left_observation_shortlist
+
+    quotes = pd.DataFrame(
+        [
+            {"symbol": "1111", "close": 20, "turnover": 30_000_000},
+            {"symbol": "2222", "close": 8, "turnover": 500_000_000},
+            {"symbol": "3333", "close": 50, "turnover": 120_000_000},
+        ]
+    )
+
+    result = build_left_observation_shortlist(quotes, limit=2)
+
+    assert list(result["symbol"]) == ["3333", "1111"]
+    assert result["signal_score"].tolist() == [0.0, 0.0]
+    assert "short_balance_change_pct" in result.columns
+
+
+def test_chip_store_summary_handles_missing_optional_columns() -> None:
+    from scripts.run_screener import chip_store_summary
+
+    summary = chip_store_summary(pd.DataFrame({"date": ["2026-07-13"], "symbol": ["2330"]}))
+
+    assert summary["date_count"] == 1
+    assert summary["margin_rows"] == 0
+    assert summary["short_rows"] == 0
+    assert summary["day_trade_rows"] == 0

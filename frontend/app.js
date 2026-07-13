@@ -75,6 +75,7 @@ const REASON_LABELS = {
   still_profitable: "EPS 為正",
   revenue_not_collapsing: "營收未惡化",
   sentiment_freeze: "網路聲量冰點",
+  observation_pool: "潛伏觀察池",
 };
 
 function money(value) {
@@ -162,9 +163,10 @@ function renderStrengthMetrics(item) {
 }
 
 function renderChipMetrics(item) {
+  const title = item.is_observation_pool ? "深度籌碼（觀察池，資料累積中）" : "深度籌碼（近 20 日）";
   return `
     <section class="detail-section">
-      <h3>深度籌碼（近 20 日）</h3>
+      <h3>${title}</h3>
       <div class="metric-grid">
         ${metricCard("借券賣出餘額變化", pct(item.short_balance_change_pct), Number(item.short_balance_change_pct) < 0 ? "good" : "")}
         ${metricCard("融資餘額變化", pct(item.margin_balance_change_pct), Number(item.margin_balance_change_pct) < 0 ? "good" : "")}
@@ -375,6 +377,9 @@ function updateNotice() {
     } else {
       if (latestData.left_side_universe_count) {
         messages.push(`全市場掃描 ${latestData.left_side_universe_count} 檔，籌碼起手式訊號入圍 ${latestData.left_side_shortlist_count ?? 0} 檔。`);
+      }
+      if (latestData.left_side_mode === "observation_pool") {
+        messages.push(`目前為潛伏觀察池，籌碼歷史已累積 ${latestData.left_side_chip_dates ?? 0} 個交易日。`);
       }
       if (latestData.left_side_note) {
         messages.push(latestData.left_side_note);

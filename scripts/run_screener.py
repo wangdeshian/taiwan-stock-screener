@@ -740,6 +740,62 @@ def left_side_metrics(chip_rows: pd.DataFrame | None, holder_rows: pd.DataFrame 
     }
 
 
+def chip_store_summary(store: pd.DataFrame) -> dict[str, int]:
+    def count_numeric_rows(column: str) -> int:
+        if column not in store.columns:
+            return 0
+        return int(pd.to_numeric(store[column], errors="coerce").notna().sum())
+
+    if store.empty:
+        return {
+            "date_count": 0,
+            "row_count": 0,
+            "margin_rows": 0,
+            "short_rows": 0,
+            "day_trade_rows": 0,
+        }
+    return {
+        "date_count": int(store["date"].nunique()) if "date" in store.columns else 0,
+        "row_count": int(len(store)),
+        "margin_rows": count_numeric_rows("margin_balance"),
+        "short_rows": count_numeric_rows("short_balance"),
+        "day_trade_rows": count_numeric_rows("day_trade_volume"),
+    }
+
+
+def build_left_observation_shortlist(universe: pd.DataFrame, limit: int) -> pd.DataFrame:
+    """Fallback shortlist used before chip history has enough days to form trends.
+
+    The official left-side signal still comes from the chip funnel. Until that
+    rolling store has enough dates, publish a liquid observation pool so the
+    dashboard remains useful instead of showing an empty left-side tab.
+    """
+    columns = [
+        "symbol",
+        "signal_score",
+        "short_balance_change_pct",
+        "margin_balance_change_pct",
+        "day_trade_ratio_pct",
+    ]
+    if universe.empty or limit <= 0:
+        return pd.DataFrame(columns=columns)
+
+    pool = universe.copy()
+    pool["symbol"] = pool["symbol"].astype(str)
+    pool["turnover"] = pd.to_numeric(pool.get("turnover"), errors="coerce").fillna(0)
+    pool["close"] = pd.to_numeric(pool.get("close"), errors="coerce").fillna(0)
+    pool = pool[(pool["close"] > 10) & (pool["turnover"] > 0)]
+    if pool.empty:
+        return pd.DataFrame(columns=columns)
+
+    result = pool.sort_values("turnover", ascending=False).head(limit).copy()
+    result["signal_score"] = 0.0
+    result["short_balance_change_pct"] = pd.NA
+    result["margin_balance_change_pct"] = pd.NA
+    result["day_trade_ratio_pct"] = pd.NA
+    return result[columns].reset_index(drop=True)
+
+
 def serialize_left_candidate(
     symbol: str,
     name: str,
@@ -981,30 +1037,48 @@ def run_left_side_screener(all_quotes: pd.DataFrame, fundamentals_cache: dict[st
 
     today_volumes = {str(row["symbol"]): safe_float(row["volume"]) for _, row in all_quotes.iterrows()}
     store, chip_sources = refresh_chip_store(CHIP_STORE_PATH, today_volumes=today_volumes)
+    chip_summary = chip_store_summary(store)
     payload["chip_sources"] = chip_sources
+    payload["left_side_chip_dates"] = chip_summary["date_count"]
+    payload["left_side_chip_rows"] = chip_summary["row_count"]
+    payload["left_side_mode"] = "chip_signal"
     if store.empty:
-        payload["left_side_note"] = "全市場籌碼快照暫時無法取得，左側潛伏本次未更新。"
-        payload["left_side_shortlist_count"] = 0
-        return payload
+        shortlist = build_left_observation_shortlist(universe, LEFT_UNIVERSE_LIMIT)
+        payload["left_side_mode"] = "observation_pool"
+        payload["left_side_shortlist_count"] = int(len(shortlist))
+        payload["left_side_note"] = "全市場籌碼快照暫時無法取得，目前先顯示流動性股票的左側潛伏觀察池。"
+    else:
+        shortlist = prefilter_left_symbols(
+            store,
+            universe["symbol"].astype(str),
+            limit=LEFT_UNIVERSE_LIMIT,
+            short_drop_pct=float(thresholds["short_balance_drop_pct"]),
+            margin_drop_pct=float(thresholds["margin_drop_pct"]),
+            day_trade_max_pct=float(thresholds["day_trade_ratio_max_pct"]),
+            lookback=int(thresholds["short_balance_lookback_days"]),
+        )
+        payload["left_side_shortlist_count"] = int(len(shortlist))
 
-    shortlist = prefilter_left_symbols(
-        store,
-        universe["symbol"].astype(str),
-        limit=LEFT_UNIVERSE_LIMIT,
-        short_drop_pct=float(thresholds["short_balance_drop_pct"]),
-        margin_drop_pct=float(thresholds["margin_drop_pct"]),
-        day_trade_max_pct=float(thresholds["day_trade_ratio_max_pct"]),
-        lookback=int(thresholds["short_balance_lookback_days"]),
-    )
-    payload["left_side_shortlist_count"] = int(len(shortlist))
-    print(f"Left-side funnel: universe {len(universe)} → chip-signal shortlist {len(shortlist)}")
     if shortlist.empty:
-        payload["left_side_note"] = "全市場籌碼訊號初選沒有找到符合起手式的股票（快照可能仍在累積中）。"
+        shortlist = build_left_observation_shortlist(universe, LEFT_UNIVERSE_LIMIT)
+        payload["left_side_mode"] = "observation_pool"
+        payload["left_side_shortlist_count"] = int(len(shortlist))
+        payload["left_side_note"] = (
+            f"籌碼歷史目前只有 {chip_summary['date_count']} 個交易日，或借券/當沖欄位尚未完整，"
+            "正式起手式暫無入圍；目前先顯示左側潛伏觀察池排序。"
+        )
+    print(
+        f"Left-side funnel: universe {len(universe)} → "
+        f"{payload['left_side_mode']} shortlist {len(shortlist)}"
+    )
+    if shortlist.empty:
+        payload["left_side_note"] = "左側潛伏觀察池暫時無法建立，請稍後重新執行。"
         return payload
 
     quote_lookup = universe.set_index(universe["symbol"].astype(str)).to_dict("index")
     left_scored: list[dict[str, Any]] = []
     left_candidates: list[dict[str, Any]] = []
+    is_observation_pool = payload["left_side_mode"] == "observation_pool"
 
     for index, pre_row in shortlist.iterrows():
         symbol = str(pre_row["symbol"])
@@ -1065,6 +1139,9 @@ def run_left_side_screener(all_quotes: pd.DataFrame, fundamentals_cache: dict[st
                 chip_metrics=left_side_metrics(chip_rows, holder_rows),
                 price_source=price_source,
             )
+            if is_observation_pool:
+                left_candidate["reasons"] = ["observation_pool", *left_candidate.get("reasons", [])]
+                left_candidate["is_observation_pool"] = True
             left_scored.append(left_candidate)
             if left_result.is_candidate:
                 left_candidates.append(left_candidate)
@@ -1075,7 +1152,13 @@ def run_left_side_screener(all_quotes: pd.DataFrame, fundamentals_cache: dict[st
     left_candidates.sort(key=lambda item: float(item["total_score"]), reverse=True)
     if not left_candidates and left_scored:
         left_candidates = left_scored[:MAX_OUTPUT]
-        payload["left_side_note"] = "沒有股票達到左側潛伏門檻，改顯示左側分數最高的排序。"
+        if is_observation_pool:
+            payload["left_side_note"] = (
+                f"{payload.get('left_side_note', '')} 目前尚無股票達正式左側門檻，"
+                f"先顯示觀察池分數最高前 {MAX_OUTPUT} 檔。"
+            ).strip()
+        else:
+            payload["left_side_note"] = "沒有股票達到左側潛伏門檻，改顯示左側分數最高的排序。"
     payload["left_side_candidates"] = left_candidates[:MAX_OUTPUT]
     return payload
 
