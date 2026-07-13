@@ -58,6 +58,31 @@ scoring:
   industry: 10
   risk_reward: 5
 
+left_side:
+  candidate_score: 70
+  thresholds:
+    low_base_from_high_pct: 25
+    bb_squeeze_lookback_days: 120
+    bb_squeeze_percentile: 25
+    stabilize_ma_days: 20
+    short_balance_lookback_days: 20
+    short_balance_drop_pct: 15
+    margin_lookback_days: 20
+    margin_drop_pct: 10
+    day_trade_ratio_max_pct: 10
+    volume_dryup_ratio: 0.75
+    holder_lookback_weeks: 8
+    holder_ratio_gain_pp: 0.5
+    trust_days: 10
+    revenue_yoy_floor_pct: -20
+  weights:
+    base_structure: 25
+    short_covering: 20
+    retail_capitulation: 20
+    smart_money: 20
+    fundamental_safety: 10
+    sentiment: 5
+
 trade_plan:
   atr_stop_multiplier: 1.5
   first_target_r_multiple: 2

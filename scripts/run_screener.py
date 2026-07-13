@@ -16,14 +16,22 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from taiwan_stock_screener.collectors.sample import (  # noqa: E402
+    sample_big_holder_ratios,
+    sample_chip_data,
     sample_daily_prices,
     sample_financials,
     sample_institutional_trades,
     sample_monthly_revenue,
     sample_stocks,
 )
+from taiwan_stock_screener.collectors.market_chip import (  # noqa: E402
+    chip_rows_for,
+    prefilter_left_symbols,
+    refresh_chip_store,
+)
 from taiwan_stock_screener.indicators.technical import add_technical_indicators  # noqa: E402
 from taiwan_stock_screener.scoring.engine import ScoringEngine  # noqa: E402
+from taiwan_stock_screener.scoring.left_side import LeftSideScoringEngine  # noqa: E402
 
 TW_TZ = timezone(timedelta(hours=8))
 FINMIND_TOKEN = os.environ.get("FINMIND_TOKEN", "").replace("\r", "").replace("\n", "").strip()
@@ -32,6 +40,13 @@ FUGLE_API_KEY = os.environ.get("FUGLE_API_KEY", "").replace("\r", "").replace("\
 FUGLE_BASE = "https://api.fugle.tw/marketdata/v1.0/stock"
 TOP_N = int(os.environ.get("SCREENER_TOP_N", "60"))
 MAX_OUTPUT = int(os.environ.get("SCREENER_MAX_OUTPUT", "20"))
+# 左側潛伏策略：全市場籌碼快照 → 訊號初選 → 入圍名單完整評分
+LEFT_SIDE_ENABLED = os.environ.get("SCREENER_LEFT_SIDE", "1").lower() not in {"0", "false", "no"}
+# 初選後進入完整評分的檔數上限（每檔需要抓歷史股價與 FinMind 資料）
+LEFT_UNIVERSE_LIMIT = int(os.environ.get("SCREENER_LEFT_UNIVERSE", "50"))
+# 全市場掃描的最低流動性門檻（成交金額，避免完全無量的殭屍股）
+LEFT_MIN_TURNOVER = float(os.environ.get("SCREENER_LEFT_MIN_TURNOVER", "30000000"))
+CHIP_STORE_PATH = ROOT / "frontend" / "data" / "chip_history.csv"
 OUTPUT = ROOT / "frontend" / "data" / "results.json"
 HISTORY = ROOT / "frontend" / "data" / "history.json"
 MAX_HISTORY_DAYS = 30
@@ -159,7 +174,8 @@ def fetch_tpex_today() -> pd.DataFrame:
     return pd.DataFrame(data)
 
 
-def fetch_today_universe() -> pd.DataFrame:
+def fetch_all_quotes() -> pd.DataFrame:
+    """全市場當日行情（TWSE + TPEx），不做流動性篩選。"""
     frames: list[pd.DataFrame] = []
     for label, fetcher in (("TWSE", fetch_twse_today), ("TPEx", fetch_tpex_today)):
         try:
@@ -170,11 +186,43 @@ def fetch_today_universe() -> pd.DataFrame:
             print(f"WARN {label} quote fetch failed: {exc}")
     if not frames:
         return pd.DataFrame()
+    return pd.concat(frames, ignore_index=True)
 
-    today = pd.concat(frames, ignore_index=True)
-    today = today[(today["close"] > 10) & (today["turnover"] > 100_000_000)]
+
+def fetch_today_universe(all_quotes: pd.DataFrame | None = None) -> pd.DataFrame:
+    """右側動能策略股票池：成交值前 TOP_N 名。"""
+    if all_quotes is None:
+        all_quotes = fetch_all_quotes()
+    if all_quotes.empty:
+        return all_quotes
+
+    today = all_quotes[(all_quotes["close"] > 10) & (all_quotes["turnover"] > 100_000_000)]
     today = today.sort_values("turnover", ascending=False).head(TOP_N)
     return today.reset_index(drop=True)
+
+
+def fetch_price_history(symbol: str, market: str) -> tuple[pd.DataFrame, str]:
+    """依 FinMind → Fugle → yfinance 順序抓一年日線，回傳 (history, 來源)。"""
+    price_source = "none"
+    if FINMIND_TOKEN:
+        history = fetch_history_finmind(symbol)
+        time.sleep(0.2)
+        price_source = "FinMind" if not history.empty else "none"
+        if history.empty:
+            print(f"WARN FinMind unavailable for {symbol}; trying Fugle/yfinance")
+    else:
+        history = pd.DataFrame()
+
+    if history.empty and FUGLE_API_KEY:
+        history = fetch_history_fugle(symbol)
+        time.sleep(0.2)
+        price_source = "Fugle" if not history.empty else price_source
+
+    if history.empty:
+        history = fetch_history_yfinance(symbol, market)
+        price_source = "yfinance" if not history.empty else price_source
+
+    return history, price_source
 
 
 def fetch_twse_pe_ratios() -> dict[str, float]:
@@ -408,6 +456,144 @@ def fetch_institutional_finmind(symbol: str) -> pd.DataFrame:
     return result.fillna(0)
 
 
+def fetch_chip_finmind(symbol: str, price_history: pd.DataFrame) -> pd.DataFrame:
+    """左側策略籌碼資料：融資餘額、借券賣出餘額、當沖率。
+
+    回傳欄位: trade_date, margin_balance, short_balance, day_trade_ratio_pct。
+    short_balance 優先使用借券賣出餘額 (SBL)，抓不到時退回融券餘額。
+    """
+    if not FINMIND_TOKEN:
+        return pd.DataFrame()
+
+    end = date.today()
+    start = end - timedelta(days=90)
+    date_params = {"start_date": start.isoformat(), "end_date": end.isoformat()}
+
+    # 融資融券餘額
+    margin_frame = pd.DataFrame()
+    try:
+        payload = finmind_get({"dataset": "TaiwanStockMarginPurchaseShortSale", "data_id": symbol, **date_params}, timeout=20)
+        data = payload.get("data", [])
+        if data:
+            frame = pd.DataFrame(data)
+            frame["trade_date"] = pd.to_datetime(frame["date"])
+            frame["margin_balance"] = pd.to_numeric(frame.get("MarginPurchaseTodayBalance"), errors="coerce")
+            frame["margin_short_balance"] = pd.to_numeric(frame.get("ShortSaleTodayBalance"), errors="coerce")
+            margin_frame = frame[["trade_date", "margin_balance", "margin_short_balance"]]
+    except Exception as exc:
+        print(f"WARN FinMind margin failed for {symbol}: {exc}")
+    time.sleep(0.15)
+
+    # 借券賣出餘額 (SBL)
+    sbl_frame = pd.DataFrame()
+    try:
+        payload = finmind_get({"dataset": "TaiwanDailyShortSaleBalances", "data_id": symbol, **date_params}, timeout=20)
+        data = payload.get("data", [])
+        if data:
+            frame = pd.DataFrame(data)
+            sbl_column = next(
+                (col for col in frame.columns if "SBL" in col and col.endswith("CurrentDayBalance")),
+                None,
+            )
+            if sbl_column:
+                frame["trade_date"] = pd.to_datetime(frame["date"])
+                frame["sbl_balance"] = pd.to_numeric(frame[sbl_column], errors="coerce")
+                sbl_frame = frame[["trade_date", "sbl_balance"]]
+    except Exception as exc:
+        print(f"WARN FinMind SBL failed for {symbol}: {exc}")
+    time.sleep(0.15)
+
+    # 當沖成交量 → 當沖率
+    day_trade_frame = pd.DataFrame()
+    try:
+        payload = finmind_get({"dataset": "TaiwanStockDayTrading", "data_id": symbol, **date_params}, timeout=20)
+        data = payload.get("data", [])
+        if data:
+            frame = pd.DataFrame(data)
+            frame["trade_date"] = pd.to_datetime(frame["date"])
+            frame["day_trade_volume"] = pd.to_numeric(frame.get("Volume"), errors="coerce")
+            day_trade_frame = frame[["trade_date", "day_trade_volume"]]
+    except Exception as exc:
+        print(f"WARN FinMind day trading failed for {symbol}: {exc}")
+    time.sleep(0.15)
+
+    if margin_frame.empty and sbl_frame.empty and day_trade_frame.empty:
+        return pd.DataFrame()
+
+    frames = [frame for frame in (margin_frame, sbl_frame, day_trade_frame) if not frame.empty]
+    result = frames[0]
+    for frame in frames[1:]:
+        result = result.merge(frame, on="trade_date", how="outer")
+    result = result.sort_values("trade_date")
+
+    if "sbl_balance" in result.columns and result["sbl_balance"].notna().any():
+        result["short_balance"] = result["sbl_balance"]
+    elif "margin_short_balance" in result.columns:
+        result["short_balance"] = result["margin_short_balance"]
+
+    if "day_trade_volume" in result.columns and not price_history.empty:
+        volumes = price_history[["trade_date", "volume"]].copy()
+        volumes["trade_date"] = pd.to_datetime(volumes["trade_date"])
+        result = result.merge(volumes, on="trade_date", how="left")
+        result["day_trade_ratio_pct"] = (
+            result["day_trade_volume"] / result["volume"].replace(0, pd.NA) * 100
+        ).astype(float)
+
+    keep = [col for col in ("trade_date", "margin_balance", "short_balance", "day_trade_ratio_pct") if col in result.columns]
+    return result[keep]
+
+
+def fetch_holders_finmind(symbol: str) -> pd.DataFrame:
+    """股權分散表（TDCC 週資料）→ 400 張以上大戶持股比例。
+
+    回傳欄位: date, big_holder_ratio_pct。
+    """
+    if not FINMIND_TOKEN:
+        return pd.DataFrame()
+
+    end = date.today()
+    start = end - timedelta(days=120)
+    params = {
+        "dataset": "TaiwanStockHoldingSharesPer",
+        "data_id": symbol,
+        "start_date": start.isoformat(),
+        "end_date": end.isoformat(),
+    }
+    try:
+        payload = finmind_get(params, timeout=20)
+        data = payload.get("data", [])
+    except Exception as exc:
+        print(f"WARN FinMind holders failed for {symbol}: {exc}")
+        return pd.DataFrame()
+    if not data:
+        return pd.DataFrame()
+
+    frame = pd.DataFrame(data)
+    if "HoldingSharesLevel" not in frame.columns or "percent" not in frame.columns:
+        return pd.DataFrame()
+
+    def is_big_holder_level(level: str) -> bool:
+        text = str(level).strip().lower()
+        if "total" in text or "合計" in text:
+            return False
+        if "more than" in text or "以上" in text:
+            return True
+        first_number = text.replace(",", "").split("-")[0]
+        try:
+            return int(first_number) >= 400_001
+        except ValueError:
+            return False
+
+    frame["percent"] = pd.to_numeric(frame["percent"], errors="coerce").fillna(0)
+    big = frame[frame["HoldingSharesLevel"].apply(is_big_holder_level)]
+    if big.empty:
+        return pd.DataFrame()
+    grouped = big.groupby("date")["percent"].sum().reset_index()
+    grouped = grouped.rename(columns={"percent": "big_holder_ratio_pct"})
+    grouped["date"] = pd.to_datetime(grouped["date"])
+    return grouped.sort_values("date")
+
+
 def fetch_revenue_finmind(symbol: str) -> dict[str, Any] | None:
     """Fetch monthly revenue and compute YoY growth % for the scoring engine.
 
@@ -521,24 +707,106 @@ def fetch_financial_finmind(symbol: str) -> dict[str, Any] | None:
     return result if result else None
 
 
+def chip_change_pct(chip_rows: pd.DataFrame | None, column: str, lookback: int = 20) -> float | None:
+    """近 lookback 筆資料的餘額變化百分比（負值代表下降）。"""
+    if chip_rows is None or chip_rows.empty or column not in chip_rows.columns:
+        return None
+    series = chip_rows.sort_values("trade_date")[column].dropna().tail(lookback)
+    if len(series) < 2 or float(series.iloc[0]) <= 0:
+        return None
+    return round((float(series.iloc[-1]) - float(series.iloc[0])) / float(series.iloc[0]) * 100, 2)
+
+
+def left_side_metrics(chip_rows: pd.DataFrame | None, holder_rows: pd.DataFrame | None) -> dict[str, float | None]:
+    day_trade_ratio: float | None = None
+    if chip_rows is not None and not chip_rows.empty and "day_trade_ratio_pct" in chip_rows.columns:
+        recent = chip_rows.sort_values("trade_date")["day_trade_ratio_pct"].dropna().tail(5)
+        if not recent.empty:
+            day_trade_ratio = round(float(recent.mean()), 2)
+
+    holder_gain: float | None = None
+    if holder_rows is not None and not holder_rows.empty and "big_holder_ratio_pct" in holder_rows.columns:
+        window = holder_rows.sort_values("date").tail(8)
+        if len(window) >= 2:
+            holder_gain = round(
+                float(window.iloc[-1]["big_holder_ratio_pct"]) - float(window.iloc[0]["big_holder_ratio_pct"]), 2
+            )
+
+    return {
+        "short_balance_change_pct": chip_change_pct(chip_rows, "short_balance"),
+        "margin_balance_change_pct": chip_change_pct(chip_rows, "margin_balance"),
+        "day_trade_ratio_pct": day_trade_ratio,
+        "big_holder_gain_pp": holder_gain,
+    }
+
+
+def serialize_left_candidate(
+    symbol: str,
+    name: str,
+    market: str,
+    industry: str | None,
+    result: Any,
+    close: float | None = None,
+    chip_metrics: dict[str, float | None] | None = None,
+    price_source: str | None = None,
+) -> dict[str, Any]:
+    plan = result.trade_plan
+    metrics = chip_metrics or {}
+    return {
+        "symbol": symbol,
+        "name": name,
+        "market": market,
+        "industry": industry,
+        "price_source": price_source,
+        "strategy": "left_side",
+        "total_score": result.total_score,
+        "base_structure_score": result.base_structure_score,
+        "short_covering_score": result.short_covering_score,
+        "retail_capitulation_score": result.retail_capitulation_score,
+        "smart_money_score": result.smart_money_score,
+        "fundamental_safety_score": result.fundamental_safety_score,
+        "sentiment_score": result.sentiment_score,
+        "reasons": result.reasons,
+        "close_price": round_optional(close, 2),
+        "entry_price": plan.entry_price if plan else None,
+        "alternate_entry_price": plan.alternate_entry_price if plan else None,
+        "stop_loss_price": plan.stop_loss_price if plan else None,
+        "target_price_1": plan.target_price_1 if plan else None,
+        "target_price_2": plan.target_price_2 if plan else None,
+        "risk_reward_ratio": plan.risk_reward_ratio if plan else None,
+        "suggested_position_pct": plan.suggested_position_pct if plan else None,
+        "short_balance_change_pct": metrics.get("short_balance_change_pct"),
+        "margin_balance_change_pct": metrics.get("margin_balance_change_pct"),
+        "day_trade_ratio_pct": metrics.get("day_trade_ratio_pct"),
+        "big_holder_gain_pp": metrics.get("big_holder_gain_pp"),
+    }
+
+
 def demo_output() -> dict[str, Any]:
     now_tw = datetime.now(TW_TZ)
     prices = sample_daily_prices()
     institutions = sample_institutional_trades()
     revenues = sample_monthly_revenue()
     financials = sample_financials()
+    chips = sample_chip_data()
+    holders = sample_big_holder_ratios()
     stock_lookup = sample_stocks().set_index("symbol").to_dict("index")
     engine = ScoringEngine()
+    left_engine = LeftSideScoringEngine()
     candidates: list[dict[str, Any]] = []
+    left_candidates: list[dict[str, Any]] = []
 
     for symbol, price_rows in prices.groupby("symbol"):
         indicators = add_technical_indicators(price_rows)
+        institutional_rows = institutions[institutions["symbol"] == symbol]
+        revenue_row = revenues[revenues["symbol"] == symbol].iloc[-1]
+        financial_row = financials[financials["symbol"] == symbol].iloc[-1]
         result = engine.score(
             symbol=symbol,
             indicators=indicators,
-            institutional_rows=institutions[institutions["symbol"] == symbol],
-            revenue_row=revenues[revenues["symbol"] == symbol].iloc[-1],
-            financial_row=financials[financials["symbol"] == symbol].iloc[-1],
+            institutional_rows=institutional_rows,
+            revenue_row=revenue_row,
+            financial_row=financial_row,
             industry_rank_pct=1,
         )
         plan = result.trade_plan
@@ -554,7 +822,31 @@ def demo_output() -> dict[str, Any]:
             )
         )
 
+        chip_rows = chips[chips["symbol"] == symbol]
+        holder_rows = holders[holders["symbol"] == symbol]
+        left_result = left_engine.score(
+            symbol=str(symbol),
+            indicators=indicators,
+            chip_rows=chip_rows,
+            holder_rows=holder_rows,
+            institutional_rows=institutional_rows,
+            revenue_row=revenue_row,
+            financial_row=financial_row,
+        )
+        left_candidates.append(
+            serialize_left_candidate(
+                symbol=str(symbol),
+                name=str(stock.get("name", symbol)),
+                market=str(stock.get("market", "TWSE")),
+                industry=stock.get("industry"),
+                result=left_result,
+                close=float(indicators.iloc[-1]["close"]),
+                chip_metrics=left_side_metrics(chip_rows, holder_rows),
+            )
+        )
+
     candidates.sort(key=lambda item: float(item["total_score"]), reverse=True)
+    left_candidates.sort(key=lambda item: float(item["total_score"]), reverse=True)
     return {
         "updated_at": now_tw.isoformat(),
         "screened_count": int(prices["symbol"].nunique()),
@@ -565,6 +857,8 @@ def demo_output() -> dict[str, Any]:
         "score_threshold": 85,
         "source": "demo",
         "top_candidates": candidates[:MAX_OUTPUT],
+        "left_side_threshold": left_engine.candidate_score,
+        "left_side_candidates": left_candidates[:MAX_OUTPUT],
     }
 
 
@@ -666,9 +960,130 @@ def serialize_candidate(
     }
 
 
+def run_left_side_screener(all_quotes: pd.DataFrame, fundamentals_cache: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """左側潛伏全市場兩段式漏斗。
+
+    第一段（零 API 成本）：以全市場籌碼快照（融資/借券/當沖）對整個股票池
+    計算「佈局起手式」訊號，挑出前 LEFT_UNIVERSE_LIMIT 檔。
+    第二段：只對入圍股抓取歷史股價、法人、大戶持股並執行完整六構面評分。
+    右側迴圈已抓過的股票直接重用快取，額外 API 成本僅限入圍的冷門股。
+    """
+    left_engine = LeftSideScoringEngine()
+    thresholds = left_engine.thresholds
+
+    universe = all_quotes[(all_quotes["close"] > 10) & (all_quotes["turnover"] > LEFT_MIN_TURNOVER)]
+    payload: dict[str, Any] = {
+        "left_side_enabled": True,
+        "left_side_threshold": left_engine.candidate_score,
+        "left_side_universe_count": int(len(universe)),
+        "left_side_candidates": [],
+    }
+
+    today_volumes = {str(row["symbol"]): safe_float(row["volume"]) for _, row in all_quotes.iterrows()}
+    store, chip_sources = refresh_chip_store(CHIP_STORE_PATH, today_volumes=today_volumes)
+    payload["chip_sources"] = chip_sources
+    if store.empty:
+        payload["left_side_note"] = "全市場籌碼快照暫時無法取得，左側潛伏本次未更新。"
+        payload["left_side_shortlist_count"] = 0
+        return payload
+
+    shortlist = prefilter_left_symbols(
+        store,
+        universe["symbol"].astype(str),
+        limit=LEFT_UNIVERSE_LIMIT,
+        short_drop_pct=float(thresholds["short_balance_drop_pct"]),
+        margin_drop_pct=float(thresholds["margin_drop_pct"]),
+        day_trade_max_pct=float(thresholds["day_trade_ratio_max_pct"]),
+        lookback=int(thresholds["short_balance_lookback_days"]),
+    )
+    payload["left_side_shortlist_count"] = int(len(shortlist))
+    print(f"Left-side funnel: universe {len(universe)} → chip-signal shortlist {len(shortlist)}")
+    if shortlist.empty:
+        payload["left_side_note"] = "全市場籌碼訊號初選沒有找到符合起手式的股票（快照可能仍在累積中）。"
+        return payload
+
+    quote_lookup = universe.set_index(universe["symbol"].astype(str)).to_dict("index")
+    left_scored: list[dict[str, Any]] = []
+    left_candidates: list[dict[str, Any]] = []
+
+    for index, pre_row in shortlist.iterrows():
+        symbol = str(pre_row["symbol"])
+        quote = quote_lookup.get(symbol)
+        if quote is None:
+            continue
+        name = str(quote.get("name", symbol))
+        market = str(quote.get("market", "TWSE"))
+        print(f"[left {index + 1:03d}/{len(shortlist):03d}] {symbol} {name}")
+
+        cached = fundamentals_cache.get(symbol)
+        try:
+            if cached:
+                history = cached["history"]
+                indicators = cached["indicators"]
+                price_source = cached["price_source"]
+                institutions = cached["institutions"]
+                revenue_row = cached["revenue_row"]
+                financial_row = cached["financial_row"]
+            else:
+                history, price_source = fetch_price_history(symbol, market)
+                if history.empty or len(history) < 60:
+                    continue
+                indicators = add_technical_indicators(history)
+                institutions = fetch_institutional_finmind(symbol)
+                if FINMIND_TOKEN:
+                    time.sleep(0.2)
+                # 入圍的冷門股不再抓營收/財報（僅影響基本面安全 10 分），控制 API 用量
+                revenue_row = None
+                financial_row = None
+
+            chip_rows = chip_rows_for(store, symbol)
+            if len(chip_rows) < 10 and FINMIND_TOKEN:
+                fallback = fetch_chip_finmind(symbol, history)
+                if len(fallback) > len(chip_rows):
+                    chip_rows = fallback
+
+            holder_rows = fetch_holders_finmind(symbol)
+            if FINMIND_TOKEN:
+                time.sleep(0.15)
+
+            left_result = left_engine.score(
+                symbol=symbol,
+                indicators=indicators,
+                chip_rows=chip_rows if not chip_rows.empty else None,
+                holder_rows=holder_rows if not holder_rows.empty else None,
+                institutional_rows=institutions if institutions is not None and not institutions.empty else None,
+                revenue_row=revenue_row,
+                financial_row=financial_row,
+            )
+            left_candidate = serialize_left_candidate(
+                symbol=symbol,
+                name=name,
+                market=market,
+                industry=None,
+                result=left_result,
+                close=safe_float(quote.get("close")),
+                chip_metrics=left_side_metrics(chip_rows, holder_rows),
+                price_source=price_source,
+            )
+            left_scored.append(left_candidate)
+            if left_result.is_candidate:
+                left_candidates.append(left_candidate)
+        except Exception as exc:
+            print(f"WARN left-side scoring failed for {symbol}: {exc}")
+
+    left_scored.sort(key=lambda item: float(item["total_score"]), reverse=True)
+    left_candidates.sort(key=lambda item: float(item["total_score"]), reverse=True)
+    if not left_candidates and left_scored:
+        left_candidates = left_scored[:MAX_OUTPUT]
+        payload["left_side_note"] = "沒有股票達到左側潛伏門檻，改顯示左側分數最高的排序。"
+    payload["left_side_candidates"] = left_candidates[:MAX_OUTPUT]
+    return payload
+
+
 def run_live_screener() -> dict[str, Any]:
     now_tw = datetime.now(TW_TZ)
-    today = fetch_today_universe()
+    all_quotes = fetch_all_quotes()
+    today = fetch_today_universe(all_quotes)
     if today.empty:
         print("WARN no live universe found; keeping previous live output if available")
         previous = previous_live_output(
@@ -684,32 +1099,16 @@ def run_live_screener() -> dict[str, Any]:
     twse_pe_map = fetch_twse_pe_ratios()
     scored_candidates: list[dict[str, Any]] = []
     candidates: list[dict[str, Any]] = []
+    # 右側迴圈抓過的資料留給左側入圍股重用，避免重複打 API
+    fundamentals_cache: dict[str, dict[str, Any]] = {}
 
     for index, row in today.iterrows():
         symbol = str(row["symbol"])
         name = str(row["name"])
         market = str(row["market"])
-        price_source = "none"
         print(f"[{index + 1:03d}/{len(today):03d}] {symbol} {name}")
 
-        if FINMIND_TOKEN:
-            history = fetch_history_finmind(symbol)
-            time.sleep(0.2)
-            price_source = "FinMind" if not history.empty else "none"
-            if history.empty:
-                print(f"WARN FinMind unavailable for {symbol}; trying Fugle/yfinance")
-        else:
-            history = pd.DataFrame()
-
-        if history.empty and FUGLE_API_KEY:
-            history = fetch_history_fugle(symbol)
-            time.sleep(0.2)
-            price_source = "Fugle" if not history.empty else price_source
-
-        if history.empty:
-            history = fetch_history_yfinance(symbol, market)
-            price_source = "yfinance" if not history.empty else price_source
-
+        history, price_source = fetch_price_history(symbol, market)
         if history.empty or len(history) < 60:
             continue
 
@@ -733,6 +1132,15 @@ def run_live_screener() -> dict[str, Any]:
                     time.sleep(0.15)
                 except Exception as exc:
                     print(f"WARN financial fetch failed for {symbol}: {exc}")
+
+            fundamentals_cache[symbol] = {
+                "history": history,
+                "price_source": price_source,
+                "indicators": indicators,
+                "institutions": institutions,
+                "revenue_row": revenue_row,
+                "financial_row": financial_row,
+            }
 
             result = engine.score(
                 symbol=symbol,
@@ -775,6 +1183,20 @@ def run_live_screener() -> dict[str, Any]:
     scored_candidates.sort(key=lambda item: float(item["total_score"]), reverse=True)
     candidates.sort(key=lambda item: float(item["total_score"]), reverse=True)
     candidates = candidates[:MAX_OUTPUT]
+
+    if LEFT_SIDE_ENABLED:
+        try:
+            left_payload = run_left_side_screener(all_quotes, fundamentals_cache)
+        except Exception as exc:
+            print(f"WARN left-side screener failed: {exc}")
+            left_payload = {
+                "left_side_enabled": True,
+                "left_side_candidates": [],
+                "left_side_note": "左側潛伏本次執行失敗，畫面沿用上一版資料。",
+            }
+    else:
+        left_payload = {"left_side_enabled": False, "left_side_candidates": []}
+
     if not candidates and scored_candidates:
         print("WARN no candidates met threshold; publishing relaxed live ranking")
         candidates = scored_candidates[:MAX_OUTPUT]
@@ -789,6 +1211,7 @@ def run_live_screener() -> dict[str, Any]:
             "data_sources": ["TWSE", "TPEx", "FinMind", *([] if not FUGLE_API_KEY else ["Fugle"]), "yfinance"],
             "selection_note": "No stocks met the strict threshold; showing the highest live scores.",
             "top_candidates": candidates,
+            **left_payload,
         }
 
     if not candidates:
@@ -809,6 +1232,7 @@ def run_live_screener() -> dict[str, Any]:
         "source": "live",
         "data_sources": ["TWSE", "TPEx", "FinMind", *([] if not FUGLE_API_KEY else ["Fugle"]), "yfinance"],
         "top_candidates": candidates,
+        **left_payload,
     }
 
 
@@ -869,6 +1293,24 @@ def update_history(output: dict[str, Any]) -> None:
                 "relative_strength_60d_pct": c.get("relative_strength_60d_pct"),
             }
             for c in output.get("top_candidates", [])
+        ],
+        "left_side_candidates": [
+            {
+                "symbol": c["symbol"],
+                "name": c["name"],
+                "market": c.get("market", "TWSE"),
+                "industry": c.get("industry"),
+                "total_score": c.get("total_score"),
+                "entry_price": c.get("entry_price"),
+                "stop_loss_price": c.get("stop_loss_price"),
+                "target_price_1": c.get("target_price_1"),
+                "risk_reward_ratio": c.get("risk_reward_ratio"),
+                "short_balance_change_pct": c.get("short_balance_change_pct"),
+                "margin_balance_change_pct": c.get("margin_balance_change_pct"),
+                "day_trade_ratio_pct": c.get("day_trade_ratio_pct"),
+                "big_holder_gain_pp": c.get("big_holder_gain_pp"),
+            }
+            for c in output.get("left_side_candidates", [])
         ],
     }
 

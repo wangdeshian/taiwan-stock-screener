@@ -77,6 +77,62 @@ def sample_institutional_trades(days: int = 20) -> pd.DataFrame:
     return pd.DataFrame(records)
 
 
+def sample_chip_data(days: int = 40) -> pd.DataFrame:
+    """左側策略示範用籌碼資料：融資餘額、借券賣出餘額、當沖率。
+
+    2303 / 2317 模擬「散戶絕望＋空單回補」情境：融資與借券餘額持續下降、當沖率極低。
+    """
+    trading_dates = sorted(sample_daily_prices(days=days)["trade_date"].unique())
+    profiles = {
+        "2330": {"margin": (900_000, 1.05), "short": (450_000, 1.02), "day_trade": 16.0},
+        "2454": {"margin": (650_000, 1.02), "short": (300_000, 0.98), "day_trade": 14.0},
+        "2317": {"margin": (1_200_000, 0.82), "short": (520_000, 0.70), "day_trade": 5.0},
+        "2303": {"margin": (2_000_000, 0.80), "short": (800_000, 0.68), "day_trade": 4.5},
+        "6488": {"margin": (400_000, 0.88), "short": (150_000, 0.85), "day_trade": 8.0},
+    }
+    records: list[dict[str, object]] = []
+    steps = max(len(trading_dates) - 1, 1)
+    for symbol, profile in profiles.items():
+        margin_start, margin_factor = profile["margin"]
+        short_start, short_factor = profile["short"]
+        for idx, trade_date in enumerate(trading_dates):
+            progress = idx / steps
+            records.append(
+                {
+                    "symbol": symbol,
+                    "trade_date": trade_date,
+                    "margin_balance": round(margin_start * (1 + (margin_factor - 1) * progress)),
+                    "short_balance": round(short_start * (1 + (short_factor - 1) * progress)),
+                    "day_trade_ratio_pct": profile["day_trade"],
+                }
+            )
+    return pd.DataFrame(records)
+
+
+def sample_big_holder_ratios(weeks: int = 12) -> pd.DataFrame:
+    """左側策略示範用股權分散資料：千張大戶持股比例（週資料）。"""
+    end = date.today()
+    week_dates = [end - timedelta(weeks=weeks - 1 - i) for i in range(weeks)]
+    profiles = {
+        "2330": (78.0, 0.0),
+        "2454": (70.0, 0.1),
+        "2317": (62.0, 1.4),
+        "2303": (55.0, 1.8),
+        "6488": (66.0, 0.6),
+    }
+    records: list[dict[str, object]] = []
+    for symbol, (base, total_gain) in profiles.items():
+        for idx, week_date in enumerate(week_dates):
+            records.append(
+                {
+                    "symbol": symbol,
+                    "date": week_date,
+                    "big_holder_ratio_pct": round(base + total_gain * idx / max(weeks - 1, 1), 2),
+                }
+            )
+    return pd.DataFrame(records)
+
+
 def sample_monthly_revenue() -> pd.DataFrame:
     return pd.DataFrame(
         [
