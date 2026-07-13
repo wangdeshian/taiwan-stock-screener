@@ -13,9 +13,14 @@ const historyView = document.getElementById("historyView");
 const historyContent = document.getElementById("historyContent");
 const tabToday = document.getElementById("tabToday");
 const tabHistory = document.getElementById("tabHistory");
+const strategyMomentumBtn = document.getElementById("strategyMomentum");
+const strategyLeftBtn = document.getElementById("strategyLeft");
 
-let allCandidates = [];
-let expandedRows  = new Set();
+let latestData    = null;
+let strategy      = "momentum";           // "momentum" | "left"
+let candidateSets = { momentum: [], left: [] };
+let rowOrder      = { momentum: [], left: [] };  // 保持列位置：以代號記住顯示順序
+let expandedRows  = new Set();            // key: `${strategy}:${symbol}`
 let historyLoaded = false;
 let budget        = 0;   // 使用者投入預算（台幣）
 
@@ -27,6 +32,15 @@ const DIM_LABELS = {
   fundamental_score: "基本面",
   industry_score: "產業",
   risk_reward_score: "風報比",
+};
+
+const LEFT_DIM_LABELS = {
+  base_structure_score: "底部結構",
+  short_covering_score: "空單回補",
+  retail_capitulation_score: "散戶絕望",
+  smart_money_score: "聰明錢",
+  fundamental_safety_score: "基本面安全",
+  sentiment_score: "聲量情緒",
 };
 
 const REASON_LABELS = {
@@ -48,6 +62,19 @@ const REASON_LABELS = {
   risk_reward_above_min: "風報比 >= 2",
   relative_strength_20d: "20 日強於大盤",
   relative_strength_60d: "60 日強於大盤",
+  // 左側潛伏策略
+  low_base: "股價低基期",
+  bollinger_squeeze: "布林通道極度壓縮",
+  price_stabilizing: "股價止穩",
+  short_covering: "借券/空單回補",
+  margin_flush: "融資大減",
+  day_trade_freeze: "當沖冷清",
+  volume_dryup: "量能萎縮（無人問津）",
+  big_holder_accumulation: "千張大戶增持",
+  trust_light_buying: "投信微幅買超",
+  still_profitable: "EPS 為正",
+  revenue_not_collapsing: "營收未惡化",
+  sentiment_freeze: "網路聲量冰點",
 };
 
 function money(value) {
@@ -90,7 +117,8 @@ function metricCard(label, value, tone = "") {
 }
 
 function renderScoreBreakdown(item) {
-  return Object.entries(DIM_LABELS).map(([key, label]) => `
+  const labels = item.strategy === "left_side" ? LEFT_DIM_LABELS : DIM_LABELS;
+  return Object.entries(labels).map(([key, label]) => `
     <div class="detail-dim">
       <span class="dim-label">${label}</span>
       <span class="dim-val">${money(item[key])}</span>
@@ -129,6 +157,19 @@ function renderStrengthMetrics(item) {
         ${metricCard("個股 60 日", pct(item.stock_return_60d_pct))}
         ${metricCard("大盤 60 日", pct(item.benchmark_return_60d_pct))}
         ${metricCard("RS 60 日", pct(item.relative_strength_60d_pct), Number(item.relative_strength_60d_pct) > 0 ? "good" : "")}
+      </div>
+    </section>`;
+}
+
+function renderChipMetrics(item) {
+  return `
+    <section class="detail-section">
+      <h3>深度籌碼（近 20 日）</h3>
+      <div class="metric-grid">
+        ${metricCard("借券賣出餘額變化", pct(item.short_balance_change_pct), Number(item.short_balance_change_pct) < 0 ? "good" : "")}
+        ${metricCard("融資餘額變化", pct(item.margin_balance_change_pct), Number(item.margin_balance_change_pct) < 0 ? "good" : "")}
+        ${metricCard("近 5 日當沖率", pct(item.day_trade_ratio_pct))}
+        ${metricCard("大戶持股增減 (8週)", item.big_holder_gain_pp === null || item.big_holder_gain_pp === undefined ? "-" : `${money(item.big_holder_gain_pp)} pp`, Number(item.big_holder_gain_pp) > 0 ? "good" : "")}
       </div>
     </section>`;
 }
@@ -216,51 +257,74 @@ function buildDetailRow(item, colSpan) {
   tr.className = "detail-row";
   const td = document.createElement("td");
   td.colSpan = colSpan;
+  const isLeft = item.strategy === "left_side";
   td.innerHTML = `
     <div class="detail-grid">${renderScoreBreakdown(item)}</div>
     <div class="reason-tags">${renderReasonTags(item)}</div>
-    ${renderFundamentalMetrics(item)}
-    ${renderStrengthMetrics(item)}
+    ${isLeft ? renderChipMetrics(item) : renderFundamentalMetrics(item) + renderStrengthMetrics(item)}
     ${renderTradePlan(item)}
-    ${renderLivermore(item)}
+    ${isLeft ? "" : renderLivermore(item)}
   `;
   tr.appendChild(td);
   return tr;
 }
 
+function expandKey(item) {
+  return `${item.strategy === "left_side" ? "left" : "momentum"}:${item.symbol}`;
+}
+
+// 保持列位置：舊代號沿用原本順序，新出現的代號附加在最後
+function applyStableOrder(strategyKey, rows) {
+  const bySymbol = new Map(rows.map(row => [row.symbol, row]));
+  const kept = rowOrder[strategyKey].filter(symbol => bySymbol.has(symbol));
+  const known = new Set(kept);
+  const appended = rows.map(row => row.symbol).filter(symbol => !known.has(symbol));
+  rowOrder[strategyKey] = [...kept, ...appended];
+  return rowOrder[strategyKey].map(symbol => bySymbol.get(symbol));
+}
+
 // 預算變更時重繪已展開的列
 function refreshExpandedRows() {
-  const filtered = searchInput.value.trim().toLowerCase()
-    ? allCandidates.filter(item =>
-        [item.symbol, item.name, item.market, item.industry]
-          .some(v => String(v || "").toLowerCase().includes(searchInput.value.trim().toLowerCase()))
-      )
-    : allCandidates;
-
-  expandedRows.forEach(idx => {
-    const oldDetail = document.getElementById(`detail-${idx}`);
-    if (!oldDetail || !filtered[idx]) return;
-    const newDetail = buildDetailRow(filtered[idx], 8);
-    newDetail.id = `detail-${idx}`;
+  currentRows().forEach(item => {
+    const key = expandKey(item);
+    if (!expandedRows.has(key)) return;
+    const oldDetail = document.getElementById(`detail-${key.replace(":", "-")}`);
+    if (!oldDetail) return;
+    const newDetail = buildDetailRow(item, 9);
+    newDetail.id = oldDetail.id;
     oldDetail.replaceWith(newDetail);
   });
 }
 
+function currentRows() {
+  const query = searchInput.value.trim().toLowerCase();
+  const rows = candidateSets[strategy];
+  if (!query) return rows;
+  return rows.filter(item =>
+    [item.symbol, item.name, item.market, item.industry]
+      .some(value => String(value || "").toLowerCase().includes(query))
+  );
+}
+
 function renderRows(rows) {
   candidateRows.innerHTML = "";
-  expandedRows.clear();
 
   if (!rows.length) {
-    candidateRows.innerHTML = `<tr><td class="empty" colspan="9">目前沒有符合條件的候選股</td></tr>`;
+    const message = strategy === "left"
+      ? "目前沒有符合左側潛伏條件的股票（需要 FinMind 籌碼資料）"
+      : "目前沒有符合條件的候選股";
+    candidateRows.innerHTML = `<tr><td class="empty" colspan="9">${message}</td></tr>`;
     return;
   }
 
-  rows.forEach((item, idx) => {
+  rows.forEach(item => {
+    const key = expandKey(item);
+    const detailId = `detail-${key.replace(":", "-")}`;
     const tr = document.createElement("tr");
     tr.className = "candidate-row";
-    tr.dataset.idx = idx;
+    tr.dataset.symbol = item.symbol;
     tr.innerHTML = `
-      <td>${item.symbol} <span class="chevron">▶</span></td>
+      <td>${item.symbol} <span class="chevron${expandedRows.has(key) ? " open" : ""}">▶</span></td>
       <td>${item.name}</td>
       <td class="close-price">${money(item.close_price)}</td>
       <td>${item.industry || "-"}</td>
@@ -272,34 +336,69 @@ function renderRows(rows) {
 
     tr.addEventListener("click", () => {
       const chevron = tr.querySelector(".chevron");
-      if (expandedRows.has(idx)) {
-        const detail = document.getElementById(`detail-${idx}`);
-        if (detail) detail.remove();
-        expandedRows.delete(idx);
+      const existing = document.getElementById(detailId);
+      if (expandedRows.has(key)) {
+        if (existing) existing.remove();
+        expandedRows.delete(key);
         chevron.classList.remove("open");
       } else {
         const detail = buildDetailRow(item, 9);
-        detail.id = `detail-${idx}`;
+        detail.id = detailId;
         tr.insertAdjacentElement("afterend", detail);
-        expandedRows.add(idx);
+        expandedRows.add(key);
         chevron.classList.add("open");
       }
     });
 
     candidateRows.appendChild(tr);
+
+    // 更新資料後維持原本展開狀態
+    if (expandedRows.has(key)) {
+      const detail = buildDetailRow(item, 9);
+      detail.id = detailId;
+      candidateRows.appendChild(detail);
+    }
   });
 }
 
+function updateNotice() {
+  if (!latestData) return;
+  const messages = [];
+  if (latestData.source === "live_stale") {
+    messages.push(latestData.selection_note || "本次資料源暫時無法完整更新，畫面保留上一版真實篩選結果。");
+  } else if (strategy === "momentum" && latestData.selection_note) {
+    messages.push("目前沒有股票達到正式門檻，畫面改顯示最高分的真實排序。");
+  }
+  if (strategy === "left") {
+    if (latestData.left_side_enabled === false) {
+      messages.push("左側潛伏策略需要 FinMind 籌碼資料（借券/融資/當沖/大戶持股），請確認 FINMIND_TOKEN 已設定。");
+    } else if (latestData.left_side_note) {
+      messages.push(latestData.left_side_note);
+    }
+  }
+  if (!latestData.has_institutional_data) {
+    messages.push("目前缺少法人資料，請確認 GitHub Secrets 已設定 FINMIND_TOKEN。");
+  }
+  setNotice(messages.join(" "));
+}
+
+function renderCurrent() {
+  const rows = currentRows();
+  candidateCount.textContent = rows.length;
+  renderRows(rows);
+  updateNotice();
+}
+
+function switchStrategy(next) {
+  if (strategy === next) return;
+  strategy = next;
+  strategyMomentumBtn.classList.toggle("active", next === "momentum");
+  strategyLeftBtn.classList.toggle("active", next === "left");
+  renderCurrent();
+}
+
 function applySearch() {
-  const query = searchInput.value.trim().toLowerCase();
-  const filtered = query
-    ? allCandidates.filter(item =>
-        [item.symbol, item.name, item.market, item.industry]
-          .some(value => String(value || "").toLowerCase().includes(query))
-      )
-    : allCandidates;
-  candidateCount.textContent = filtered.length;
-  renderRows(filtered);
+  renderCurrent();
 }
 
 async function loadData() {
@@ -310,9 +409,14 @@ async function loadData() {
     const response = await fetch(`${RESULTS_URL}?t=${Date.now()}`);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
+    latestData = data;
 
-    allCandidates = data.top_candidates || [];
-    candidateCount.textContent = allCandidates.length;
+    const momentum = (data.top_candidates || []).map(item => ({ ...item, strategy: item.strategy || "momentum" }));
+    const left = (data.left_side_candidates || []).map(item => ({ ...item, strategy: "left_side" }));
+    candidateSets = {
+      momentum: applyStableOrder("momentum", momentum),
+      left: applyStableOrder("left", left),
+    };
 
     if (data.updated_at) {
       const dt = new Date(data.updated_at);
@@ -328,17 +432,7 @@ async function loadData() {
     }
 
     renderDemoBanner(data.source === "demo");
-
-    if (data.source === "live_stale") {
-      setNotice(data.selection_note || "本次資料源暫時無法完整更新，畫面保留上一版真實篩選結果。");
-    } else if (data.selection_note) {
-      setNotice("目前沒有股票達到正式門檻，畫面改顯示最高分的真實排序。");
-    }
-    if (!data.has_institutional_data) {
-      setNotice("目前缺少法人資料，請確認 GitHub Secrets 已設定 FINMIND_TOKEN。");
-    }
-
-    renderRows(allCandidates);
+    renderCurrent();
   } catch (error) {
     console.error(error);
     candidateCount.textContent = "0";
@@ -375,6 +469,33 @@ async function loadHistory() {
   }
 }
 
+function historyTable(candidates) {
+  const rows = candidates.map(candidate => `
+    <tr>
+      <td>${candidate.symbol}</td>
+      <td>${candidate.name}</td>
+      <td>${candidate.industry || "-"}</td>
+      <td class="score">${money(candidate.total_score)}</td>
+      <td>${money(candidate.entry_price)}</td>
+      <td>${money(candidate.stop_loss_price)}</td>
+      <td>${money(candidate.target_price_1)}</td>
+      <td>${money(candidate.risk_reward_ratio)}</td>
+    </tr>
+  `).join("");
+  return `
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>代號</th><th>名稱</th><th>產業</th><th>總分</th>
+            <th>進場</th><th>停損</th><th>目標一</th><th>RR</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
 function renderHistory(entries) {
   if (!entries || !entries.length) {
     historyContent.innerHTML = `<p class="empty" style="padding:20px;text-align:center;color:#64748b">目前沒有歷史紀錄</p>`;
@@ -386,42 +507,24 @@ function renderHistory(entries) {
     const srcBadge = entry.source === "demo"
       ? `<span class="hist-badge demo">示範</span>`
       : `<span class="hist-badge live">真實</span>`;
-    const count = (entry.candidates || []).length;
-    const rows = (entry.candidates || []).map(candidate => `
-      <tr>
-        <td>${candidate.symbol}</td>
-        <td>${candidate.name}</td>
-        <td>${candidate.industry || "-"}</td>
-        <td class="score">${money(candidate.total_score)}</td>
-        <td>${money(candidate.entry_price)}</td>
-        <td>${money(candidate.stop_loss_price)}</td>
-        <td>${money(candidate.target_price_1)}</td>
-        <td>${money(candidate.risk_reward_ratio)}</td>
-      </tr>
-    `).join("");
+    const momentum = entry.candidates || [];
+    const left = entry.left_side_candidates || [];
 
     return `
       <div class="hist-entry">
         <button class="hist-header" type="button" aria-expanded="${idx === 0}" onclick="toggleHistEntry(this)">
           <span class="hist-date">${dateLabel}</span>
           ${srcBadge}
-          <span class="hist-meta">篩選 ${entry.screened_count ?? "-"} 檔，候選 ${count} 檔</span>
+          <span class="hist-meta">篩選 ${entry.screened_count ?? "-"} 檔，右側 ${momentum.length} 檔${left.length ? `，左側 ${left.length} 檔` : ""}</span>
           <span class="hist-chevron ${idx === 0 ? "open" : ""}">▶</span>
         </button>
         <div class="hist-body" ${idx === 0 ? "" : "hidden"}>
-          ${count === 0
-            ? `<p class="empty" style="padding:12px">沒有候選股</p>`
-            : `<div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>代號</th><th>名稱</th><th>產業</th><th>總分</th>
-                      <th>進場</th><th>停損</th><th>目標一</th><th>RR</th>
-                    </tr>
-                  </thead>
-                  <tbody>${rows}</tbody>
-                </table>
-              </div>`}
+          ${momentum.length === 0
+            ? `<p class="empty" style="padding:12px">沒有右側動能候選股</p>`
+            : `<h4 style="padding:10px 12px 0">📈 右側動能</h4>${historyTable(momentum)}`}
+          ${left.length === 0
+            ? ""
+            : `<h4 style="padding:10px 12px 0">🪤 左側潛伏</h4>${historyTable(left)}`}
         </div>
       </div>`;
   }).join("");
@@ -440,6 +543,8 @@ function toggleHistEntry(button) {
 
 tabToday.addEventListener("click", () => switchTab("today"));
 tabHistory.addEventListener("click", () => switchTab("history"));
+strategyMomentumBtn.addEventListener("click", () => switchStrategy("momentum"));
+strategyLeftBtn.addEventListener("click", () => switchStrategy("left"));
 refreshButton.addEventListener("click", loadData);
 searchButton.addEventListener("click", applySearch);
 searchInput.addEventListener("keydown", event => {

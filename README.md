@@ -8,7 +8,12 @@
 - SQLite MVP 資料庫，保留 PostgreSQL 擴充空間
 - TWSE、TPEx、FinMind、MOPS、FRED collector 介面
 - 技術指標：MA、EMA、RSI、MACD、KD、ATR、Bollinger Bands、OBV、ADX、VWAP、量比
-- 100 分 AI 評分模型
+- 雙策略 100 分 AI 評分模型：
+  - 右側動能：趨勢、量能、法人、籌碼、基本面、產業、風報比
+  - 左側潛伏：底部結構（低基期＋布林通道壓縮）、空單回補（借券賣出餘額大減）、
+    散戶絕望（融資大減＋當沖冷清＋量能萎縮）、聰明錢（千張大戶增持＋投信微幅買超）、
+    基本面安全、網路聲量情緒（預留欄位，爬蟲尚未串接）
+- 左側策略深度籌碼數據源（FinMind）：融資融券餘額、借券賣出餘額 (SBL)、當沖統計、股權分散表大戶比例
 - Top 20 候選股 API
 - 交易計畫分析：建議進場、替代進場、停損、目標價、風險報酬比
 - Firebase Hosting ready 靜態前端
