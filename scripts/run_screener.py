@@ -525,6 +525,25 @@ def demo_output() -> dict[str, Any]:
     }
 
 
+def previous_live_output(now_tw: datetime, message: str) -> dict[str, Any] | None:
+    if not OUTPUT.exists():
+        return None
+    try:
+        previous: dict[str, Any] = json.loads(OUTPUT.read_text(encoding="utf-8"))
+    except Exception as exc:
+        print(f"WARN cannot read previous output: {exc}")
+        return None
+
+    if previous.get("source") == "demo" or not previous.get("top_candidates"):
+        return None
+
+    previous["source"] = "live_stale"
+    previous["stale"] = True
+    previous["refresh_attempted_at"] = now_tw.isoformat()
+    previous["selection_note"] = message
+    return previous
+
+
 def round_optional(value: object, digits: int = 2) -> float | None:
     try:
         number = float(value)
@@ -608,8 +627,12 @@ def run_live_screener() -> dict[str, Any]:
     now_tw = datetime.now(TW_TZ)
     today = fetch_today_universe()
     if today.empty:
-        print("WARN no live universe found; using demo output")
-        return demo_output()
+        print("WARN no live universe found; keeping previous live output if available")
+        previous = previous_live_output(
+            now_tw,
+            "本次市場資料源暫時無法完整更新，畫面保留上一版真實篩選結果。",
+        )
+        return previous if previous else demo_output()
 
     engine = ScoringEngine()
     threshold = 55 if FINMIND_TOKEN else 42
@@ -722,8 +745,12 @@ def run_live_screener() -> dict[str, Any]:
         }
 
     if not candidates:
-        print("WARN live run produced no candidates; using demo output")
-        return demo_output()
+        print("WARN live run produced no candidates; keeping previous live output if available")
+        previous = previous_live_output(
+            now_tw,
+            "本次沒有產生有效候選股，畫面保留上一版真實篩選結果。",
+        )
+        return previous if previous else demo_output()
 
     return {
         "updated_at": now_tw.isoformat(),

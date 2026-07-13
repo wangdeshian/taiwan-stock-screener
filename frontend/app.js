@@ -329,7 +329,9 @@ async function loadData() {
 
     renderDemoBanner(data.source === "demo");
 
-    if (data.selection_note) {
+    if (data.source === "live_stale") {
+      setNotice(data.selection_note || "本次資料源暫時無法完整更新，畫面保留上一版真實篩選結果。");
+    } else if (data.selection_note) {
       setNotice("目前沒有股票達到正式門檻，畫面改顯示最高分的真實排序。");
     }
     if (!data.has_institutional_data) {
