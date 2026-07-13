@@ -51,14 +51,18 @@ jobs:
           git diff --staged --quiet || git commit -m "chore: update screener results"
           git push
 
-      - name: Publish generated data to GitHub Pages
+      - name: Publish frontend to GitHub Pages
         run: |
           git fetch origin gh-pages:gh-pages
           git worktree add ../pages gh-pages
+          cp frontend/index.html ../pages/index.html
+          cp frontend/app.js ../pages/app.js
+          cp frontend/styles.css ../pages/styles.css
+          cp frontend/.nojekyll ../pages/.nojekyll
           mkdir -p ../pages/data
           cp frontend/data/results.json ../pages/data/results.json
           cp frontend/data/history.json ../pages/data/history.json
           cd ../pages
-          git add data/results.json data/history.json
-          git diff --staged --quiet || git commit -m "chore: update published screener data"
+          git add index.html app.js styles.css .nojekyll data/results.json data/history.json
+          git diff --staged --quiet || git commit -m "chore: update published screener site"
           git push origin gh-pages
