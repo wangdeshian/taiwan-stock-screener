@@ -25,12 +25,25 @@
       <div id="todayView">
         <section class="summary">
           <div>
-            <span class="label">&#20505;&#36984;&#32929;</span>
+            <span class="label">候選股</span>
             <strong id="candidateCount">0</strong>
           </div>
           <div>
-            <span class="label">&#26368;&#24460;&#26356;&#26032;</span>
+            <span class="label">最後更新</span>
             <strong id="latestUpdate">-</strong>
+          </div>
+          <div class="budget-card">
+            <span class="label">投入預算</span>
+            <div class="budget-input-row">
+              <span class="budget-currency">NT$</span>
+              <input id="budgetInput" type="number" min="0" step="10000" placeholder="0" />
+            </div>
+            <div class="budget-presets">
+              <button class="preset-btn" type="button" data-val="100000">10萬</button>
+              <button class="preset-btn" type="button" data-val="200000">20萬</button>
+              <button class="preset-btn" type="button" data-val="500000">50萬</button>
+              <button class="preset-btn" type="button" data-val="1000000">100萬</button>
+            </div>
           </div>
         </section>
 
@@ -47,6 +60,7 @@
               <tr>
                 <th>&#20195;&#34399;</th>
                 <th>&#21517;&#31281;</th>
+                <th>&#25910;&#30424;</th>
                 <th>&#29986;&#26989;</th>
                 <th>&#32317;&#20998;</th>
                 <th>&#36914;&#22580;</th>
