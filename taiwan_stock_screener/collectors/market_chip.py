@@ -272,9 +272,10 @@ def refresh_chip_store(
             frame = fetch_finmind_chip_snapshot(finmind_fetch, day)
             if frame.empty:
                 consecutive_failures += 1
-                # 連續失敗多為額度用盡或服務中斷，直接停止；單日空資料（假日）不常連續 3 天
+                # 連續失敗多為帳號等級不足（全市場查詢需 FinMind Sponsor）
+                # 或額度用盡，直接停止；假日空資料不常連續 3 天
                 if consecutive_failures >= 3 and backfilled == 0:
-                    print("WARN FinMind bulk backfill unavailable; skipping remaining dates")
+                    print("WARN FinMind bulk backfill unavailable (whole-market queries need sponsor tier); falling back to TWSE snapshot")
                     break
                 continue
             consecutive_failures = 0
@@ -283,12 +284,18 @@ def refresh_chip_store(
             new_frames.append(frame)
         if backfilled:
             sources.append(f"FinMind×{backfilled}")
-    else:
-        twse_today = fetch_twse_snapshot_today()
-        if not twse_today.empty:
-            twse_today["date"] = today_text
-            new_frames.append(twse_today)
-            sources.append("TWSE")
+
+    if not new_frames:
+        # FinMind 批次不可用（無 token 或等級不足）：改用 TWSE openapi 最新
+        # 報表逐日累積。注意 openapi 回「最新已發布」報表，盤後未發布時內容
+        # 是前一交易日，日期會偏移一天；隨每日累積趨勢仍然成立。
+        already_has_today = today_text in set(store["date"].astype(str))
+        if not already_has_today:
+            twse_today = fetch_twse_snapshot_today()
+            if not twse_today.empty:
+                twse_today["date"] = today_text
+                new_frames.append(twse_today)
+                sources.append("TWSE")
 
     if new_frames:
         combined = pd.concat([store, *new_frames], ignore_index=True, sort=False)
@@ -316,9 +323,9 @@ def chip_rows_for(store: pd.DataFrame, symbol: str) -> pd.DataFrame:
         return rows
     rows["trade_date"] = pd.to_datetime(rows["date"])
     with pd.option_context("mode.chained_assignment", None):
-        day_trade = pd.to_numeric(rows.get("day_trade_volume"), errors="coerce")
-        total = pd.to_numeric(rows.get("total_volume"), errors="coerce")
-        rows["day_trade_ratio_pct"] = (day_trade / total.replace(0, pd.NA) * 100).astype(float)
+        day_trade = pd.to_numeric(rows.get("day_trade_volume"), errors="coerce").astype(float)
+        total = pd.to_numeric(rows.get("total_volume"), errors="coerce").astype(float)
+        rows["day_trade_ratio_pct"] = day_trade / total.where(total > 0) * 100
     keep = ["trade_date", "margin_balance", "short_balance", "day_trade_ratio_pct"]
     return rows[keep].sort_values("trade_date")
 
@@ -357,9 +364,9 @@ def prefilter_left_symbols(
         margin_change = _trend_change_pct(rows["margin_balance"], lookback)
 
         day_trade_ratio: float | None = None
-        day_trade = pd.to_numeric(rows.get("day_trade_volume"), errors="coerce")
-        total = pd.to_numeric(rows.get("total_volume"), errors="coerce")
-        ratio = (day_trade / total.replace(0, pd.NA) * 100).dropna().tail(5)
+        day_trade = pd.to_numeric(rows.get("day_trade_volume"), errors="coerce").astype(float)
+        total = pd.to_numeric(rows.get("total_volume"), errors="coerce").astype(float)
+        ratio = (day_trade / total.where(total > 0) * 100).dropna().tail(5)
         if not ratio.empty:
             day_trade_ratio = float(ratio.mean())
 

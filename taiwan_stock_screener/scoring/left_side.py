@@ -240,5 +240,6 @@ class LeftSideScoringEngine:
         required = {"bb_upper", "bb_lower", "bb_middle"}
         if not required.issubset(indicators.columns):
             return None
-        middle = indicators["bb_middle"].astype(float).replace(0, pd.NA)
-        return ((indicators["bb_upper"].astype(float) - indicators["bb_lower"].astype(float)) / middle).astype(float)
+        middle = indicators["bb_middle"].astype(float)
+        middle = middle.where(middle != 0)
+        return (indicators["bb_upper"].astype(float) - indicators["bb_lower"].astype(float)) / middle

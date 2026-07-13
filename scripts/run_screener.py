@@ -233,8 +233,18 @@ def fetch_twse_today() -> pd.DataFrame:
 
 def fetch_tpex_today() -> pd.DataFrame:
     url = "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_quotes"
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
+    # TPEx openapi 偶發 5xx，重試三次再放棄（失敗會讓左側範圍只剩上市股）
+    last_error: Exception | None = None
+    for attempt in range(3):
+        try:
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+            break
+        except Exception as exc:
+            last_error = exc
+            time.sleep(2 * (attempt + 1))
+    else:
+        raise RuntimeError(f"TPEx quotes failed after retries: {last_error}")
     rows = response.json()
     data: list[dict[str, Any]] = []
     for row in rows:
@@ -678,20 +688,26 @@ def fetch_chip_finmind(symbol: str, price_history: pd.DataFrame) -> pd.DataFrame
         volumes = price_history[["trade_date", "volume"]].copy()
         volumes["trade_date"] = pd.to_datetime(volumes["trade_date"])
         result = result.merge(volumes, on="trade_date", how="left")
-        result["day_trade_ratio_pct"] = (
-            result["day_trade_volume"] / result["volume"].replace(0, pd.NA) * 100
-        ).astype(float)
+        day_trade = pd.to_numeric(result["day_trade_volume"], errors="coerce").astype(float)
+        total = pd.to_numeric(result["volume"], errors="coerce").astype(float)
+        result["day_trade_ratio_pct"] = day_trade / total.where(total > 0) * 100
 
     keep = [col for col in ("trade_date", "margin_balance", "short_balance", "day_trade_ratio_pct") if col in result.columns]
     return result[keep]
+
+
+_HOLDERS_UNAVAILABLE = False
 
 
 def fetch_holders_finmind(symbol: str) -> pd.DataFrame:
     """股權分散表（TDCC 週資料）→ 400 張以上大戶持股比例。
 
     回傳欄位: date, big_holder_ratio_pct。
+    注意：此 dataset 在 FinMind 免費（register）等級不可用，偵測到等級錯誤後
+    整輪跳過，避免對每一檔入圍股白打一次 API。
     """
-    if not FINMIND_TOKEN:
+    global _HOLDERS_UNAVAILABLE
+    if not FINMIND_TOKEN or _HOLDERS_UNAVAILABLE:
         return pd.DataFrame()
 
     end = date.today()
@@ -706,7 +722,11 @@ def fetch_holders_finmind(symbol: str) -> pd.DataFrame:
         payload = finmind_get(params, timeout=20)
         data = payload.get("data", [])
     except Exception as exc:
-        print(f"WARN FinMind holders failed for {symbol}: {exc}")
+        if "level" in str(exc).lower():
+            _HOLDERS_UNAVAILABLE = True
+            print("WARN FinMind holders dataset needs sponsor tier; skipping for the rest of this run")
+        else:
+            print(f"WARN FinMind holders failed for {symbol}: {exc}")
         return pd.DataFrame()
     if not data:
         return pd.DataFrame()
