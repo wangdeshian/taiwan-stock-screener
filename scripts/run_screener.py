@@ -100,7 +100,71 @@ def safe_float(value: object) -> float:
         return 0.0
 
 
-def fetch_twse_today() -> pd.DataFrame:
+def roc_date_to_iso(value: object) -> str | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    if "/" in text:
+        parts = text.split("/")
+        if len(parts) == 3:
+            return f"{int(parts[0]) + 1911:04d}-{int(parts[1]):02d}-{int(parts[2]):02d}"
+    digits = "".join(ch for ch in text if ch.isdigit())
+    if len(digits) == 7:
+        return f"{int(digits[:3]) + 1911:04d}-{int(digits[3:5]):02d}-{int(digits[5:7]):02d}"
+    if len(digits) == 8:
+        return f"{int(digits[:4]):04d}-{int(digits[4:6]):02d}-{int(digits[6:8]):02d}"
+    return None
+
+
+def parse_twse_rwd_quotes(payload: dict[str, Any]) -> pd.DataFrame:
+    quote_date = roc_date_to_iso(payload.get("date"))
+    tables = payload.get("tables") or []
+    table = next((item for item in tables if "每日收盤行情" in str(item.get("title", ""))), None)
+    if not table:
+        return pd.DataFrame()
+
+    fields = table.get("fields") or []
+    rows = table.get("data") or []
+    data: list[dict[str, Any]] = []
+    for values in rows:
+        row = dict(zip(fields, values))
+        symbol = str(row.get("證券代號", "")).strip()
+        close = safe_float(row.get("收盤價"))
+        volume = safe_float(row.get("成交股數"))
+        turnover = safe_float(row.get("成交金額"))
+        if not symbol or close <= 0:
+            continue
+        data.append(
+            {
+                "symbol": symbol,
+                "name": row.get("證券名稱", symbol),
+                "market": "TWSE",
+                "quote_date": quote_date,
+                "quote_source": "TWSE",
+                "open": safe_float(row.get("開盤價")) or close,
+                "high": safe_float(row.get("最高價")) or close,
+                "low": safe_float(row.get("最低價")) or close,
+                "close": close,
+                "volume": volume,
+                "turnover": turnover or close * volume,
+                "pe_ratio": safe_float(row.get("本益比")) or None,
+            }
+        )
+    return pd.DataFrame(data)
+
+
+def fetch_twse_rwd_today() -> pd.DataFrame:
+    trade_date = datetime.now(TW_TZ).strftime("%Y%m%d")
+    url = f"https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX?date={trade_date}&type=ALLBUT0999&response=json"
+    response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=30)
+    response.raise_for_status()
+    payload = response.json()
+    if str(payload.get("stat", "")).upper() != "OK":
+        return pd.DataFrame()
+    return parse_twse_rwd_quotes(payload)
+
+
+def fetch_twse_openapi_latest() -> pd.DataFrame:
     url = "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL"
     response = requests.get(url, timeout=30)
     response.raise_for_status()
@@ -125,6 +189,11 @@ def fetch_twse_today() -> pd.DataFrame:
                 "symbol": symbol,
                 "name": row.get("Name", symbol),
                 "market": "TWSE",
+                "quote_date": roc_date_to_iso(row.get("Date")),
+                "quote_source": "TWSE-openapi",
+                "open": safe_float(row.get("OpeningPrice")) or close,
+                "high": safe_float(row.get("HighestPrice")) or close,
+                "low": safe_float(row.get("LowestPrice")) or close,
                 "close": close,
                 "volume": volume,
                 "turnover": turnover or close * volume,
@@ -132,6 +201,16 @@ def fetch_twse_today() -> pd.DataFrame:
             }
         )
     return pd.DataFrame(data)
+
+
+def fetch_twse_today() -> pd.DataFrame:
+    try:
+        frame = fetch_twse_rwd_today()
+        if not frame.empty:
+            return frame
+    except Exception as exc:
+        print(f"WARN TWSE rwd daily close fetch failed: {exc}")
+    return fetch_twse_openapi_latest()
 
 
 def fetch_tpex_today() -> pd.DataFrame:
@@ -165,6 +244,11 @@ def fetch_tpex_today() -> pd.DataFrame:
                 "symbol": symbol,
                 "name": row.get("CompanyName") or row.get("Name") or symbol,
                 "market": "TPEx",
+                "quote_date": roc_date_to_iso(row.get("Date")),
+                "quote_source": "TPEx",
+                "open": safe_float(row.get("Open")) or close,
+                "high": safe_float(row.get("High")) or close,
+                "low": safe_float(row.get("Low")) or close,
                 "close": close,
                 "volume": volume,
                 "turnover": turnover,
@@ -199,6 +283,47 @@ def fetch_today_universe(all_quotes: pd.DataFrame | None = None) -> pd.DataFrame
     today = all_quotes[(all_quotes["close"] > 10) & (all_quotes["turnover"] > 100_000_000)]
     today = today.sort_values("turnover", ascending=False).head(TOP_N)
     return today.reset_index(drop=True)
+
+
+def merge_quote_into_history(history: pd.DataFrame, quote: pd.Series | dict[str, Any]) -> pd.DataFrame:
+    """Keep technical indicators on the same date as the displayed close.
+
+    Some historical providers lag behind the official exchange close. When the
+    official quote is newer than the history frame, append it; when the same
+    date already exists, replace that OHLCV row with the official exchange row.
+    """
+    if history.empty:
+        return history
+    quote_date = pd.to_datetime((quote.get("quote_date") if hasattr(quote, "get") else None), errors="coerce")
+    close = safe_float(quote.get("close") if hasattr(quote, "get") else 0)
+    if pd.isna(quote_date) or close <= 0:
+        return history
+
+    result = history.copy()
+    result["trade_date"] = pd.to_datetime(result["trade_date"]).dt.tz_localize(None)
+    quote_day = pd.Timestamp(quote_date).tz_localize(None).normalize()
+    latest_day = result["trade_date"].max().normalize()
+    if quote_day < latest_day:
+        return result.sort_values("trade_date")
+
+    volume = safe_float(quote.get("volume") if hasattr(quote, "get") else 0)
+    turnover = safe_float(quote.get("turnover") if hasattr(quote, "get") else 0) or close * volume
+    quote_row = {
+        "trade_date": quote_day,
+        "open": safe_float(quote.get("open") if hasattr(quote, "get") else 0) or close,
+        "high": safe_float(quote.get("high") if hasattr(quote, "get") else 0) or close,
+        "low": safe_float(quote.get("low") if hasattr(quote, "get") else 0) or close,
+        "close": close,
+        "volume": volume,
+        "turnover": turnover,
+    }
+    same_day = result["trade_date"].dt.normalize() == quote_day
+    if same_day.any():
+        for key, value in quote_row.items():
+            result.loc[same_day, key] = value
+    else:
+        result = pd.concat([result, pd.DataFrame([quote_row])], ignore_index=True)
+    return result.sort_values("trade_date").reset_index(drop=True)
 
 
 def fetch_price_history(symbol: str, market: str) -> tuple[pd.DataFrame, str]:
@@ -805,6 +930,8 @@ def serialize_left_candidate(
     close: float | None = None,
     chip_metrics: dict[str, float | None] | None = None,
     price_source: str | None = None,
+    quote_date: str | None = None,
+    quote_source: str | None = None,
 ) -> dict[str, Any]:
     plan = result.trade_plan
     metrics = chip_metrics or {}
@@ -824,6 +951,8 @@ def serialize_left_candidate(
         "sentiment_score": result.sentiment_score,
         "reasons": result.reasons,
         "close_price": round_optional(close, 2),
+        "quote_date": quote_date,
+        "quote_source": quote_source,
         "entry_price": plan.entry_price if plan else None,
         "alternate_entry_price": plan.alternate_entry_price if plan else None,
         "stop_loss_price": plan.stop_loss_price if plan else None,
@@ -898,6 +1027,8 @@ def demo_output() -> dict[str, Any]:
                 result=left_result,
                 close=float(indicators.iloc[-1]["close"]),
                 chip_metrics=left_side_metrics(chip_rows, holder_rows),
+                quote_date=None,
+                quote_source="demo",
             )
         )
 
@@ -972,6 +1103,8 @@ def serialize_candidate(
     financial_row: dict[str, Any] | None = None,
     strength_metrics: dict[str, float | None] | None = None,
     price_source: str | None = None,
+    quote_date: str | None = None,
+    quote_source: str | None = None,
 ) -> dict[str, Any]:
     revenue_yoy_pct = round_optional((revenue_row or {}).get("revenue_yoy_pct"))
     eps = round_optional((financial_row or {}).get("eps"))
@@ -995,6 +1128,8 @@ def serialize_candidate(
         "risk_reward_score": result.risk_reward_score,
         "reasons": result.reasons,
         "close_price": round_optional(close, 2),
+        "quote_date": quote_date,
+        "quote_source": quote_source,
         "entry_price": plan.entry_price if plan else None,
         "alternate_entry_price": plan.alternate_entry_price if plan else None,
         "stop_loss_price": plan.stop_loss_price if plan else None,
@@ -1100,6 +1235,7 @@ def run_left_side_screener(all_quotes: pd.DataFrame, fundamentals_cache: dict[st
                 financial_row = cached["financial_row"]
             else:
                 history, price_source = fetch_price_history(symbol, market)
+                history = merge_quote_into_history(history, quote)
                 if history.empty or len(history) < 60:
                     continue
                 indicators = add_technical_indicators(history)
@@ -1138,6 +1274,8 @@ def run_left_side_screener(all_quotes: pd.DataFrame, fundamentals_cache: dict[st
                 close=safe_float(quote.get("close")),
                 chip_metrics=left_side_metrics(chip_rows, holder_rows),
                 price_source=price_source,
+                quote_date=str(quote.get("quote_date") or ""),
+                quote_source=str(quote.get("quote_source") or market),
             )
             if is_observation_pool:
                 left_candidate["reasons"] = ["observation_pool", *left_candidate.get("reasons", [])]
@@ -1192,6 +1330,7 @@ def run_live_screener() -> dict[str, Any]:
         print(f"[{index + 1:03d}/{len(today):03d}] {symbol} {name}")
 
         history, price_source = fetch_price_history(symbol, market)
+        history = merge_quote_into_history(history, row)
         if history.empty or len(history) < 60:
             continue
 
@@ -1257,6 +1396,8 @@ def run_live_screener() -> dict[str, Any]:
             financial_row=financial_row,
             strength_metrics=strength_metrics,
             price_source=price_source,
+            quote_date=str(row.get("quote_date") or ""),
+            quote_source=str(row.get("quote_source") or market),
         )
         scored_candidates.append(candidate)
 
