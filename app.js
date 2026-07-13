@@ -182,13 +182,15 @@ function renderTradePlan(item) {
     <section class="detail-section">
       <h3>交易計畫</h3>
       <div class="metric-grid">
+        ${metricCard("收盤日期", item.quote_date || "-")}
+        ${metricCard("收盤來源", item.quote_source || "-")}
         ${metricCard("進場", money(item.entry_price))}
         ${metricCard("備用進場", money(item.alternate_entry_price))}
         ${metricCard("停損", money(item.stop_loss_price))}
         ${metricCard("目標一", money(item.target_price_1))}
         ${metricCard("目標二", money(item.target_price_2))}
         ${metricCard("建議部位", `${money(item.suggested_position_pct)}%`)}
-        ${metricCard("價格來源", item.price_source || "-")}
+        ${metricCard("技術資料", item.price_source || "-")}
       </div>
     </section>`;
 }
