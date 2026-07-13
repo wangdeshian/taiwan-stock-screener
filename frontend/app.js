@@ -311,7 +311,7 @@ function renderRows(rows) {
 
   if (!rows.length) {
     const message = strategy === "left"
-      ? "目前沒有符合左側潛伏條件的股票（需要 FinMind 籌碼資料）"
+      ? "目前沒有符合左側潛伏起手式的股票（籌碼快照累積約一個月後訊號最完整）"
       : "目前沒有符合條件的候選股";
     candidateRows.innerHTML = `<tr><td class="empty" colspan="9">${message}</td></tr>`;
     return;
@@ -371,9 +371,14 @@ function updateNotice() {
   }
   if (strategy === "left") {
     if (latestData.left_side_enabled === false) {
-      messages.push("左側潛伏策略需要 FinMind 籌碼資料（借券/融資/當沖/大戶持股），請確認 FINMIND_TOKEN 已設定。");
-    } else if (latestData.left_side_note) {
-      messages.push(latestData.left_side_note);
+      messages.push("左側潛伏策略目前已停用（SCREENER_LEFT_SIDE=0）。");
+    } else {
+      if (latestData.left_side_universe_count) {
+        messages.push(`全市場掃描 ${latestData.left_side_universe_count} 檔，籌碼起手式訊號入圍 ${latestData.left_side_shortlist_count ?? 0} 檔。`);
+      }
+      if (latestData.left_side_note) {
+        messages.push(latestData.left_side_note);
+      }
     }
   }
   if (!latestData.has_institutional_data) {
