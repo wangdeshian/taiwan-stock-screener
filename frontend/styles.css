@@ -77,6 +77,63 @@ main {
   margin-bottom: 16px;
 }
 
+/* 預算卡片 — 橫跨兩欄 */
+.budget-card {
+  grid-column: 1 / -1;
+}
+.budget-input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.budget-input-row input {
+  min-height: 36px;
+  font-size: 18px;
+  font-weight: 700;
+  width: 180px;
+  flex: unset;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0 10px;
+}
+.budget-currency {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.budget-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.preset-btn {
+  min-height: 30px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.preset-btn:hover {
+  background: #e2e8f0;
+  color: var(--text);
+}
+.preset-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* Livermore warning text */
+.lv-warn-text {
+  color: #b45309;
+  font-weight: 600;
+}
+
 .summary > div,
 .toolbar,
 .table-wrap {
@@ -154,6 +211,11 @@ th {
 td.score {
   color: var(--accent-strong);
   font-weight: 800;
+}
+
+td.close-price {
+  font-weight: 700;
+  color: var(--text);
 }
 
 .empty,
@@ -322,6 +384,40 @@ tr.detail-row td {
   border-radius: 4px;
   padding: 2px 7px;
   font-size: 11px;
+}
+.detail-section {
+  margin-top: 12px;
+}
+.detail-section h3 {
+  margin: 0 0 8px;
+  color: #334155;
+  font-size: 13px;
+}
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+}
+.metric-card {
+  min-height: 54px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+}
+.metric-card.good {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+.metric-label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.metric-card strong {
+  color: var(--text);
+  font-size: 15px;
 }
 .chevron {
   display: inline-block;

@@ -39,6 +39,7 @@ jobs:
       - name: Run screener
         env:
           FINMIND_TOKEN: ${{ secrets.FINMIND_TOKEN }}
+          FUGLE_API_KEY: ${{ secrets.FUGLE_API_KEY }}
           SCREENER_FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.force_run || 'false' }}
         run: python scripts/run_screener.py
 

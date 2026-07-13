@@ -28,6 +28,8 @@ from taiwan_stock_screener.scoring.engine import ScoringEngine  # noqa: E402
 TW_TZ = timezone(timedelta(hours=8))
 FINMIND_TOKEN = os.environ.get("FINMIND_TOKEN", "").replace("\r", "").replace("\n", "").strip()
 FINMIND_BASE = "https://api.finmindtrade.com/api/v4/data"
+FUGLE_API_KEY = os.environ.get("FUGLE_API_KEY", "").replace("\r", "").replace("\n", "").strip()
+FUGLE_BASE = "https://api.fugle.tw/marketdata/v1.0/stock"
 TOP_N = int(os.environ.get("SCREENER_TOP_N", "60"))
 MAX_OUTPUT = int(os.environ.get("SCREENER_MAX_OUTPUT", "20"))
 OUTPUT = ROOT / "frontend" / "data" / "results.json"
@@ -55,6 +57,27 @@ def finmind_get(params: dict[str, Any], timeout: int = 30) -> dict[str, Any]:
     return payload
 
 
+def fugle_get(path: str, params: dict[str, Any], timeout: int = 30) -> dict[str, Any]:
+    if not FUGLE_API_KEY:
+        raise RuntimeError("FUGLE_API_KEY is not configured")
+    response = requests.get(
+        f"{FUGLE_BASE}{path}",
+        params=params,
+        headers={"X-API-KEY": FUGLE_API_KEY},
+        timeout=timeout,
+    )
+    try:
+        payload: dict[str, Any] = response.json()
+    except Exception:
+        payload = {}
+    if not response.ok:
+        raise RuntimeError(
+            f"Fugle API failed status={response.status_code} "
+            f"msg={payload.get('message') or payload.get('msg') or response.text[:200]}"
+        )
+    return payload
+
+
 def safe_float(value: object) -> float:
     try:
         return float(str(value).replace(",", ""))
@@ -73,6 +96,13 @@ def fetch_twse_today() -> pd.DataFrame:
         close = safe_float(row.get("ClosingPrice", 0))
         volume = safe_float(row.get("TradeVolume", 0))
         turnover = safe_float(row.get("TradeValue", 0))
+        pe_ratio = safe_float(
+            row.get("PEratio")
+            or row.get("PERatio")
+            or row.get("PriceEarningRatio")
+            or row.get("P/E")
+            or 0
+        )
         if not symbol or close <= 0:
             continue
         data.append(
@@ -83,6 +113,7 @@ def fetch_twse_today() -> pd.DataFrame:
                 "close": close,
                 "volume": volume,
                 "turnover": turnover or close * volume,
+                "pe_ratio": pe_ratio or None,
             }
         )
     return pd.DataFrame(data)
@@ -104,6 +135,14 @@ def fetch_tpex_today() -> pd.DataFrame:
         close = safe_float(row.get("Close", 0))
         volume = safe_float(row.get("Volume", 0))
         turnover = safe_float(row.get("Amount", 0)) or close * volume
+        pe_ratio = safe_float(
+            row.get("PEratio")
+            or row.get("PERatio")
+            or row.get("PriceEarningRatio")
+            or row.get("P/E")
+            or row.get("PE")
+            or 0
+        )
         if not symbol or close <= 0:
             continue
         data.append(
@@ -114,6 +153,7 @@ def fetch_tpex_today() -> pd.DataFrame:
                 "close": close,
                 "volume": volume,
                 "turnover": turnover,
+                "pe_ratio": pe_ratio or None,
             }
         )
     return pd.DataFrame(data)
@@ -167,6 +207,92 @@ def fetch_history_yfinance(symbol: str, market: str) -> pd.DataFrame:
     history["turnover"] = history["close"] * history["volume"]
     keep = ["trade_date", "open", "high", "low", "close", "volume", "turnover"]
     return history[keep].sort_values("trade_date")
+
+
+def fetch_history_fugle(symbol: str) -> pd.DataFrame:
+    if not FUGLE_API_KEY:
+        return pd.DataFrame()
+
+    end = date.today()
+    start = end - timedelta(days=370)
+    params = {
+        "from": start.isoformat(),
+        "to": end.isoformat(),
+        "timeframe": "D",
+        "adjusted": "true",
+        "fields": "open,high,low,close,volume,turnover,change",
+        "sort": "asc",
+    }
+    try:
+        payload = fugle_get(f"/historical/candles/{symbol}", params=params)
+    except Exception as exc:
+        print(f"WARN Fugle history failed for {symbol}: {exc}")
+        return pd.DataFrame()
+
+    data = payload.get("data", [])
+    if not data:
+        return pd.DataFrame()
+
+    frame = pd.DataFrame(data)
+    frame = frame.rename(columns={"date": "trade_date"})
+    frame["trade_date"] = pd.to_datetime(frame["trade_date"])
+    for column in ["open", "high", "low", "close", "volume", "turnover"]:
+        frame[column] = pd.to_numeric(frame.get(column, 0), errors="coerce").fillna(0)
+    keep = ["trade_date", "open", "high", "low", "close", "volume", "turnover"]
+    return frame[keep].sort_values("trade_date")
+
+
+def fetch_benchmark_history() -> pd.DataFrame:
+    try:
+        import yfinance as yf
+    except ImportError:
+        return pd.DataFrame()
+
+    try:
+        history = yf.Ticker("^TWII").history(period="1y", auto_adjust=True)
+    except Exception as exc:
+        print(f"WARN benchmark history failed: {exc}")
+        return pd.DataFrame()
+    if history.empty:
+        return pd.DataFrame()
+
+    history = history.reset_index()
+    history = history.rename(columns={"Date": "trade_date", "Close": "close"})
+    history["trade_date"] = pd.to_datetime(history["trade_date"]).dt.tz_localize(None)
+    history["close"] = pd.to_numeric(history["close"], errors="coerce").fillna(0)
+    return history[["trade_date", "close"]].sort_values("trade_date")
+
+
+def trailing_return_pct(history: pd.DataFrame, window: int) -> float | None:
+    if history.empty or len(history) <= window:
+        return None
+    close = pd.to_numeric(history["close"], errors="coerce").dropna()
+    if len(close) <= window:
+        return None
+    previous = float(close.iloc[-window - 1])
+    latest = float(close.iloc[-1])
+    if previous <= 0:
+        return None
+    return round((latest - previous) / previous * 100, 2)
+
+
+def relative_strength_metrics(history: pd.DataFrame, benchmark: pd.DataFrame) -> dict[str, float | None]:
+    stock_20d = trailing_return_pct(history, 20)
+    stock_60d = trailing_return_pct(history, 60)
+    benchmark_20d = trailing_return_pct(benchmark, 20)
+    benchmark_60d = trailing_return_pct(benchmark, 60)
+    return {
+        "stock_return_20d_pct": stock_20d,
+        "stock_return_60d_pct": stock_60d,
+        "benchmark_return_20d_pct": benchmark_20d,
+        "benchmark_return_60d_pct": benchmark_60d,
+        "relative_strength_20d_pct": round(stock_20d - benchmark_20d, 2)
+        if stock_20d is not None and benchmark_20d is not None
+        else None,
+        "relative_strength_60d_pct": round(stock_60d - benchmark_60d, 2)
+        if stock_60d is not None and benchmark_60d is not None
+        else None,
+    }
 
 
 def fetch_history_finmind(symbol: str) -> pd.DataFrame:
@@ -391,10 +517,34 @@ def demo_output() -> dict[str, Any]:
         "screened_count": int(prices["symbol"].nunique()),
         "candidate_count": len(candidates[:MAX_OUTPUT]),
         "has_institutional_data": True,
+        "has_fugle_data": False,
+        "data_sources": ["demo"],
         "score_threshold": 85,
         "source": "demo",
         "top_candidates": candidates[:MAX_OUTPUT],
     }
+
+
+def round_optional(value: object, digits: int = 2) -> float | None:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if pd.isna(number):
+        return None
+    return round(number, digits)
+
+
+def calculate_peg_ratio(close: float, pe_ratio: float | None, revenue_yoy_pct: float | None, eps: float | None) -> float | None:
+    if revenue_yoy_pct is None or revenue_yoy_pct <= 0:
+        return None
+
+    effective_pe = pe_ratio if pe_ratio and pe_ratio > 0 else None
+    if effective_pe is None and eps and eps > 0:
+        effective_pe = close / (eps * 4)
+    if effective_pe is None or effective_pe <= 0:
+        return None
+    return round(effective_pe / revenue_yoy_pct, 2)
 
 
 def serialize_candidate(
@@ -404,12 +554,25 @@ def serialize_candidate(
     industry: str | None,
     result: Any,
     plan: Any,
+    close: float | None = None,
+    pe_ratio: float | None = None,
+    revenue_row: dict[str, Any] | None = None,
+    financial_row: dict[str, Any] | None = None,
+    strength_metrics: dict[str, float | None] | None = None,
+    price_source: str | None = None,
 ) -> dict[str, Any]:
+    revenue_yoy_pct = round_optional((revenue_row or {}).get("revenue_yoy_pct"))
+    eps = round_optional((financial_row or {}).get("eps"))
+    roe_pct = round_optional((financial_row or {}).get("roe_pct"))
+    rounded_pe = round_optional(pe_ratio)
+    peg_ratio = calculate_peg_ratio(float(close or 0), rounded_pe, revenue_yoy_pct, eps)
+    metrics = strength_metrics or {}
     return {
         "symbol": symbol,
         "name": name,
         "market": market,
         "industry": industry,
+        "price_source": price_source,
         "total_score": result.total_score,
         "trend_score": result.trend_score,
         "volume_score": result.volume_score,
@@ -419,6 +582,7 @@ def serialize_candidate(
         "industry_score": result.industry_score,
         "risk_reward_score": result.risk_reward_score,
         "reasons": result.reasons,
+        "close_price": round_optional(close, 2),
         "entry_price": plan.entry_price if plan else None,
         "alternate_entry_price": plan.alternate_entry_price if plan else None,
         "stop_loss_price": plan.stop_loss_price if plan else None,
@@ -426,6 +590,17 @@ def serialize_candidate(
         "target_price_2": plan.target_price_2 if plan else None,
         "risk_reward_ratio": plan.risk_reward_ratio if plan else None,
         "suggested_position_pct": plan.suggested_position_pct if plan else None,
+        "revenue_yoy_pct": revenue_yoy_pct,
+        "eps": eps,
+        "roe_pct": roe_pct,
+        "pe_ratio": rounded_pe,
+        "peg_ratio": peg_ratio,
+        "stock_return_20d_pct": metrics.get("stock_return_20d_pct"),
+        "stock_return_60d_pct": metrics.get("stock_return_60d_pct"),
+        "benchmark_return_20d_pct": metrics.get("benchmark_return_20d_pct"),
+        "benchmark_return_60d_pct": metrics.get("benchmark_return_60d_pct"),
+        "relative_strength_20d_pct": metrics.get("relative_strength_20d_pct"),
+        "relative_strength_60d_pct": metrics.get("relative_strength_60d_pct"),
     }
 
 
@@ -438,6 +613,7 @@ def run_live_screener() -> dict[str, Any]:
 
     engine = ScoringEngine()
     threshold = 55 if FINMIND_TOKEN else 42
+    benchmark_history = fetch_benchmark_history()
     scored_candidates: list[dict[str, Any]] = []
     candidates: list[dict[str, Any]] = []
 
@@ -445,16 +621,26 @@ def run_live_screener() -> dict[str, Any]:
         symbol = str(row["symbol"])
         name = str(row["name"])
         market = str(row["market"])
+        price_source = "none"
         print(f"[{index + 1:03d}/{len(today):03d}] {symbol} {name}")
 
         if FINMIND_TOKEN:
             history = fetch_history_finmind(symbol)
             time.sleep(0.2)
+            price_source = "FinMind" if not history.empty else "none"
             if history.empty:
-                print(f"WARN FinMind unavailable for {symbol}; falling back to yfinance")
-                history = fetch_history_yfinance(symbol, market)
+                print(f"WARN FinMind unavailable for {symbol}; trying Fugle/yfinance")
         else:
+            history = pd.DataFrame()
+
+        if history.empty and FUGLE_API_KEY:
+            history = fetch_history_fugle(symbol)
+            time.sleep(0.2)
+            price_source = "Fugle" if not history.empty else price_source
+
+        if history.empty:
             history = fetch_history_yfinance(symbol, market)
+            price_source = "yfinance" if not history.empty else price_source
 
         if history.empty or len(history) < 60:
             continue
@@ -488,6 +674,11 @@ def run_live_screener() -> dict[str, Any]:
                 financial_row=financial_row,
                 industry_rank_pct=0.5,
             )
+            strength_metrics = relative_strength_metrics(history, benchmark_history)
+            if (strength_metrics.get("relative_strength_20d_pct") or 0) > 0:
+                result.reasons.append("relative_strength_20d")
+            if (strength_metrics.get("relative_strength_60d_pct") or 0) > 0:
+                result.reasons.append("relative_strength_60d")
         except Exception as exc:
             print(f"WARN scoring failed for {symbol}: {exc}")
             continue
@@ -499,6 +690,12 @@ def run_live_screener() -> dict[str, Any]:
             industry=None,
             result=result,
             plan=result.trade_plan,
+            close=safe_float(row.get("close")),
+            pe_ratio=round_optional(row.get("pe_ratio")),
+            revenue_row=revenue_row,
+            financial_row=financial_row,
+            strength_metrics=strength_metrics,
+            price_source=price_source,
         )
         scored_candidates.append(candidate)
 
@@ -516,8 +713,10 @@ def run_live_screener() -> dict[str, Any]:
             "screened_count": len(today),
             "candidate_count": len(candidates),
             "has_institutional_data": bool(FINMIND_TOKEN),
+            "has_fugle_data": bool(FUGLE_API_KEY),
             "score_threshold": threshold,
             "source": "live_relaxed",
+            "data_sources": ["TWSE", "TPEx", "FinMind", *([] if not FUGLE_API_KEY else ["Fugle"]), "yfinance"],
             "selection_note": "No stocks met the strict threshold; showing the highest live scores.",
             "top_candidates": candidates,
         }
@@ -531,8 +730,10 @@ def run_live_screener() -> dict[str, Any]:
         "screened_count": len(today),
         "candidate_count": len(candidates),
         "has_institutional_data": bool(FINMIND_TOKEN),
+        "has_fugle_data": bool(FUGLE_API_KEY),
         "score_threshold": threshold,
         "source": "live",
+        "data_sources": ["TWSE", "TPEx", "FinMind", *([] if not FUGLE_API_KEY else ["Fugle"]), "yfinance"],
         "top_candidates": candidates,
     }
 
@@ -569,6 +770,7 @@ def update_history(output: dict[str, Any]) -> None:
         "date": today_date,
         "updated_at": output["updated_at"],
         "source": output["source"],
+        "data_sources": output.get("data_sources", []),
         "screened_count": output.get("screened_count", 0),
         "candidate_count": output.get("candidate_count", 0),
         "score_threshold": output.get("score_threshold", 0),
@@ -578,11 +780,19 @@ def update_history(output: dict[str, Any]) -> None:
                 "name": c["name"],
                 "market": c.get("market", "TWSE"),
                 "industry": c.get("industry"),
+                "price_source": c.get("price_source"),
                 "total_score": c.get("total_score"),
                 "entry_price": c.get("entry_price"),
                 "stop_loss_price": c.get("stop_loss_price"),
                 "target_price_1": c.get("target_price_1"),
                 "risk_reward_ratio": c.get("risk_reward_ratio"),
+                "revenue_yoy_pct": c.get("revenue_yoy_pct"),
+                "eps": c.get("eps"),
+                "roe_pct": c.get("roe_pct"),
+                "pe_ratio": c.get("pe_ratio"),
+                "peg_ratio": c.get("peg_ratio"),
+                "relative_strength_20d_pct": c.get("relative_strength_20d_pct"),
+                "relative_strength_60d_pct": c.get("relative_strength_60d_pct"),
             }
             for c in output.get("top_candidates", [])
         ],
