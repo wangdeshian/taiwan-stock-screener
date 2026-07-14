@@ -55,10 +55,50 @@ LEFT_MIN_CLOSE = float(os.environ.get("SCREENER_LEFT_MIN_CLOSE", "5"))
 SQUEEZE_SCAN_ENABLED = os.environ.get("SCREENER_SQUEEZE_SCAN", "1").lower() not in {"0", "false", "no"}
 SQUEEZE_MIN_CLOSE = float(os.environ.get("SCREENER_SQUEEZE_MIN_CLOSE", "10"))
 SQUEEZE_MIN_TURNOVER = float(os.environ.get("SCREENER_SQUEEZE_MIN_TURNOVER", "100000000"))
+LEFT_FUNDAMENTAL_FETCH_LIMIT = int(os.environ.get("SCREENER_LEFT_FUNDAMENTAL_LIMIT", "12"))
 CHIP_STORE_PATH = ROOT / "frontend" / "data" / "chip_history.csv"
 OUTPUT = ROOT / "frontend" / "data" / "results.json"
 HISTORY = ROOT / "frontend" / "data" / "history.json"
 MAX_HISTORY_DAYS = 30
+
+INDUSTRY_CODE_NAMES = {
+    "01": "水泥工業",
+    "02": "食品工業",
+    "03": "塑膠工業",
+    "04": "紡織纖維",
+    "05": "電機機械",
+    "06": "電器電纜",
+    "07": "化學生技醫療",
+    "08": "玻璃陶瓷",
+    "09": "造紙工業",
+    "10": "鋼鐵工業",
+    "11": "橡膠工業",
+    "12": "汽車工業",
+    "14": "建材營造",
+    "15": "航運業",
+    "16": "觀光餐旅",
+    "17": "金融保險",
+    "18": "貿易百貨",
+    "20": "其他",
+    "21": "化學工業",
+    "22": "生技醫療",
+    "23": "油電燃氣",
+    "24": "半導體",
+    "25": "電腦及週邊",
+    "26": "光電",
+    "27": "通信網路",
+    "28": "電子零組件",
+    "29": "電子通路",
+    "30": "資訊服務",
+    "31": "其他電子",
+    "32": "文化創意",
+    "33": "農業科技",
+    "34": "電子商務",
+    "35": "綠能環保",
+    "36": "數位雲端",
+    "37": "運動休閒",
+    "38": "居家生活",
+}
 
 
 def finmind_get(params: dict[str, Any], timeout: int = 30) -> dict[str, Any]:
@@ -123,6 +163,67 @@ def safe_float(value: object) -> float:
         return float(str(value).replace(",", ""))
     except Exception:
         return 0.0
+
+
+def industry_label_from_code(value: object) -> str | None:
+    text = str(value or "").strip()
+    if not text or text in {"-", "--", "－"}:
+        return None
+    digits = "".join(ch for ch in text if ch.isdigit())
+    code = digits.zfill(2) if digits else text
+    return INDUSTRY_CODE_NAMES.get(code, text)
+
+
+def infer_security_type(symbol: str, name: str | None = None) -> str | None:
+    text = f"{symbol} {name or ''}"
+    if str(symbol).startswith("00"):
+        return "ETF/ETN"
+    if "ETF" in text.upper() or "ETN" in text.upper():
+        return "ETF/ETN"
+    return None
+
+
+def industry_for_symbol(symbol: str, name: str | None, industry_map: dict[str, str]) -> str | None:
+    return infer_security_type(symbol, name) or industry_map.get(str(symbol))
+
+
+def fetch_industry_map() -> dict[str, str]:
+    """Fetch TWSE/TPEx company industry codes and convert them to readable labels."""
+    sources = [
+        (
+            "TWSE",
+            "https://openapi.twse.com.tw/v1/opendata/t187ap03_L",
+            ("公司代號", "Code", "SecuritiesCompanyCode"),
+            ("產業別", "SecuritiesIndustryCode"),
+        ),
+        (
+            "TPEx",
+            "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_O",
+            ("SecuritiesCompanyCode", "公司代號", "Code"),
+            ("SecuritiesIndustryCode", "產業別"),
+        ),
+    ]
+    mapping: dict[str, str] = {}
+    for label, url, symbol_keys, industry_keys in sources:
+        try:
+            response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=30)
+            response.raise_for_status()
+            rows = response.json()
+        except Exception as exc:
+            print(f"WARN {label} industry fetch failed: {exc}")
+            continue
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            symbol = next((str(row.get(key, "")).strip() for key in symbol_keys if row.get(key)), "")
+            industry_code = next((row.get(key) for key in industry_keys if row.get(key)), None)
+            industry = industry_label_from_code(industry_code)
+            if symbol and industry:
+                mapping[symbol] = industry
+        print(f"{label} industries: {sum(1 for row in rows if isinstance(row, dict))} rows")
+    return mapping
 
 
 def roc_date_to_iso(value: object) -> str | None:
@@ -813,6 +914,56 @@ def fetch_revenue_finmind(symbol: str) -> dict[str, Any] | None:
     return {"revenue_yoy_pct": round(yoy_pct, 2)}
 
 
+def _latest_statement_value(frame: pd.DataFrame, exact_types: set[str], contains_any: tuple[str, ...] = ()) -> float | None:
+    if frame.empty or "type" not in frame.columns or "value" not in frame.columns:
+        return None
+    type_text = frame["type"].astype(str)
+    normalized = type_text.str.upper().str.replace(r"[^A-Z0-9]", "", regex=True)
+    mask = normalized.isin(exact_types)
+    for keyword in contains_any:
+        mask = mask | normalized.str.contains(keyword, na=False)
+    rows = frame[mask].sort_values("date")
+    if rows.empty:
+        return None
+    value = pd.to_numeric(rows.iloc[-1]["value"], errors="coerce")
+    return float(value) if pd.notna(value) else None
+
+
+def extract_financial_metrics(frame: pd.DataFrame) -> dict[str, Any] | None:
+    if frame.empty or "type" not in frame.columns or "value" not in frame.columns:
+        return None
+    result: dict[str, Any] = {}
+    eps = _latest_statement_value(frame, {"EPS"})
+    if eps is not None:
+        result["eps"] = eps
+
+    net_income = _latest_statement_value(
+        frame,
+        {
+            "PROFITLOSS",
+            "PROFITLOSSATTRIBUTABLETOOWNERSOFPARENT",
+            "NETINCOME",
+            "NETINCOMEATTRIBUTABLETOOWNERSOFPARENT",
+        },
+        ("PROFITLOSS", "NETINCOME"),
+    )
+    equity = _latest_statement_value(
+        frame,
+        {
+            "EQUITY",
+            "TOTAL_EQUITY",
+            "TOTALEQUITY",
+            "EQUITYATTRIBUTABLETOOWNERSOFPARENT",
+            "TOTALSTOCKHOLDERSEQUITY",
+        },
+        ("EQUITYATTRIBUTABLE", "TOTALEQUITY", "STOCKHOLDERSEQUITY"),
+    )
+    if net_income is not None and equity and equity > 0:
+        result["roe_pct"] = round(net_income / equity * 4 * 100, 2)
+
+    return result if result else None
+
+
 def fetch_financial_finmind(symbol: str) -> dict[str, Any] | None:
     """Fetch latest quarterly EPS (and ROE if present) from FinMind financial statements.
 
@@ -837,24 +988,7 @@ def fetch_financial_finmind(symbol: str) -> dict[str, Any] | None:
     if not data:
         return None
 
-    frame = pd.DataFrame(data)
-    if "type" not in frame.columns or "value" not in frame.columns:
-        return None
-
-    type_upper = frame["type"].astype(str).str.upper()
-    result: dict[str, Any] = {}
-
-    # EPS
-    eps_rows = frame[type_upper == "EPS"].sort_values("date")
-    if not eps_rows.empty:
-        val = pd.to_numeric(eps_rows.iloc[-1]["value"], errors="coerce")
-        if pd.notna(val):
-            result["eps"] = float(val)
-
-    # ROE：FinMind 免費版沒有現成的獲利能力 dataset（TaiwanStockProfitability
-    # 不是合法 dataset，會回 422），維持 None，評分引擎會自動略過 ROE 條件。
-
-    return result if result else None
+    return extract_financial_metrics(pd.DataFrame(data))
 
 
 def chip_change_pct(chip_rows: pd.DataFrame | None, column: str, lookback: int = 20) -> float | None:
@@ -961,6 +1095,8 @@ def serialize_left_candidate(
     industry: str | None,
     result: Any,
     close: float | None = None,
+    revenue_row: dict[str, Any] | None = None,
+    financial_row: dict[str, Any] | None = None,
     chip_metrics: dict[str, float | None] | None = None,
     price_source: str | None = None,
     quote_date: str | None = None,
@@ -968,6 +1104,9 @@ def serialize_left_candidate(
 ) -> dict[str, Any]:
     plan = result.trade_plan
     metrics = chip_metrics or {}
+    revenue_yoy_pct = round_optional((revenue_row or {}).get("revenue_yoy_pct"))
+    eps = round_optional((financial_row or {}).get("eps"))
+    roe_pct = round_optional((financial_row or {}).get("roe_pct"))
     return {
         "symbol": symbol,
         "name": name,
@@ -982,6 +1121,7 @@ def serialize_left_candidate(
         "smart_money_score": result.smart_money_score,
         "fundamental_safety_score": result.fundamental_safety_score,
         "sentiment_score": result.sentiment_score,
+        "sentiment_available": False,
         "ignition_score": result.ignition_score,
         "bb_bandwidth_pctile": result.bb_bandwidth_percentile,
         "reasons": result.reasons,
@@ -999,6 +1139,9 @@ def serialize_left_candidate(
         "margin_balance_change_pct": metrics.get("margin_balance_change_pct"),
         "day_trade_ratio_pct": metrics.get("day_trade_ratio_pct"),
         "big_holder_gain_pp": metrics.get("big_holder_gain_pp"),
+        "revenue_yoy_pct": revenue_yoy_pct,
+        "eps": eps,
+        "roe_pct": roe_pct,
     }
 
 
@@ -1286,7 +1429,11 @@ def scan_bollinger_squeeze(
     return hits_frame, histories
 
 
-def run_left_side_screener(all_quotes: pd.DataFrame, fundamentals_cache: dict[str, dict[str, Any]]) -> dict[str, Any]:
+def run_left_side_screener(
+    all_quotes: pd.DataFrame,
+    fundamentals_cache: dict[str, dict[str, Any]],
+    industry_map: dict[str, str],
+) -> dict[str, Any]:
     """左側潛伏全市場兩段式漏斗。
 
     第一段（低 API 成本）有兩路訊號來源：
@@ -1383,6 +1530,7 @@ def run_left_side_screener(all_quotes: pd.DataFrame, fundamentals_cache: dict[st
     left_scored: list[dict[str, Any]] = []
     left_candidates: list[dict[str, Any]] = []
     is_observation_pool = payload["left_side_mode"] == "observation_pool"
+    left_fundamental_fetches = 0
 
     for index, pre_row in shortlist.iterrows():
         symbol = str(pre_row["symbol"])
@@ -1415,9 +1563,24 @@ def run_left_side_screener(all_quotes: pd.DataFrame, fundamentals_cache: dict[st
                 institutions = fetch_institutional_finmind(symbol)
                 if FINMIND_TOKEN:
                     time.sleep(0.2)
-                # 入圍的冷門股不再抓營收/財報（僅影響基本面安全 10 分），控制 API 用量
                 revenue_row = None
                 financial_row = None
+                if (
+                    FINMIND_TOKEN
+                    and left_fundamental_fetches < LEFT_FUNDAMENTAL_FETCH_LIMIT
+                    and not infer_security_type(symbol, name)
+                ):
+                    left_fundamental_fetches += 1
+                    try:
+                        revenue_row = fetch_revenue_finmind(symbol)
+                        time.sleep(0.15)
+                    except Exception as exc:
+                        print(f"WARN left-side revenue fetch failed for {symbol}: {exc}")
+                    try:
+                        financial_row = fetch_financial_finmind(symbol)
+                        time.sleep(0.15)
+                    except Exception as exc:
+                        print(f"WARN left-side financial fetch failed for {symbol}: {exc}")
 
             chip_rows = chip_rows_for(store, symbol)
             if len(chip_rows) < 10 and FINMIND_TOKEN:
@@ -1442,9 +1605,11 @@ def run_left_side_screener(all_quotes: pd.DataFrame, fundamentals_cache: dict[st
                 symbol=symbol,
                 name=name,
                 market=market,
-                industry=None,
+                industry=industry_for_symbol(symbol, name, industry_map),
                 result=left_result,
                 close=safe_float(quote.get("close")),
+                revenue_row=revenue_row,
+                financial_row=financial_row,
                 chip_metrics=left_side_metrics(chip_rows, holder_rows),
                 price_source=price_source,
                 quote_date=str(quote.get("quote_date") or ""),
@@ -1477,6 +1642,7 @@ def run_left_side_screener(all_quotes: pd.DataFrame, fundamentals_cache: dict[st
 def run_live_screener() -> dict[str, Any]:
     now_tw = datetime.now(TW_TZ)
     all_quotes = fetch_all_quotes()
+    industry_map = fetch_industry_map()
     today = fetch_today_universe(all_quotes)
     if today.empty:
         print("WARN no live universe found; keeping previous live output if available")
@@ -1560,7 +1726,7 @@ def run_live_screener() -> dict[str, Any]:
             symbol=symbol,
             name=name,
             market=market,
-            industry=None,
+            industry=industry_for_symbol(symbol, name, industry_map),
             result=result,
             plan=result.trade_plan,
             close=safe_float(row.get("close")),
@@ -1583,7 +1749,7 @@ def run_live_screener() -> dict[str, Any]:
 
     if LEFT_SIDE_ENABLED:
         try:
-            left_payload = run_left_side_screener(all_quotes, fundamentals_cache)
+            left_payload = run_left_side_screener(all_quotes, fundamentals_cache, industry_map)
         except Exception as exc:
             print(f"WARN left-side screener failed: {exc}")
             left_payload = {
