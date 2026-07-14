@@ -180,6 +180,83 @@ def test_sentiment_dimension_is_reserved_placeholder() -> None:
     assert "sentiment_freeze" in frozen_sentiment.reasons
 
 
+def _squeeze_ignition_prices(days: int = 260) -> pd.DataFrame:
+    """打底末端出現壓縮點火：波動遞減至今日最低、今日溫和放量收紅。"""
+    dates = _trading_dates(days)
+    decline = np.linspace(100, 60.4, days - 60)
+    offsets = np.linspace(0.4, 0.0, 60)  # 波動逐日收斂，今日帶寬為期間最低
+    closes = np.concatenate([decline, 60.0 - offsets])
+    records = []
+    for idx, trade_date in enumerate(dates):
+        close = float(closes[idx])
+        is_today = idx == days - 1
+        volume = 4_000_000.0 if is_today else 2_000_000.0  # 今日量 = 前 5 日均量 2 倍
+        records.append(
+            {
+                "trade_date": trade_date,
+                "open": close * 0.995 if is_today else close,  # 今日收紅
+                "high": close * 1.002,
+                "low": close * 0.993,
+                "close": close,
+                "volume": volume,
+                "turnover": volume * close,
+            }
+        )
+    return pd.DataFrame(records)
+
+
+def test_ignition_dimension_fires_on_squeeze_breakout() -> None:
+    prices = _squeeze_ignition_prices()
+    indicators = add_technical_indicators(prices)
+
+    result = LeftSideScoringEngine().score(symbol="SQZ", indicators=indicators)
+
+    assert result.bb_bandwidth_percentile is not None
+    assert result.bb_bandwidth_percentile <= 5
+    for reason in ("bollinger_squeeze_extreme", "mild_ignition", "bullish_red_candle"):
+        assert reason in result.reasons
+    assert result.ignition_score == 10
+
+
+def test_trust_streak_buying_rewarded() -> None:
+    prices = _bottoming_prices()
+    indicators = add_technical_indicators(prices)
+    recent_dates = list(prices["trade_date"].tail(10))
+    institutional = pd.DataFrame(
+        {
+            "trade_date": recent_dates,
+            "foreign_buy_sell": 0.0,
+            # 近 5 日內連續 3 日買超
+            "investment_trust_buy_sell": [0, 0, 0, 0, 0, 800, 900, 700, -100, 200],
+            "dealer_buy_sell": 0.0,
+        }
+    )
+
+    result = LeftSideScoringEngine().score(
+        symbol="TRUST",
+        indicators=indicators,
+        institutional_rows=institutional,
+    )
+
+    assert "trust_streak_buying" in result.reasons
+    assert "trust_light_buying" in result.reasons
+
+
+def test_bollinger_squeeze_signal_intersection() -> None:
+    from taiwan_stock_screener.indicators.technical import bollinger_squeeze_signal
+
+    trigger = bollinger_squeeze_signal(_squeeze_ignition_prices())
+    assert trigger is not None
+    assert trigger["is_extreme_squeeze"]
+    assert trigger["is_mild_ignition"]
+    assert trigger["is_bullish_confirmation"]
+    assert trigger["is_squeeze_trigger"]
+
+    hot = bollinger_squeeze_signal(_momentum_prices())
+    assert hot is not None
+    assert not hot["is_squeeze_trigger"]
+
+
 def test_demo_output_includes_left_side_candidates() -> None:
     from scripts.run_screener import demo_output
 
