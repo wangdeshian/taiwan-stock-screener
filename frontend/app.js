@@ -74,7 +74,7 @@ const REASON_LABELS = {
   big_holder_accumulation: "千張大戶增持",
   trust_light_buying: "投信微幅買超",
   trust_streak_buying: "投信連續 3 日買超",
-  bollinger_squeeze_extreme: "布林帶寬最低 5% 極度壓縮",
+  bollinger_squeeze_extreme: "布林帶寬最低 10% 極度壓縮",
   mild_ignition: "溫和點火（量 1.5~3 倍）",
   bullish_red_candle: "收紅站上月線",
   still_profitable: "EPS 為正",

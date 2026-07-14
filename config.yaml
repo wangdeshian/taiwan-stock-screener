@@ -64,7 +64,7 @@ left_side:
     low_base_from_high_pct: 25
     bb_squeeze_lookback_days: 120
     bb_squeeze_percentile: 25
-    bb_squeeze_extreme_percentile: 5
+    bb_squeeze_extreme_percentile: 10
     stabilize_ma_days: 20
     ignition_volume_avg_days: 5
     ignition_volume_min_ratio: 1.5
