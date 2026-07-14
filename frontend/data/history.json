@@ -1,7 +1,7 @@
 [
   {
     "date": "2026-07-14",
-    "updated_at": "2026-07-14T17:15:19.533293+08:00",
+    "updated_at": "2026-07-14T23:33:52.692225+08:00",
     "source": "live",
     "data_sources": [
       "TWSE",
@@ -148,6 +148,25 @@
         "relative_strength_60d_pct": -6.89
       },
       {
+        "symbol": "2382",
+        "name": "廣達",
+        "market": "TWSE",
+        "industry": null,
+        "price_source": "FinMind",
+        "total_score": 72.0,
+        "entry_price": 380.0,
+        "stop_loss_price": 364.89,
+        "target_price_1": 410.21,
+        "risk_reward_ratio": 2.0,
+        "revenue_yoy_pct": 102.87,
+        "eps": 5.5,
+        "roe_pct": null,
+        "pe_ratio": 19.0,
+        "peg_ratio": 0.18,
+        "relative_strength_20d_pct": 0.86,
+        "relative_strength_60d_pct": -1.17
+      },
+      {
         "symbol": "4958",
         "name": "臻鼎-KY",
         "market": "TWSE",
@@ -222,25 +241,6 @@
         "peg_ratio": 0.21,
         "relative_strength_20d_pct": -5.14,
         "relative_strength_60d_pct": 1.24
-      },
-      {
-        "symbol": "2382",
-        "name": "廣達",
-        "market": "TWSE",
-        "industry": null,
-        "price_source": "FinMind",
-        "total_score": 63.75,
-        "entry_price": 380.0,
-        "stop_loss_price": 364.89,
-        "target_price_1": 410.21,
-        "risk_reward_ratio": 2.0,
-        "revenue_yoy_pct": 102.87,
-        "eps": 5.5,
-        "roe_pct": null,
-        "pe_ratio": 19.0,
-        "peg_ratio": 0.18,
-        "relative_strength_20d_pct": 0.86,
-        "relative_strength_60d_pct": -1.17
       },
       {
         "symbol": "6669",
@@ -397,18 +397,63 @@
     ],
     "left_side_candidates": [
       {
+        "symbol": "9914",
+        "name": "美利達",
+        "market": "TWSE",
+        "industry": null,
+        "total_score": 48.0,
+        "entry_price": 76.1,
+        "stop_loss_price": 72.1,
+        "target_price_1": 84.09,
+        "risk_reward_ratio": 2.0,
+        "short_balance_change_pct": -23.81,
+        "margin_balance_change_pct": 8.98,
+        "day_trade_ratio_pct": 28.45,
+        "big_holder_gain_pp": null
+      },
+      {
         "symbol": "5269",
         "name": "祥碩",
         "market": "TWSE",
         "industry": null,
-        "total_score": 35.6,
+        "total_score": 36.22,
         "entry_price": 1525.0,
         "stop_loss_price": 1430.71,
         "target_price_1": 1713.57,
         "risk_reward_ratio": 2.0,
-        "short_balance_change_pct": -3.21,
-        "margin_balance_change_pct": -16.31,
-        "day_trade_ratio_pct": 31.26,
+        "short_balance_change_pct": -4.43,
+        "margin_balance_change_pct": -17.68,
+        "day_trade_ratio_pct": 39.41,
+        "big_holder_gain_pp": null
+      },
+      {
+        "symbol": "2382",
+        "name": "廣達",
+        "market": "TWSE",
+        "industry": null,
+        "total_score": 31.5,
+        "entry_price": 380.0,
+        "stop_loss_price": 364.89,
+        "target_price_1": 410.21,
+        "risk_reward_ratio": 2.0,
+        "short_balance_change_pct": 7.71,
+        "margin_balance_change_pct": -2.69,
+        "day_trade_ratio_pct": 21.93,
+        "big_holder_gain_pp": null
+      },
+      {
+        "symbol": "00632R",
+        "name": "元大台灣50反1",
+        "market": "TWSE",
+        "industry": null,
+        "total_score": 30.66,
+        "entry_price": 10.35,
+        "stop_loss_price": 9.99,
+        "target_price_1": 11.06,
+        "risk_reward_ratio": 2.0,
+        "short_balance_change_pct": -1.31,
+        "margin_balance_change_pct": -1.62,
+        "day_trade_ratio_pct": 28.07,
         "big_holder_gain_pp": null
       }
     ]
