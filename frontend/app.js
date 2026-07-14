@@ -36,6 +36,7 @@ const DIM_LABELS = {
 
 const LEFT_DIM_LABELS = {
   base_structure_score: "底部結構",
+  ignition_score: "壓縮點火",
   short_covering_score: "空單回補",
   retail_capitulation_score: "散戶絕望",
   smart_money_score: "聰明錢",
@@ -72,6 +73,10 @@ const REASON_LABELS = {
   volume_dryup: "量能萎縮（無人問津）",
   big_holder_accumulation: "千張大戶增持",
   trust_light_buying: "投信微幅買超",
+  trust_streak_buying: "投信連續 3 日買超",
+  bollinger_squeeze_extreme: "布林帶寬最低 5% 極度壓縮",
+  mild_ignition: "溫和點火（量 1.5~3 倍）",
+  bullish_red_candle: "收紅站上月線",
   still_profitable: "EPS 為正",
   revenue_not_collapsing: "營收未惡化",
   sentiment_freeze: "網路聲量冰點",
@@ -168,6 +173,7 @@ function renderChipMetrics(item) {
     <section class="detail-section">
       <h3>${title}</h3>
       <div class="metric-grid">
+        ${metricCard("布林帶寬百分位", item.bb_bandwidth_pctile === null || item.bb_bandwidth_pctile === undefined ? "-" : `${money(item.bb_bandwidth_pctile)}%`, Number(item.bb_bandwidth_pctile) <= 5 ? "good" : "")}
         ${metricCard("借券賣出餘額變化", pct(item.short_balance_change_pct), Number(item.short_balance_change_pct) < 0 ? "good" : "")}
         ${metricCard("融資餘額變化", pct(item.margin_balance_change_pct), Number(item.margin_balance_change_pct) < 0 ? "good" : "")}
         ${metricCard("近 5 日當沖率", pct(item.day_trade_ratio_pct))}

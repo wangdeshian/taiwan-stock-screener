@@ -29,7 +29,10 @@ from taiwan_stock_screener.collectors.market_chip import (  # noqa: E402
     prefilter_left_symbols,
     refresh_chip_store,
 )
-from taiwan_stock_screener.indicators.technical import add_technical_indicators  # noqa: E402
+from taiwan_stock_screener.indicators.technical import (  # noqa: E402
+    add_technical_indicators,
+    bollinger_squeeze_signal,
+)
 from taiwan_stock_screener.scoring.engine import ScoringEngine  # noqa: E402
 from taiwan_stock_screener.scoring.left_side import LeftSideScoringEngine  # noqa: E402
 
@@ -48,6 +51,10 @@ LEFT_UNIVERSE_LIMIT = int(os.environ.get("SCREENER_LEFT_UNIVERSE", "50"))
 # 左側找的是「無人問津」的股票，門檻放寬：股價 5 元以上、日成交值 1 千萬以上
 LEFT_MIN_TURNOVER = float(os.environ.get("SCREENER_LEFT_MIN_TURNOVER", "10000000"))
 LEFT_MIN_CLOSE = float(os.environ.get("SCREENER_LEFT_MIN_CLOSE", "5"))
+# 布林壓縮點火海選（yfinance 批次），依規格：股價 > 10 元、成交值 > 1 億
+SQUEEZE_SCAN_ENABLED = os.environ.get("SCREENER_SQUEEZE_SCAN", "1").lower() not in {"0", "false", "no"}
+SQUEEZE_MIN_CLOSE = float(os.environ.get("SCREENER_SQUEEZE_MIN_CLOSE", "10"))
+SQUEEZE_MIN_TURNOVER = float(os.environ.get("SCREENER_SQUEEZE_MIN_TURNOVER", "100000000"))
 CHIP_STORE_PATH = ROOT / "frontend" / "data" / "chip_history.csv"
 OUTPUT = ROOT / "frontend" / "data" / "results.json"
 HISTORY = ROOT / "frontend" / "data" / "history.json"
@@ -975,6 +982,8 @@ def serialize_left_candidate(
         "smart_money_score": result.smart_money_score,
         "fundamental_safety_score": result.fundamental_safety_score,
         "sentiment_score": result.sentiment_score,
+        "ignition_score": result.ignition_score,
+        "bb_bandwidth_pctile": result.bb_bandwidth_percentile,
         "reasons": result.reasons,
         "close_price": round_optional(close, 2),
         "quote_date": quote_date,
@@ -1177,13 +1186,114 @@ def serialize_candidate(
     }
 
 
+def scan_bollinger_squeeze(
+    universe: pd.DataFrame,
+    thresholds: dict[str, Any],
+) -> tuple[pd.DataFrame, dict[str, pd.DataFrame]]:
+    """左側第一階段海選（yfinance 批次）：布林極度壓縮＋溫和點火＋收紅站上月線交集。
+
+    對海選池（股價 > SQUEEZE_MIN_CLOSE、成交值 > SQUEEZE_MIN_TURNOVER）批次下載
+    近 9 個月日 K，逐檔計算三大觸發條件。回傳 (命中表, 歷史快取)；歷史快取涵蓋
+    整個海選池，第二階段直接重用，省下逐檔抓歷史的 API 成本。
+    """
+    columns = ["symbol", "bb_bandwidth_pctile", "ignition_volume_ratio"]
+    empty = pd.DataFrame(columns=columns)
+    try:
+        import yfinance as yf
+    except ImportError:
+        print("WARN yfinance not installed; squeeze scan skipped")
+        return empty, {}
+
+    pool = universe[(universe["close"] > SQUEEZE_MIN_CLOSE) & (universe["turnover"] > SQUEEZE_MIN_TURNOVER)]
+    if pool.empty:
+        return empty, {}
+
+    ticker_map: dict[str, str] = {}
+    for _, row in pool.iterrows():
+        symbol = str(row["symbol"])
+        suffix = ".TW" if str(row.get("market", "TWSE")) == "TWSE" else ".TWO"
+        ticker_map[f"{symbol}{suffix}"] = symbol
+
+    histories: dict[str, pd.DataFrame] = {}
+    hits: list[dict[str, Any]] = []
+    tickers = list(ticker_map)
+    chunk_size = 100
+    for start in range(0, len(tickers), chunk_size):
+        chunk = tickers[start:start + chunk_size]
+        try:
+            data = yf.download(
+                tickers=chunk,
+                period="9mo",
+                interval="1d",
+                auto_adjust=True,
+                group_by="ticker",
+                threads=True,
+                progress=False,
+            )
+        except Exception as exc:
+            print(f"WARN yfinance batch download failed (offset {start}): {exc}")
+            continue
+        if data is None or data.empty:
+            continue
+        for ticker in chunk:
+            symbol = ticker_map[ticker]
+            try:
+                frame = data[ticker] if isinstance(data.columns, pd.MultiIndex) else data
+                frame = frame.dropna(subset=["Close"])
+            except Exception:
+                continue
+            if frame.empty:
+                continue
+            history = frame.reset_index().rename(
+                columns={
+                    "Date": "trade_date",
+                    "Open": "open",
+                    "High": "high",
+                    "Low": "low",
+                    "Close": "close",
+                    "Volume": "volume",
+                }
+            )
+            history["trade_date"] = pd.to_datetime(history["trade_date"]).dt.tz_localize(None)
+            for column in ("open", "high", "low", "close", "volume"):
+                history[column] = pd.to_numeric(history.get(column), errors="coerce").fillna(0)
+            history["turnover"] = history["close"] * history["volume"]
+            history = history[["trade_date", "open", "high", "low", "close", "volume", "turnover"]]
+            if len(history) < 60:
+                continue
+            histories[symbol] = history
+            signal = bollinger_squeeze_signal(
+                history,
+                lookback_days=int(thresholds["bb_squeeze_lookback_days"]),
+                extreme_percentile=float(thresholds["bb_squeeze_extreme_percentile"]),
+                volume_avg_days=int(thresholds["ignition_volume_avg_days"]),
+                volume_min_ratio=float(thresholds["ignition_volume_min_ratio"]),
+                volume_max_ratio=float(thresholds["ignition_volume_max_ratio"]),
+            )
+            if signal and signal["is_squeeze_trigger"]:
+                hits.append(
+                    {
+                        "symbol": symbol,
+                        "bb_bandwidth_pctile": signal["bandwidth_percentile"],
+                        "ignition_volume_ratio": signal["volume_ratio"],
+                    }
+                )
+
+    print(f"Squeeze scan: pool {len(pool)} → downloaded {len(histories)} → triggers {len(hits)}")
+    if not hits:
+        return empty, histories
+    hits_frame = pd.DataFrame(hits).sort_values("bb_bandwidth_pctile").reset_index(drop=True)
+    return hits_frame, histories
+
+
 def run_left_side_screener(all_quotes: pd.DataFrame, fundamentals_cache: dict[str, dict[str, Any]]) -> dict[str, Any]:
     """左側潛伏全市場兩段式漏斗。
 
-    第一段（零 API 成本）：以全市場籌碼快照（融資/借券/當沖）對整個股票池
-    計算「佈局起手式」訊號，挑出前 LEFT_UNIVERSE_LIMIT 檔。
-    第二段：只對入圍股抓取歷史股價、法人、大戶持股並執行完整六構面評分。
-    右側迴圈已抓過的股票直接重用快取，額外 API 成本僅限入圍的冷門股。
+    第一段（低 API 成本）有兩路訊號來源：
+    1. 布林壓縮點火海選（yfinance 批次）：極度壓縮＋溫和點火＋收紅站上月線的交集
+    2. 籌碼起手式（滾動快照）：借券/融資餘額下降、當沖冷清
+    第二段：只對入圍股抓取法人、大戶持股並執行完整評分；歷史股價優先重用
+    第一段已下載的快取。右側迴圈抓過的股票也直接重用。
     """
     left_engine = LeftSideScoringEngine()
     thresholds = left_engine.thresholds
@@ -1209,13 +1319,11 @@ def run_left_side_screener(all_quotes: pd.DataFrame, fundamentals_cache: dict[st
     payload["left_side_chip_dates"] = chip_summary["date_count"]
     payload["left_side_chip_rows"] = chip_summary["row_count"]
     payload["left_side_mode"] = "chip_signal"
-    if store.empty:
-        shortlist = build_left_observation_shortlist(universe, LEFT_UNIVERSE_LIMIT, exclude_symbols=momentum_symbols)
-        payload["left_side_mode"] = "observation_pool"
-        payload["left_side_shortlist_count"] = int(len(shortlist))
-        payload["left_side_note"] = "全市場籌碼快照暫時無法取得，目前先顯示流動性股票的左側潛伏觀察池。"
-    else:
-        shortlist = prefilter_left_symbols(
+
+    # 訊號一：籌碼起手式（借券/融資下降、當沖冷清）
+    chip_shortlist = pd.DataFrame()
+    if not store.empty:
+        chip_shortlist = prefilter_left_symbols(
             store,
             universe["symbol"].astype(str),
             limit=LEFT_UNIVERSE_LIMIT,
@@ -1224,15 +1332,44 @@ def run_left_side_screener(all_quotes: pd.DataFrame, fundamentals_cache: dict[st
             day_trade_max_pct=float(thresholds["day_trade_ratio_max_pct"]),
             lookback=int(thresholds["short_balance_lookback_days"]),
         )
-        payload["left_side_shortlist_count"] = int(len(shortlist))
+
+    # 訊號二：布林壓縮點火海選（不依賴籌碼快照，第一天就有訊號）
+    squeeze_hits = pd.DataFrame()
+    squeeze_histories: dict[str, pd.DataFrame] = {}
+    if SQUEEZE_SCAN_ENABLED:
+        try:
+            squeeze_hits, squeeze_histories = scan_bollinger_squeeze(universe, thresholds)
+        except Exception as exc:
+            print(f"WARN squeeze scan failed: {exc}")
+    payload["squeeze_hit_count"] = int(len(squeeze_hits))
+
+    # 合併：壓縮點火命中優先，其次籌碼訊號，總數上限 LEFT_UNIVERSE_LIMIT
+    frames = []
+    if not squeeze_hits.empty:
+        frames.append(squeeze_hits)
+    if not chip_shortlist.empty:
+        seen = set(squeeze_hits["symbol"].astype(str)) if not squeeze_hits.empty else set()
+        frames.append(chip_shortlist[~chip_shortlist["symbol"].astype(str).isin(seen)])
+    shortlist = (
+        pd.concat(frames, ignore_index=True, sort=False).head(LEFT_UNIVERSE_LIMIT)
+        if frames
+        else pd.DataFrame()
+    )
+    payload["left_side_shortlist_count"] = int(len(shortlist))
 
     if shortlist.empty:
         shortlist = build_left_observation_shortlist(universe, LEFT_UNIVERSE_LIMIT, exclude_symbols=momentum_symbols)
         payload["left_side_mode"] = "observation_pool"
         payload["left_side_shortlist_count"] = int(len(shortlist))
         payload["left_side_note"] = (
-            f"籌碼歷史目前只有 {chip_summary['date_count']} 個交易日，或借券/當沖欄位尚未完整，"
-            "正式起手式暫無入圍；目前先顯示左側潛伏觀察池排序。"
+            "壓縮點火與籌碼起手式今日皆無命中"
+            f"（籌碼歷史 {chip_summary['date_count']} 個交易日），先顯示左側潛伏觀察池排序。"
+        )
+    elif not squeeze_hits.empty:
+        payload["left_side_note"] = (
+            f"布林壓縮點火命中 {len(squeeze_hits)} 檔"
+            + (f"、籌碼起手式 {len(chip_shortlist)} 檔" if not chip_shortlist.empty else "")
+            + "。"
         )
     print(
         f"Left-side funnel: universe {len(universe)} → "
@@ -1266,7 +1403,11 @@ def run_left_side_screener(all_quotes: pd.DataFrame, fundamentals_cache: dict[st
                 revenue_row = cached["revenue_row"]
                 financial_row = cached["financial_row"]
             else:
-                history, price_source = fetch_price_history(symbol, market)
+                # 歷史股價優先重用海選階段已下載的 yfinance 快取
+                history = squeeze_histories.get(symbol, pd.DataFrame())
+                price_source = "yfinance" if not history.empty else "none"
+                if history.empty:
+                    history, price_source = fetch_price_history(symbol, market)
                 history = merge_quote_into_history(history, quote)
                 if history.empty or len(history) < 60:
                     continue

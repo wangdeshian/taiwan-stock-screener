@@ -64,7 +64,11 @@ left_side:
     low_base_from_high_pct: 25
     bb_squeeze_lookback_days: 120
     bb_squeeze_percentile: 25
+    bb_squeeze_extreme_percentile: 5
     stabilize_ma_days: 20
+    ignition_volume_avg_days: 5
+    ignition_volume_min_ratio: 1.5
+    ignition_volume_max_ratio: 3
     short_balance_lookback_days: 20
     short_balance_drop_pct: 15
     margin_lookback_days: 20
@@ -74,14 +78,17 @@ left_side:
     holder_lookback_weeks: 8
     holder_ratio_gain_pp: 0.5
     trust_days: 10
+    trust_streak_days: 3
+    trust_streak_window: 5
     revenue_yoy_floor_pct: -20
   weights:
-    base_structure: 25
-    short_covering: 20
+    base_structure: 20
+    short_covering: 15
     retail_capitulation: 20
     smart_money: 20
     fundamental_safety: 10
     sentiment: 5
+    ignition: 10
 
 trade_plan:
   atr_stop_multiplier: 1.5

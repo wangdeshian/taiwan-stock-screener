@@ -48,6 +48,62 @@ def add_technical_indicators(prices: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def bollinger_squeeze_signal(
+    prices: pd.DataFrame,
+    lookback_days: int = 120,
+    extreme_percentile: float = 5,
+    volume_avg_days: int = 5,
+    volume_min_ratio: float = 1.5,
+    volume_max_ratio: float = 3,
+) -> dict[str, float | bool] | None:
+    """布林通道極度壓縮＋溫和點火的海選訊號（左側潛伏第一階段用）。
+
+    三大觸發條件（交集）：
+    1. 絕對壓縮：今日帶寬處於近 lookback_days 的最低 extreme_percentile 百分位內
+    2. 溫和點火：今日量為前 volume_avg_days 日均量的 min~max 倍（排除已噴出爆量股）
+    3. 趨勢確認：收盤 > 20MA 且收紅（Close > Open）
+
+    回傳 dict（含各條件布林值與 is_squeeze_trigger 交集結果），資料不足時回傳 None。
+    """
+    required = {"open", "close", "volume"}
+    if prices.empty or not required.issubset(prices.columns):
+        return None
+    df = prices.sort_values("trade_date") if "trade_date" in prices.columns else prices
+    close = df["close"].astype(float)
+    if len(close) < 40:
+        return None
+
+    middle = close.rolling(window=20, min_periods=20).mean()
+    std = close.rolling(window=20, min_periods=20).std()
+    safe_middle = middle.where(middle != 0)
+    bandwidth = (4 * std) / safe_middle  # (upper-lower)/middle = 4σ/MA20
+
+    recent = bandwidth.tail(lookback_days).dropna()
+    if len(recent) < 20:
+        return None
+    percentile = float((recent <= recent.iloc[-1]).mean() * 100)
+    is_extreme_squeeze = percentile <= extreme_percentile
+
+    volumes = df["volume"].astype(float)
+    prior_avg = float(volumes.iloc[-(volume_avg_days + 1):-1].mean()) if len(volumes) > volume_avg_days else 0.0
+    volume_ratio = float(volumes.iloc[-1]) / prior_avg if prior_avg > 0 else 0.0
+    is_mild_ignition = volume_min_ratio <= volume_ratio < volume_max_ratio
+
+    last_close = float(close.iloc[-1])
+    last_open = float(df["open"].astype(float).iloc[-1])
+    last_ma20 = float(middle.iloc[-1]) if pd.notna(middle.iloc[-1]) else 0.0
+    is_bullish_confirmation = last_close > last_ma20 and last_close > last_open
+
+    return {
+        "bandwidth_percentile": round(percentile, 1),
+        "volume_ratio": round(volume_ratio, 2),
+        "is_extreme_squeeze": is_extreme_squeeze,
+        "is_mild_ignition": is_mild_ignition,
+        "is_bullish_confirmation": is_bullish_confirmation,
+        "is_squeeze_trigger": is_extreme_squeeze and is_mild_ignition and is_bullish_confirmation,
+    }
+
+
 def rsi(close: pd.Series, window: int = 14) -> pd.Series:
     delta = close.diff()
     gain = delta.clip(lower=0).rolling(window=window, min_periods=1).mean()

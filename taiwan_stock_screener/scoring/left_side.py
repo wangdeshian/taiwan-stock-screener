@@ -18,9 +18,11 @@ class LeftSideScoreBreakdown:
     smart_money_score: float
     fundamental_safety_score: float
     sentiment_score: float
+    ignition_score: float
     is_candidate: bool
     reasons: list[str] = field(default_factory=list)
     trade_plan: TradePlan | None = None
+    bb_bandwidth_percentile: float | None = None
 
 
 class LeftSideScoringEngine:
@@ -60,10 +62,18 @@ class LeftSideScoringEngine:
         smart_money = self._smart_money_score(holder_rows, institutional_rows, latest, reasons)
         fundamental_safety = self._fundamental_safety_score(revenue_row, financial_row, reasons)
         sentiment = self._sentiment_score(sentiment_ratio, reasons)
+        bandwidth_percentile = self._bandwidth_percentile(indicators)
+        ignition = self._ignition_score(indicators, bandwidth_percentile, reasons)
 
         total = min(
             100.0,
-            base_structure + short_covering + retail_capitulation + smart_money + fundamental_safety + sentiment,
+            base_structure
+            + short_covering
+            + retail_capitulation
+            + smart_money
+            + fundamental_safety
+            + sentiment
+            + ignition,
         )
         plan = build_trade_plan(float(latest["close"]), float(latest.get("atr14", 0) or 0), total)
         return LeftSideScoreBreakdown(
@@ -75,9 +85,11 @@ class LeftSideScoringEngine:
             smart_money_score=round(smart_money, 2),
             fundamental_safety_score=round(fundamental_safety, 2),
             sentiment_score=round(sentiment, 2),
+            ignition_score=round(ignition, 2),
             is_candidate=total >= self.candidate_score,
             reasons=reasons,
             trade_plan=plan,
+            bb_bandwidth_percentile=None if bandwidth_percentile is None else round(bandwidth_percentile, 1),
         )
 
     def _base_structure_score(self, indicators: pd.DataFrame, reasons: list[str]) -> float:
@@ -94,15 +106,10 @@ class LeftSideScoringEngine:
                 score += weight * 0.4
                 reasons.append("low_base")
 
-        bandwidth = self._bollinger_bandwidth(indicators)
-        if bandwidth is not None:
-            lookback = int(self.thresholds["bb_squeeze_lookback_days"])
-            recent = bandwidth.tail(lookback).dropna()
-            if len(recent) >= 20:
-                percentile = float((recent <= recent.iloc[-1]).mean() * 100)
-                if percentile <= float(self.thresholds["bb_squeeze_percentile"]):
-                    score += weight * 0.35
-                    reasons.append("bollinger_squeeze")
+        percentile = self._bandwidth_percentile(indicators)
+        if percentile is not None and percentile <= float(self.thresholds["bb_squeeze_percentile"]):
+            score += weight * 0.35
+            reasons.append("bollinger_squeeze")
 
         ma_days = int(self.thresholds["stabilize_ma_days"])
         ma20 = float(latest.get("ma20", 0) or 0)
@@ -193,8 +200,22 @@ class LeftSideScoringEngine:
             volume = float(latest.get("volume", 0) or 0)
             # 投信「微幅」買超：有買但未引起市場注意（佔量比低）
             if trust_sum > 0 and (volume <= 0 or trust_sum / (volume * len(recent)) * 100 < 1):
-                score += weight * 0.4
+                score += weight * 0.25
                 reasons.append("trust_light_buying")
+
+            # 投信近 N 日內出現連續 M 日買超（默默連續吸籌）
+            window = recent.tail(int(self.thresholds["trust_streak_window"]))
+            streak_target = int(self.thresholds["trust_streak_days"])
+            streak = 0
+            has_streak = False
+            for value in window["investment_trust_buy_sell"]:
+                streak = streak + 1 if float(value) > 0 else 0
+                if streak >= streak_target:
+                    has_streak = True
+                    break
+            if has_streak:
+                score += weight * 0.15
+                reasons.append("trust_streak_buying")
 
         return min(weight, score)
 
@@ -214,6 +235,54 @@ class LeftSideScoringEngine:
             if yoy is not None and float(yoy) >= float(self.thresholds["revenue_yoy_floor_pct"]):
                 score += weight * 0.4
                 reasons.append("revenue_not_collapsing")
+        return min(weight, score)
+
+    def _bandwidth_percentile(self, indicators: pd.DataFrame) -> float | None:
+        """今日布林帶寬在近 N 日中的百分位（越低代表壓縮越極端）。"""
+        bandwidth = self._bollinger_bandwidth(indicators)
+        if bandwidth is None:
+            return None
+        lookback = int(self.thresholds["bb_squeeze_lookback_days"])
+        recent = bandwidth.tail(lookback).dropna()
+        if len(recent) < 20:
+            return None
+        return float((recent <= recent.iloc[-1]).mean() * 100)
+
+    def _ignition_score(
+        self,
+        indicators: pd.DataFrame,
+        bandwidth_percentile: float | None,
+        reasons: list[str],
+    ) -> float:
+        """壓縮點火構面：極度壓縮＋溫和放量＋收紅站上月線（起漲點訊號）。"""
+        weight = float(self.weights["ignition"])
+        latest = indicators.iloc[-1]
+        score = 0.0
+
+        if bandwidth_percentile is not None and bandwidth_percentile <= float(
+            self.thresholds["bb_squeeze_extreme_percentile"]
+        ):
+            score += weight * 0.4
+            reasons.append("bollinger_squeeze_extreme")
+
+        # 溫和點火：今日量是前 N 日均量的 1.5~3 倍（排除已噴出的爆量股）
+        avg_days = int(self.thresholds["ignition_volume_avg_days"])
+        volumes = indicators["volume"].astype(float)
+        if len(volumes) > avg_days:
+            prior_avg = float(volumes.iloc[-(avg_days + 1):-1].mean())
+            if prior_avg > 0:
+                ratio = float(volumes.iloc[-1]) / prior_avg
+                min_ratio = float(self.thresholds["ignition_volume_min_ratio"])
+                max_ratio = float(self.thresholds["ignition_volume_max_ratio"])
+                if min_ratio <= ratio < max_ratio:
+                    score += weight * 0.35
+                    reasons.append("mild_ignition")
+
+        close = float(latest["close"])
+        if close > float(latest.get("ma20", 0) or 0) and close > float(latest.get("open", close) or close):
+            score += weight * 0.25
+            reasons.append("bullish_red_candle")
+
         return min(weight, score)
 
     def _sentiment_score(self, sentiment_ratio: float | None, reasons: list[str]) -> float:
