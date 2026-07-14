@@ -122,12 +122,19 @@ function metricCard(label, value, tone = "") {
     </div>`;
 }
 
+function scoreValue(item, key) {
+  if (item.strategy === "left_side" && key === "sentiment_score" && item.sentiment_available === false) {
+    return "未接";
+  }
+  return money(item[key]);
+}
+
 function renderScoreBreakdown(item) {
   const labels = item.strategy === "left_side" ? LEFT_DIM_LABELS : DIM_LABELS;
   return Object.entries(labels).map(([key, label]) => `
     <div class="detail-dim">
       <span class="dim-label">${label}</span>
-      <span class="dim-val">${money(item[key])}</span>
+      <span class="dim-val">${scoreValue(item, key)}</span>
     </div>
   `).join("");
 }
@@ -271,7 +278,7 @@ function buildDetailRow(item, colSpan) {
   td.innerHTML = `
     <div class="detail-grid">${renderScoreBreakdown(item)}</div>
     <div class="reason-tags">${renderReasonTags(item)}</div>
-    ${isLeft ? renderChipMetrics(item) : renderFundamentalMetrics(item) + renderStrengthMetrics(item)}
+    ${isLeft ? renderChipMetrics(item) + renderFundamentalMetrics(item) : renderFundamentalMetrics(item) + renderStrengthMetrics(item)}
     ${renderTradePlan(item)}
     ${isLeft ? "" : renderLivermore(item)}
   `;
