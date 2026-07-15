@@ -914,52 +914,56 @@ def fetch_revenue_finmind(symbol: str) -> dict[str, Any] | None:
     return {"revenue_yoy_pct": round(yoy_pct, 2)}
 
 
-def _latest_statement_value(frame: pd.DataFrame, exact_types: set[str], contains_any: tuple[str, ...] = ()) -> float | None:
+def _latest_statement_value(frame: pd.DataFrame, exact_types: list[str]) -> float | None:
+    """依優先序取最新一期的指定財報科目值（只做精確比對）。
+
+    模糊字串比對（例如 contains "PROFITLOSS"）會誤抓到營業利益、稅前淨利、
+    其他權益等科目，導致 ROE 算出 ±數百 % 的離譜值，故只允許精確科目名。
+    """
     if frame.empty or "type" not in frame.columns or "value" not in frame.columns:
         return None
-    type_text = frame["type"].astype(str)
-    normalized = type_text.str.upper().str.replace(r"[^A-Z0-9]", "", regex=True)
-    mask = normalized.isin(exact_types)
-    for keyword in contains_any:
-        mask = mask | normalized.str.contains(keyword, na=False)
-    rows = frame[mask].sort_values("date")
-    if rows.empty:
-        return None
-    value = pd.to_numeric(rows.iloc[-1]["value"], errors="coerce")
-    return float(value) if pd.notna(value) else None
+    normalized = frame["type"].astype(str).str.upper().str.replace(r"[^A-Z0-9]", "", regex=True)
+    for exact in exact_types:
+        rows = frame[normalized == exact].sort_values("date")
+        if rows.empty:
+            continue
+        value = pd.to_numeric(rows.iloc[-1]["value"], errors="coerce")
+        if pd.notna(value):
+            return float(value)
+    return None
 
 
 def extract_financial_metrics(frame: pd.DataFrame) -> dict[str, Any] | None:
     if frame.empty or "type" not in frame.columns or "value" not in frame.columns:
         return None
     result: dict[str, Any] = {}
-    eps = _latest_statement_value(frame, {"EPS"})
+    eps = _latest_statement_value(frame, ["EPS"])
     if eps is not None:
         result["eps"] = eps
 
     net_income = _latest_statement_value(
         frame,
-        {
-            "PROFITLOSS",
+        [
             "PROFITLOSSATTRIBUTABLETOOWNERSOFPARENT",
-            "NETINCOME",
             "NETINCOMEATTRIBUTABLETOOWNERSOFPARENT",
-        },
-        ("PROFITLOSS", "NETINCOME"),
+            "PROFITLOSS",
+            "NETINCOME",
+        ],
     )
     equity = _latest_statement_value(
         frame,
-        {
-            "EQUITY",
-            "TOTAL_EQUITY",
-            "TOTALEQUITY",
+        [
             "EQUITYATTRIBUTABLETOOWNERSOFPARENT",
+            "TOTALEQUITY",
             "TOTALSTOCKHOLDERSEQUITY",
-        },
-        ("EQUITYATTRIBUTABLE", "TOTALEQUITY", "STOCKHOLDERSEQUITY"),
+            "EQUITY",
+        ],
     )
     if net_income is not None and equity and equity > 0:
-        result["roe_pct"] = round(net_income / equity * 4 * 100, 2)
+        roe_pct = net_income / equity * 4 * 100  # 單季年化估算
+        # 年化估算超出 ±100% 幾乎都是抓錯科目或單位不一致，寧缺勿錯
+        if -100 <= roe_pct <= 100:
+            result["roe_pct"] = round(roe_pct, 2)
 
     return result if result else None
 
