@@ -62,3 +62,30 @@ def test_extract_financial_metrics_can_estimate_annualized_roe() -> None:
     result = extract_financial_metrics(frame)
 
     assert result == {"eps": 2.0, "roe_pct": 40.0}
+
+
+def test_extract_financial_metrics_rejects_absurd_roe() -> None:
+    # 抓錯科目（權益值過小）導致年化 ROE 超出 ±100% 時，寧缺勿錯
+    frame = pd.DataFrame(
+        [
+            {"date": "2026-03-31", "type": "EPS", "value": "2"},
+            {"date": "2026-03-31", "type": "ProfitLoss", "value": "1000"},
+            {"date": "2026-03-31", "type": "Equity", "value": "600"},
+        ]
+    )
+
+    result = extract_financial_metrics(frame)
+
+    assert result == {"eps": 2.0}
+
+
+def test_extract_financial_metrics_ignores_fuzzy_lookalike_types() -> None:
+    # 不得誤抓 ProfitLossBeforeTax / OtherEquityInterest 這類相似科目
+    frame = pd.DataFrame(
+        [
+            {"date": "2026-03-31", "type": "ProfitLossFromOperatingActivities", "value": "-500"},
+            {"date": "2026-03-31", "type": "OtherEquityInterest", "value": "5"},
+        ]
+    )
+
+    assert extract_financial_metrics(frame) is None

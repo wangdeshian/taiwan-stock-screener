@@ -180,7 +180,7 @@ function renderChipMetrics(item) {
     <section class="detail-section">
       <h3>${title}</h3>
       <div class="metric-grid">
-        ${metricCard("布林帶寬百分位", item.bb_bandwidth_pctile === null || item.bb_bandwidth_pctile === undefined ? "-" : `${money(item.bb_bandwidth_pctile)}%`, Number(item.bb_bandwidth_pctile) <= 5 ? "good" : "")}
+        ${metricCard("布林帶寬百分位", item.bb_bandwidth_pctile === null || item.bb_bandwidth_pctile === undefined ? "-" : `${money(item.bb_bandwidth_pctile)}%`, Number(item.bb_bandwidth_pctile) <= 10 ? "good" : "")}
         ${metricCard("借券賣出餘額變化", pct(item.short_balance_change_pct), Number(item.short_balance_change_pct) < 0 ? "good" : "")}
         ${metricCard("融資餘額變化", pct(item.margin_balance_change_pct), Number(item.margin_balance_change_pct) < 0 ? "good" : "")}
         ${metricCard("近 5 日當沖率", pct(item.day_trade_ratio_pct))}
