@@ -933,7 +933,10 @@ def _latest_statement_value(frame: pd.DataFrame, exact_types: list[str]) -> floa
     return None
 
 
-def extract_financial_metrics(frame: pd.DataFrame) -> dict[str, Any] | None:
+def extract_financial_metrics(
+    frame: pd.DataFrame,
+    balance_frame: pd.DataFrame | None = None,
+) -> dict[str, Any] | None:
     if frame.empty or "type" not in frame.columns or "value" not in frame.columns:
         return None
     result: dict[str, Any] = {}
@@ -946,19 +949,23 @@ def extract_financial_metrics(frame: pd.DataFrame) -> dict[str, Any] | None:
         [
             "PROFITLOSSATTRIBUTABLETOOWNERSOFPARENT",
             "NETINCOMEATTRIBUTABLETOOWNERSOFPARENT",
+            "INCOMEAFTERTAXES",
+            "TOTALCONSOLIDATEDPROFITFORTHEPERIOD",
             "PROFITLOSS",
             "NETINCOME",
         ],
     )
-    equity = _latest_statement_value(
-        frame,
-        [
-            "EQUITYATTRIBUTABLETOOWNERSOFPARENT",
-            "TOTALEQUITY",
-            "TOTALSTOCKHOLDERSEQUITY",
-            "EQUITY",
-        ],
-    )
+    equity_types = [
+        "EQUITYATTRIBUTABLETOOWNERSOFPARENT",
+        "EQUITYATTRIBUTABLETOOWNERSOFTHEPARENT",
+        "TOTALEQUITY",
+        "TOTALSTOCKHOLDERSEQUITY",
+        "EQUITY",
+    ]
+    # 權益科目在資產負債表 dataset；為相容也順便試損益表
+    equity = _latest_statement_value(frame, equity_types)
+    if equity is None and balance_frame is not None:
+        equity = _latest_statement_value(balance_frame, equity_types)
     if net_income is not None and equity and equity > 0:
         roe_pct = net_income / equity * 4 * 100  # 單季年化估算
         # 年化估算超出 ±100% 幾乎都是抓錯科目或單位不一致，寧缺勿錯
@@ -968,31 +975,49 @@ def extract_financial_metrics(frame: pd.DataFrame) -> dict[str, Any] | None:
     return result if result else None
 
 
-def fetch_financial_finmind(symbol: str) -> dict[str, Any] | None:
-    """Fetch latest quarterly EPS (and ROE if present) from FinMind financial statements.
+_STATEMENT_TYPES_LOGGED = False
 
-    Returns a dict with ``eps`` and optionally ``roe_pct`` keys, or None on failure.
+
+def fetch_financial_finmind(symbol: str) -> dict[str, Any] | None:
+    """Fetch latest quarterly EPS + annualized ROE estimate from FinMind.
+
+    EPS/淨利來自損益表（TaiwanStockFinancialStatements）；權益總額在資產負債表
+    （TaiwanStockBalanceSheet），需要多一次查詢。第一檔股票會把兩個 dataset 的
+    科目清單印進 log，之後若科目名對不上可直接從執行紀錄查到正確名稱。
     """
+    global _STATEMENT_TYPES_LOGGED
     if not FINMIND_TOKEN:
         return None
     end = date.today()
     start = end - timedelta(days=730)  # 2 years to capture latest quarterly report
-    params = {
-        "dataset": "TaiwanStockFinancialStatements",
-        "data_id": symbol,
-        "start_date": start.isoformat(),
-        "end_date": end.isoformat(),
-    }
+    date_params = {"start_date": start.isoformat(), "end_date": end.isoformat()}
     try:
-        payload = finmind_get(params, timeout=20)
+        payload = finmind_get({"dataset": "TaiwanStockFinancialStatements", "data_id": symbol, **date_params}, timeout=20)
         data = payload.get("data", [])
     except Exception as exc:
         print(f"WARN FinMind financial statements failed for {symbol}: {exc}")
         return None
     if not data:
         return None
+    statements = pd.DataFrame(data)
 
-    return extract_financial_metrics(pd.DataFrame(data))
+    balance: pd.DataFrame | None = None
+    try:
+        time.sleep(0.1)
+        payload = finmind_get({"dataset": "TaiwanStockBalanceSheet", "data_id": symbol, **date_params}, timeout=20)
+        balance_data = payload.get("data", [])
+        if balance_data:
+            balance = pd.DataFrame(balance_data)
+    except Exception as exc:
+        print(f"WARN FinMind balance sheet failed for {symbol}: {exc}")
+
+    if not _STATEMENT_TYPES_LOGGED and "type" in statements.columns:
+        _STATEMENT_TYPES_LOGGED = True
+        print(f"FinMind statement types ({symbol}): {sorted(statements['type'].astype(str).unique())[:40]}")
+        if balance is not None and "type" in balance.columns:
+            print(f"FinMind balance types ({symbol}): {sorted(balance['type'].astype(str).unique())[:40]}")
+
+    return extract_financial_metrics(statements, balance)
 
 
 def chip_change_pct(chip_rows: pd.DataFrame | None, column: str, lookback: int = 20) -> float | None:
