@@ -89,3 +89,17 @@ def test_extract_financial_metrics_ignores_fuzzy_lookalike_types() -> None:
     )
 
     assert extract_financial_metrics(frame) is None
+
+
+def test_extract_financial_metrics_reads_equity_from_balance_sheet() -> None:
+    statements = pd.DataFrame(
+        [
+            {"date": "2026-03-31", "type": "EPS", "value": "2"},
+            {"date": "2026-03-31", "type": "IncomeAfterTaxes", "value": "50"},
+        ]
+    )
+    balance = pd.DataFrame([{"date": "2026-03-31", "type": "Equity", "value": "1000"}])
+
+    result = extract_financial_metrics(statements, balance)
+
+    assert result == {"eps": 2.0, "roe_pct": 20.0}
