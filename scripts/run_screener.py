@@ -1719,7 +1719,13 @@ def run_live_screener() -> dict[str, Any]:
         str(row["symbol"]): industry_for_symbol(str(row["symbol"]), str(row.get("name", "")), industry_map)
         for _, row in all_quotes.iterrows()
     }
-    symbol_industries = {symbol: industry for symbol, industry in symbol_industries.items() if industry}
+    # ETF/ETN 不是產業：其整體成交值恆常巨大，若當成板塊會讓所有 ETF
+    # 永久拿到「板塊資金領先」加分，違背產業資金共振的本意
+    symbol_industries = {
+        symbol: industry
+        for symbol, industry in symbol_industries.items()
+        if industry and industry != "ETF/ETN"
+    }
     sector_payloads, sector_snapshot = compute_sector_resonance(
         all_quotes,
         symbol_industries,
