@@ -1,6 +1,6 @@
 # Taiwan Stock AI Screener V3
 
-台股 AI 選股分析平台 V3，定位為決策輔助系統，不包含券商登入、自動下單、改單、刪單、庫存同步或即時成交回報。
+台股 AI 選股分析平台 V3，定位為決策輔助系統。系統只產生選股、評分、風險報酬與交易計畫分析，不包含券商登入、自動下單、改單、刪單、庫存同步或即時成交回報。
 
 ## 功能
 
@@ -10,18 +10,31 @@
 - 技術指標：MA、EMA、RSI、MACD、KD、ATR、Bollinger Bands、OBV、ADX、VWAP、量比
 - 雙策略 100 分 AI 評分模型：
   - 右側動能：趨勢、量能、法人、籌碼、基本面、產業、風報比
-  - 左側潛伏：底部結構（低基期＋布林通道壓縮）、空單回補（借券賣出餘額大減）、
-    散戶絕望（融資大減＋當沖冷清＋量能萎縮）、聰明錢（千張大戶增持＋投信微幅買超）、
-    基本面安全、網路聲量情緒（預留欄位，爬蟲尚未串接）
+  - 左側潛伏：底部結構、壓縮點火、空單回補、散戶絕望、聰明錢、基本面安全、重大事件催化劑、產業資金共振
+- 左側潛伏最新 100 分權重：
+  - 底部結構：20
+  - 壓縮點火：10
+  - 空單回補：15
+  - 散戶絕望：10
+  - 聰明錢：15
+  - 基本面安全：10
+  - 重大事件催化劑：10
+  - 產業資金共振：10
+- 網路聲量情緒目前保留為預留欄位，尚未納入 100 分模型；前端以「未接」顯示，不用 0 分誤導判斷。
 - 左側潛伏採全市場兩段式漏斗：
   1. 以 TWSE/TPEx 全市場批次報表（MI_MARGN 融資融券、TWT93U 借券賣出餘額、TWTB4U 當沖統計）
      建立滾動籌碼快照（`frontend/data/chip_history.csv`，自動回補歷史、保留 45 個交易日）
-  2. 對全市場（收盤 > 10 元、成交值 > 3 千萬）計算「佈局起手式」訊號初選，
-     入圍前 50 檔才抓取完整歷史股價與 FinMind 資料做六構面評分
+  2. 對全市場流動性股票計算兩路初選訊號：
+     - 籌碼起手式：借券賣出餘額下降、融資餘額下降、當沖冷清
+     - 布林壓縮點火：布林帶寬極度壓縮、溫和放量、收紅站上月線
+  3. 入圍前 50 檔才抓取完整歷史股價、法人、大戶、月營收與財報資料做完整評分
 - 左側策略深度籌碼數據源：交易所批次快照＋FinMind（大戶持股、法人、個股籌碼備援）
+- 重大事件催化劑：支援 `frontend/data/catalysts.json` 輸入法說會、除權息、股東會或重大事件日期，計算事件倒數交易日與催化分數
+- 產業資金共振：依全市場成交值與產業分類計算產業成交比重、前 20% 排名、五日均值跳升，並累積 `frontend/data/sector_history.json`
 - Top 20 候選股 API
 - 交易計畫分析：建議進場、替代進場、停損、目標價、風險報酬比
 - Firebase Hosting ready 靜態前端
+- GitHub Pages 靜態前端，`Daily Stock Screener` workflow 會更新資料並發布到 `gh-pages`
 - Pytest 測試
 - GitHub Actions CI
 
@@ -45,11 +58,13 @@ taiwan-stock-screener/
 ├── taiwan_stock_screener/
 │   ├── api/
 │   ├── backtest/
+│   ├── catalysts/
 │   ├── collectors/
 │   ├── database/
 │   ├── indicators/
 │   ├── jobs/
 │   ├── scoring/
+│   ├── sector/
 │   ├── services/
 │   └── strategy/
 ├── dashboard/
@@ -97,7 +112,7 @@ firebase deploy --only hosting
 
 ## GitHub Pages 發布
 
-已加入 GitHub Pages 自動部署 workflow。推送到 `main` 後會部署 `frontend/`。
+目前網站由 `Daily Stock Screener` workflow 產生最新篩選資料，提交 `frontend/data/*.json`，並同步靜態前端到 `gh-pages` 分支。
 
 預期網址：
 
@@ -105,19 +120,7 @@ firebase deploy --only hosting
 https://wangdeshian.github.io/taiwan-stock-screener/
 ```
 
-若 Repository 維持 Private，GitHub Pages 是否可公開瀏覽取決於 GitHub 帳號方案與 Pages 設定。若 Actions 顯示 Pages 尚未啟用，請到 GitHub Repository 的 `Settings -> Pages`，將 Source 設為 `GitHub Actions`。
-
-預設前端會讀取：
-
-```text
-http://127.0.0.1:8000
-```
-
-可以在瀏覽器 localStorage 設定：
-
-```js
-localStorage.setItem("TAIWAN_STOCK_API_BASE_URL", "https://your-api.example.com")
-```
+若 Repository 維持 Private，GitHub Pages 是否可公開瀏覽取決於 GitHub 帳號方案與 Pages 設定。此專案目前以前端靜態 JSON 為主要展示方式，預設讀取 `frontend/data/results.json` 與 `frontend/data/history.json`。
 
 ## 環境變數
 
@@ -126,6 +129,7 @@ localStorage.setItem("TAIWAN_STOCK_API_BASE_URL", "https://your-api.example.com"
 ```text
 FINMIND_TOKEN=
 FRED_API_KEY=
+FUGLE_API_KEY=
 DATABASE_URL=sqlite:///./data/taiwan_stock_screener.db
 ```
 
@@ -155,3 +159,5 @@ pytest
 - 真實資料來源 endpoint 與欄位可能會因資料提供者調整而需要更新 mapping。
 - Firestore 同步與 Cloud Messaging 在此版本提供結構與前端基礎，尚未啟用雲端認證流程。
 - 評分模型目前為規則型模型，後續可加入回測績效自動調整權重。
+- 重大事件催化劑目前採本機 JSON 輸入，可後續再串 MOPS 或其他事件資料源。
+- 網路聲量情緒保留欄位但尚未串接爬蟲，不納入目前左側 100 分模型。
