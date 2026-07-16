@@ -81,14 +81,19 @@ left_side:
     trust_streak_days: 3
     trust_streak_window: 5
     revenue_yoy_floor_pct: -20
+    catalyst_lookahead_trading_days: 10
+    sector_rank_threshold_pct: 20
+    sector_turnover_jump_pct: 50
   weights:
     base_structure: 20
-    short_covering: 15
-    retail_capitulation: 20
-    smart_money: 20
-    fundamental_safety: 10
-    sentiment: 5
     ignition: 10
+    short_covering: 15
+    retail_capitulation: 10
+    smart_money: 15
+    fundamental_safety: 10
+    catalyst: 10
+    sector_resonance: 10
+    sentiment: 0
 
 trade_plan:
   atr_stop_multiplier: 1.5

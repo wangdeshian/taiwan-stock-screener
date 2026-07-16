@@ -29,12 +29,23 @@ from taiwan_stock_screener.collectors.market_chip import (  # noqa: E402
     prefilter_left_symbols,
     refresh_chip_store,
 )
+from taiwan_stock_screener.config import get_settings  # noqa: E402
 from taiwan_stock_screener.indicators.technical import (  # noqa: E402
     add_technical_indicators,
     bollinger_squeeze_signal,
 )
 from taiwan_stock_screener.scoring.engine import ScoringEngine  # noqa: E402
 from taiwan_stock_screener.scoring.left_side import LeftSideScoringEngine  # noqa: E402
+from taiwan_stock_screener.catalysts.events import (  # noqa: E402
+    load_catalyst_events,
+    nearest_catalyst_payload,
+)
+from taiwan_stock_screener.sector.resonance import (  # noqa: E402
+    compute_sector_resonance,
+    empty_sector_payload,
+    load_sector_history,
+    update_sector_history,
+)
 
 TW_TZ = timezone(timedelta(hours=8))
 FINMIND_TOKEN = os.environ.get("FINMIND_TOKEN", "").replace("\r", "").replace("\n", "").strip()
@@ -57,6 +68,8 @@ SQUEEZE_MIN_CLOSE = float(os.environ.get("SCREENER_SQUEEZE_MIN_CLOSE", "10"))
 SQUEEZE_MIN_TURNOVER = float(os.environ.get("SCREENER_SQUEEZE_MIN_TURNOVER", "100000000"))
 LEFT_FUNDAMENTAL_FETCH_LIMIT = int(os.environ.get("SCREENER_LEFT_FUNDAMENTAL_LIMIT", "12"))
 CHIP_STORE_PATH = ROOT / "frontend" / "data" / "chip_history.csv"
+CATALYST_EVENTS_PATH = ROOT / "frontend" / "data" / "catalysts.json"
+SECTOR_HISTORY_PATH = ROOT / "frontend" / "data" / "sector_history.json"
 OUTPUT = ROOT / "frontend" / "data" / "results.json"
 HISTORY = ROOT / "frontend" / "data" / "history.json"
 MAX_HISTORY_DAYS = 30
@@ -1128,6 +1141,8 @@ def serialize_left_candidate(
     close: float | None = None,
     revenue_row: dict[str, Any] | None = None,
     financial_row: dict[str, Any] | None = None,
+    catalyst_row: dict[str, Any] | None = None,
+    sector_row: dict[str, Any] | None = None,
     chip_metrics: dict[str, float | None] | None = None,
     price_source: str | None = None,
     quote_date: str | None = None,
@@ -1138,6 +1153,8 @@ def serialize_left_candidate(
     revenue_yoy_pct = round_optional((revenue_row or {}).get("revenue_yoy_pct"))
     eps = round_optional((financial_row or {}).get("eps"))
     roe_pct = round_optional((financial_row or {}).get("roe_pct"))
+    catalyst = catalyst_row or {}
+    sector = sector_row or empty_sector_payload()
     return {
         "symbol": symbol,
         "name": name,
@@ -1151,6 +1168,8 @@ def serialize_left_candidate(
         "retail_capitulation_score": result.retail_capitulation_score,
         "smart_money_score": result.smart_money_score,
         "fundamental_safety_score": result.fundamental_safety_score,
+        "catalyst_score": result.catalyst_score,
+        "sector_resonance_score": result.sector_resonance_score,
         "sentiment_score": result.sentiment_score,
         "sentiment_available": False,
         "ignition_score": result.ignition_score,
@@ -1173,6 +1192,14 @@ def serialize_left_candidate(
         "revenue_yoy_pct": revenue_yoy_pct,
         "eps": eps,
         "roe_pct": roe_pct,
+        "nearest_catalyst_type": catalyst.get("nearest_catalyst_type"),
+        "nearest_catalyst_date": catalyst.get("nearest_catalyst_date"),
+        "catalyst_days_left": catalyst.get("catalyst_days_left"),
+        "catalyst_available": bool(catalyst.get("catalyst_available", False)),
+        "sector_turnover_rank_pct": round_optional(sector.get("sector_turnover_rank_pct")),
+        "sector_turnover_share_pct": round_optional(sector.get("sector_turnover_share_pct")),
+        "sector_turnover_jump_pct": round_optional(sector.get("sector_turnover_jump_pct")),
+        "sector_resonance_available": bool(sector.get("sector_resonance_available", False)),
     }
 
 
@@ -1464,6 +1491,8 @@ def run_left_side_screener(
     all_quotes: pd.DataFrame,
     fundamentals_cache: dict[str, dict[str, Any]],
     industry_map: dict[str, str],
+    catalyst_events: list[Any],
+    sector_payloads: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
     """左側潛伏全市場兩段式漏斗。
 
@@ -1475,6 +1504,7 @@ def run_left_side_screener(
     """
     left_engine = LeftSideScoringEngine()
     thresholds = left_engine.thresholds
+    catalyst_lookahead = int(thresholds["catalyst_lookahead_trading_days"])
 
     universe = all_quotes[(all_quotes["close"] > LEFT_MIN_CLOSE) & (all_quotes["turnover"] > LEFT_MIN_TURNOVER)]
     payload: dict[str, Any] = {
@@ -1623,6 +1653,13 @@ def run_left_side_screener(
             if FINMIND_TOKEN:
                 time.sleep(0.15)
 
+            catalyst_row = nearest_catalyst_payload(
+                symbol=symbol,
+                events=catalyst_events,
+                today=datetime.now(TW_TZ).date(),
+                lookahead_trading_days=catalyst_lookahead,
+            )
+            sector_row = sector_payloads.get(symbol, empty_sector_payload())
             left_result = left_engine.score(
                 symbol=symbol,
                 indicators=indicators,
@@ -1631,6 +1668,8 @@ def run_left_side_screener(
                 institutional_rows=institutions if institutions is not None and not institutions.empty else None,
                 revenue_row=revenue_row,
                 financial_row=financial_row,
+                catalyst_row=catalyst_row,
+                sector_row=sector_row,
             )
             left_candidate = serialize_left_candidate(
                 symbol=symbol,
@@ -1641,6 +1680,8 @@ def run_left_side_screener(
                 close=safe_float(quote.get("close")),
                 revenue_row=revenue_row,
                 financial_row=financial_row,
+                catalyst_row=catalyst_row,
+                sector_row=sector_row,
                 chip_metrics=left_side_metrics(chip_rows, holder_rows),
                 price_source=price_source,
                 quote_date=str(quote.get("quote_date") or ""),
@@ -1674,6 +1715,21 @@ def run_live_screener() -> dict[str, Any]:
     now_tw = datetime.now(TW_TZ)
     all_quotes = fetch_all_quotes()
     industry_map = fetch_industry_map()
+    symbol_industries = {
+        str(row["symbol"]): industry_for_symbol(str(row["symbol"]), str(row.get("name", "")), industry_map)
+        for _, row in all_quotes.iterrows()
+    }
+    symbol_industries = {symbol: industry for symbol, industry in symbol_industries.items() if industry}
+    sector_payloads, sector_snapshot = compute_sector_resonance(
+        all_quotes,
+        symbol_industries,
+        previous_entries=load_sector_history(SECTOR_HISTORY_PATH),
+        rank_threshold_pct=float(get_settings().raw["left_side"]["thresholds"]["sector_rank_threshold_pct"]),
+        jump_threshold_pct=float(get_settings().raw["left_side"]["thresholds"]["sector_turnover_jump_pct"]),
+    )
+    if sector_snapshot:
+        update_sector_history(SECTOR_HISTORY_PATH, now_tw.date(), sector_snapshot)
+    catalyst_events = load_catalyst_events(CATALYST_EVENTS_PATH)
     today = fetch_today_universe(all_quotes)
     if today.empty:
         print("WARN no live universe found; keeping previous live output if available")
@@ -1780,7 +1836,13 @@ def run_live_screener() -> dict[str, Any]:
 
     if LEFT_SIDE_ENABLED:
         try:
-            left_payload = run_left_side_screener(all_quotes, fundamentals_cache, industry_map)
+            left_payload = run_left_side_screener(
+                all_quotes,
+                fundamentals_cache,
+                industry_map,
+                catalyst_events,
+                sector_payloads,
+            )
         except Exception as exc:
             print(f"WARN left-side screener failed: {exc}")
             left_payload = {
@@ -1903,6 +1965,14 @@ def update_history(output: dict[str, Any]) -> None:
                 "margin_balance_change_pct": c.get("margin_balance_change_pct"),
                 "day_trade_ratio_pct": c.get("day_trade_ratio_pct"),
                 "big_holder_gain_pp": c.get("big_holder_gain_pp"),
+                "nearest_catalyst_type": c.get("nearest_catalyst_type"),
+                "nearest_catalyst_date": c.get("nearest_catalyst_date"),
+                "catalyst_days_left": c.get("catalyst_days_left"),
+                "catalyst_score": c.get("catalyst_score"),
+                "sector_turnover_rank_pct": c.get("sector_turnover_rank_pct"),
+                "sector_turnover_share_pct": c.get("sector_turnover_share_pct"),
+                "sector_turnover_jump_pct": c.get("sector_turnover_jump_pct"),
+                "sector_resonance_score": c.get("sector_resonance_score"),
             }
             for c in output.get("left_side_candidates", [])
         ],

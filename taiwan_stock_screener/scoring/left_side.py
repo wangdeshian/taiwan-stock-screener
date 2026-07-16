@@ -17,6 +17,8 @@ class LeftSideScoreBreakdown:
     retail_capitulation_score: float
     smart_money_score: float
     fundamental_safety_score: float
+    catalyst_score: float
+    sector_resonance_score: float
     sentiment_score: float
     ignition_score: float
     is_candidate: bool
@@ -47,6 +49,8 @@ class LeftSideScoringEngine:
         institutional_rows: pd.DataFrame | None = None,
         revenue_row: pd.Series | None = None,
         financial_row: pd.Series | None = None,
+        catalyst_row: dict | pd.Series | None = None,
+        sector_row: dict | pd.Series | None = None,
         sentiment_ratio: float | None = None,
     ) -> LeftSideScoreBreakdown:
         if indicators.empty:
@@ -61,6 +65,8 @@ class LeftSideScoringEngine:
         retail_capitulation = self._retail_capitulation_score(latest, chip_rows, reasons)
         smart_money = self._smart_money_score(holder_rows, institutional_rows, latest, reasons)
         fundamental_safety = self._fundamental_safety_score(revenue_row, financial_row, reasons)
+        catalyst = self._catalyst_score(catalyst_row, reasons)
+        sector_resonance = self._sector_resonance_score(sector_row, reasons)
         sentiment = self._sentiment_score(sentiment_ratio, reasons)
         bandwidth_percentile = self._bandwidth_percentile(indicators)
         ignition = self._ignition_score(indicators, bandwidth_percentile, reasons)
@@ -72,7 +78,8 @@ class LeftSideScoringEngine:
             + retail_capitulation
             + smart_money
             + fundamental_safety
-            + sentiment
+            + catalyst
+            + sector_resonance
             + ignition,
         )
         plan = build_trade_plan(float(latest["close"]), float(latest.get("atr14", 0) or 0), total)
@@ -84,6 +91,8 @@ class LeftSideScoringEngine:
             retail_capitulation_score=round(retail_capitulation, 2),
             smart_money_score=round(smart_money, 2),
             fundamental_safety_score=round(fundamental_safety, 2),
+            catalyst_score=round(catalyst, 2),
+            sector_resonance_score=round(sector_resonance, 2),
             sentiment_score=round(sentiment, 2),
             ignition_score=round(ignition, 2),
             is_candidate=total >= self.candidate_score,
@@ -237,6 +246,36 @@ class LeftSideScoringEngine:
                 reasons.append("revenue_not_collapsing")
         return min(weight, score)
 
+    def _catalyst_score(self, catalyst_row: dict | pd.Series | None, reasons: list[str]) -> float:
+        weight = float(self.weights["catalyst"])
+        if catalyst_row is None:
+            return 0.0
+        days_left = self._get_value(catalyst_row, "catalyst_days_left")
+        in_window = bool(self._get_value(catalyst_row, "catalyst_in_window"))
+        if days_left is None or not in_window:
+            return 0.0
+
+        lookahead = max(1.0, float(self.thresholds["catalyst_lookahead_trading_days"]))
+        days = max(0.0, float(days_left))
+        score = weight * max(0.0, (lookahead - days + 1) / (lookahead + 1))
+        reasons.append("near_catalyst")
+        return min(weight, score)
+
+    def _sector_resonance_score(self, sector_row: dict | pd.Series | None, reasons: list[str]) -> float:
+        weight = float(self.weights["sector_resonance"])
+        if sector_row is None:
+            return 0.0
+        score = 0.0
+        rank_pct = self._get_value(sector_row, "sector_turnover_rank_pct")
+        jump_pct = self._get_value(sector_row, "sector_turnover_jump_pct")
+        if rank_pct is not None and float(rank_pct) <= float(self.thresholds["sector_rank_threshold_pct"]):
+            score += weight * 0.6
+            reasons.append("sector_turnover_leader")
+        if jump_pct is not None and float(jump_pct) >= float(self.thresholds["sector_turnover_jump_pct"]):
+            score += weight * 0.4
+            reasons.append("sector_turnover_jump")
+        return min(weight, score)
+
     def _bandwidth_percentile(self, indicators: pd.DataFrame) -> float | None:
         """今日布林帶寬在近 N 日中的百分位（越低代表壓縮越極端）。"""
         bandwidth = self._bollinger_bandwidth(indicators)
@@ -296,6 +335,12 @@ class LeftSideScoringEngine:
         if ratio <= 0.2:
             reasons.append("sentiment_freeze")
         return score
+
+    @staticmethod
+    def _get_value(row: dict | pd.Series, key: str) -> object:
+        if isinstance(row, pd.Series):
+            return row.get(key)
+        return row.get(key)
 
     @staticmethod
     def _chip_series(chip_rows: pd.DataFrame | None, column: str) -> pd.Series | None:

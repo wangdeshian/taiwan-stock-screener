@@ -176,8 +176,30 @@ def test_sentiment_dimension_is_reserved_placeholder() -> None:
     frozen_sentiment = engine.score(symbol="TEST", indicators=indicators, sentiment_ratio=0.05)
 
     assert without_sentiment.sentiment_score == 0
-    assert frozen_sentiment.sentiment_score > 0
+    assert frozen_sentiment.sentiment_score == 0
+    assert frozen_sentiment.total_score == without_sentiment.total_score
     assert "sentiment_freeze" in frozen_sentiment.reasons
+
+
+def test_catalyst_and_sector_resonance_are_scored() -> None:
+    prices = _bottoming_prices()
+    indicators = add_technical_indicators(prices)
+
+    result = LeftSideScoringEngine().score(
+        symbol="CAT",
+        indicators=indicators,
+        catalyst_row={"catalyst_days_left": 3, "catalyst_in_window": True},
+        sector_row={
+            "sector_turnover_rank_pct": 10,
+            "sector_turnover_jump_pct": 60,
+        },
+    )
+
+    assert result.catalyst_score > 0
+    assert result.sector_resonance_score == 10
+    assert "near_catalyst" in result.reasons
+    assert "sector_turnover_leader" in result.reasons
+    assert "sector_turnover_jump" in result.reasons
 
 
 def _squeeze_ignition_prices(days: int = 260) -> pd.DataFrame:

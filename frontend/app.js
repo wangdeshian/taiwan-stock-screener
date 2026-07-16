@@ -41,7 +41,8 @@ const LEFT_DIM_LABELS = {
   retail_capitulation_score: "散戶絕望",
   smart_money_score: "聰明錢",
   fundamental_safety_score: "基本面安全",
-  sentiment_score: "聲量情緒",
+  catalyst_score: "催化事件",
+  sector_resonance_score: "產業共振",
 };
 
 const REASON_LABELS = {
@@ -79,6 +80,9 @@ const REASON_LABELS = {
   bullish_red_candle: "收紅站上月線",
   still_profitable: "EPS 為正",
   revenue_not_collapsing: "營收未惡化",
+  near_catalyst: "重大事件接近",
+  sector_turnover_leader: "產業成交比重領先",
+  sector_turnover_jump: "產業資金顯著跳升",
   sentiment_freeze: "網路聲量冰點",
   observation_pool: "潛伏觀察池",
 };
@@ -127,6 +131,26 @@ function scoreValue(item, key) {
     return "未接";
   }
   return money(item[key]);
+}
+
+function renderCatalystSectorMetrics(item) {
+  const catalystText = item.catalyst_available
+    ? `${item.nearest_catalyst_type || "事件"}，倒數 ${money(item.catalyst_days_left)} 個交易日`
+    : "未接";
+  const sectorText = item.sector_resonance_available
+    ? `排名前 ${money(item.sector_turnover_rank_pct)}%`
+    : "-";
+  return `
+    <section class="detail-section">
+      <h3>催化與產業共振</h3>
+      <div class="metric-grid">
+        ${metricCard("近期催化", catalystText, item.catalyst_score > 0 ? "good" : "")}
+        ${metricCard("催化分數", money(item.catalyst_score))}
+        ${metricCard("產業熱度", sectorText, item.sector_resonance_score > 0 ? "good" : "")}
+        ${metricCard("成交比重", pct(item.sector_turnover_share_pct))}
+        ${metricCard("比重跳升", pct(item.sector_turnover_jump_pct), Number(item.sector_turnover_jump_pct) >= 50 ? "good" : "")}
+      </div>
+    </section>`;
 }
 
 function renderScoreBreakdown(item) {
@@ -278,7 +302,7 @@ function buildDetailRow(item, colSpan) {
   td.innerHTML = `
     <div class="detail-grid">${renderScoreBreakdown(item)}</div>
     <div class="reason-tags">${renderReasonTags(item)}</div>
-    ${isLeft ? renderChipMetrics(item) + renderFundamentalMetrics(item) : renderFundamentalMetrics(item) + renderStrengthMetrics(item)}
+    ${isLeft ? renderChipMetrics(item) + renderCatalystSectorMetrics(item) + renderFundamentalMetrics(item) : renderFundamentalMetrics(item) + renderStrengthMetrics(item)}
     ${renderTradePlan(item)}
     ${isLeft ? "" : renderLivermore(item)}
   `;
@@ -300,16 +324,28 @@ function applyStableOrder(strategyKey, rows) {
   return rowOrder[strategyKey].map(symbol => bySymbol.get(symbol));
 }
 
+function withScrollLock(updateFn) {
+  const scrollTop = window.scrollY;
+  const activeId = document.activeElement?.id || null;
+  updateFn();
+  requestAnimationFrame(() => {
+    window.scrollTo({ top: scrollTop, behavior: "auto" });
+    if (activeId) document.getElementById(activeId)?.focus?.({ preventScroll: true });
+  });
+}
+
 // 預算變更時重繪已展開的列
 function refreshExpandedRows() {
-  currentRows().forEach(item => {
-    const key = expandKey(item);
-    if (!expandedRows.has(key)) return;
-    const oldDetail = document.getElementById(`detail-${key.replace(":", "-")}`);
-    if (!oldDetail) return;
-    const newDetail = buildDetailRow(item, 9);
-    newDetail.id = oldDetail.id;
-    oldDetail.replaceWith(newDetail);
+  withScrollLock(() => {
+    currentRows().forEach(item => {
+      const key = expandKey(item);
+      if (!expandedRows.has(key)) return;
+      const oldDetail = document.getElementById(`detail-${key.replace(":", "-")}`);
+      if (!oldDetail) return;
+      const newDetail = buildDetailRow(item, 9);
+      newDetail.id = oldDetail.id;
+      oldDetail.replaceWith(newDetail);
+    });
   });
 }
 
@@ -408,10 +444,12 @@ function updateNotice() {
 }
 
 function renderCurrent() {
-  const rows = currentRows();
-  candidateCount.textContent = rows.length;
-  renderRows(rows);
-  updateNotice();
+  withScrollLock(() => {
+    const rows = currentRows();
+    candidateCount.textContent = rows.length;
+    renderRows(rows);
+    updateNotice();
+  });
 }
 
 function switchStrategy(next) {
