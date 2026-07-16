@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+# 註：ETF/ETN 排除在產業共振之外的過濾發生在 run_live_screener 組
+# symbol_industries 時；compute_sector_resonance 本身只處理收到的產業對應。
+
 from datetime import date
 
 import pandas as pd
