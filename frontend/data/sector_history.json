@@ -1,0 +1,177 @@
+[
+  {
+    "date": "2026-07-16",
+    "sectors": [
+      {
+        "industry": "半導體",
+        "sector_turnover_share_pct": 37.75,
+        "sector_turnover_rank_pct": 2.94
+      },
+      {
+        "industry": "電子零組件",
+        "sector_turnover_share_pct": 22.52,
+        "sector_turnover_rank_pct": 5.88
+      },
+      {
+        "industry": "ETF/ETN",
+        "sector_turnover_share_pct": 6.31,
+        "sector_turnover_rank_pct": 8.82
+      },
+      {
+        "industry": "電腦及週邊",
+        "sector_turnover_share_pct": 5.28,
+        "sector_turnover_rank_pct": 11.76
+      },
+      {
+        "industry": "塑膠工業",
+        "sector_turnover_share_pct": 5.11,
+        "sector_turnover_rank_pct": 14.71
+      },
+      {
+        "industry": "光電",
+        "sector_turnover_share_pct": 4.9,
+        "sector_turnover_rank_pct": 17.65
+      },
+      {
+        "industry": "其他電子",
+        "sector_turnover_share_pct": 3.94,
+        "sector_turnover_rank_pct": 20.59
+      },
+      {
+        "industry": "金融保險",
+        "sector_turnover_share_pct": 2.53,
+        "sector_turnover_rank_pct": 23.53
+      },
+      {
+        "industry": "通信網路",
+        "sector_turnover_share_pct": 1.83,
+        "sector_turnover_rank_pct": 26.47
+      },
+      {
+        "industry": "電機機械",
+        "sector_turnover_share_pct": 1.46,
+        "sector_turnover_rank_pct": 29.41
+      },
+      {
+        "industry": "電子通路",
+        "sector_turnover_share_pct": 1.18,
+        "sector_turnover_rank_pct": 32.35
+      },
+      {
+        "industry": "生技醫療",
+        "sector_turnover_share_pct": 1.17,
+        "sector_turnover_rank_pct": 35.29
+      },
+      {
+        "industry": "航運業",
+        "sector_turnover_share_pct": 1.11,
+        "sector_turnover_rank_pct": 38.24
+      },
+      {
+        "industry": "油電燃氣",
+        "sector_turnover_share_pct": 0.88,
+        "sector_turnover_rank_pct": 41.18
+      },
+      {
+        "industry": "化學工業",
+        "sector_turnover_share_pct": 0.64,
+        "sector_turnover_rank_pct": 44.12
+      },
+      {
+        "industry": "其他",
+        "sector_turnover_share_pct": 0.45,
+        "sector_turnover_rank_pct": 47.06
+      },
+      {
+        "industry": "運動休閒",
+        "sector_turnover_share_pct": 0.33,
+        "sector_turnover_rank_pct": 50.0
+      },
+      {
+        "industry": "綠能環保",
+        "sector_turnover_share_pct": 0.3,
+        "sector_turnover_rank_pct": 52.94
+      },
+      {
+        "industry": "玻璃陶瓷",
+        "sector_turnover_share_pct": 0.29,
+        "sector_turnover_rank_pct": 55.88
+      },
+      {
+        "industry": "食品工業",
+        "sector_turnover_share_pct": 0.29,
+        "sector_turnover_rank_pct": 58.82
+      },
+      {
+        "industry": "紡織纖維",
+        "sector_turnover_share_pct": 0.29,
+        "sector_turnover_rank_pct": 61.76
+      },
+      {
+        "industry": "建材營造",
+        "sector_turnover_share_pct": 0.22,
+        "sector_turnover_rank_pct": 64.71
+      },
+      {
+        "industry": "水泥工業",
+        "sector_turnover_share_pct": 0.21,
+        "sector_turnover_rank_pct": 67.65
+      },
+      {
+        "industry": "鋼鐵工業",
+        "sector_turnover_share_pct": 0.21,
+        "sector_turnover_rank_pct": 70.59
+      },
+      {
+        "industry": "汽車工業",
+        "sector_turnover_share_pct": 0.2,
+        "sector_turnover_rank_pct": 73.53
+      },
+      {
+        "industry": "貿易百貨",
+        "sector_turnover_share_pct": 0.19,
+        "sector_turnover_rank_pct": 76.47
+      },
+      {
+        "industry": "橡膠工業",
+        "sector_turnover_share_pct": 0.15,
+        "sector_turnover_rank_pct": 79.41
+      },
+      {
+        "industry": "電器電纜",
+        "sector_turnover_share_pct": 0.08,
+        "sector_turnover_rank_pct": 82.35
+      },
+      {
+        "industry": "觀光餐旅",
+        "sector_turnover_share_pct": 0.05,
+        "sector_turnover_rank_pct": 85.29
+      },
+      {
+        "industry": "資訊服務",
+        "sector_turnover_share_pct": 0.04,
+        "sector_turnover_rank_pct": 88.24
+      },
+      {
+        "industry": "數位雲端",
+        "sector_turnover_share_pct": 0.03,
+        "sector_turnover_rank_pct": 91.18
+      },
+      {
+        "industry": "居家生活",
+        "sector_turnover_share_pct": 0.03,
+        "sector_turnover_rank_pct": 94.12
+      },
+      {
+        "industry": "造紙工業",
+        "sector_turnover_share_pct": 0.02,
+        "sector_turnover_rank_pct": 97.06
+      },
+      {
+        "industry": "91",
+        "sector_turnover_share_pct": 0.02,
+        "sector_turnover_rank_pct": 100.0
+      }
+    ]
+  }
+]
