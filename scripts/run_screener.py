@@ -956,15 +956,17 @@ def extract_financial_metrics(
         ],
     )
     equity_types = [
+        "EQUITY",
         "EQUITYATTRIBUTABLETOOWNERSOFPARENT",
         "EQUITYATTRIBUTABLETOOWNERSOFTHEPARENT",
         "TOTALEQUITY",
         "TOTALSTOCKHOLDERSEQUITY",
-        "EQUITY",
     ]
-    # 權益科目在資產負債表 dataset；為相容也順便試損益表
-    equity = _latest_statement_value(frame, equity_types)
-    if equity is None and balance_frame is not None:
+    # 權益只能取自資產負債表：損益表裡也有一個
+    # EquityAttributableToOwnersOfParent，但那是「綜合損益歸屬母公司」，
+    # 拿去當分母會算出數百 % 的假 ROE（實際執行 log 已驗證）
+    equity = None
+    if balance_frame is not None:
         equity = _latest_statement_value(balance_frame, equity_types)
     if net_income is not None and equity and equity > 0:
         roe_pct = net_income / equity * 4 * 100  # 單季年化估算

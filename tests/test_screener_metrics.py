@@ -43,7 +43,7 @@ def test_industry_helpers_map_official_codes_and_etfs() -> None:
 
 
 def test_extract_financial_metrics_can_estimate_annualized_roe() -> None:
-    frame = pd.DataFrame(
+    statements = pd.DataFrame(
         [
             {"date": "2026-03-31", "type": "EPS", "value": "2"},
             {
@@ -51,15 +51,22 @@ def test_extract_financial_metrics_can_estimate_annualized_roe() -> None:
                 "type": "ProfitLossAttributableToOwnersOfParent",
                 "value": "100",
             },
+            # 損益表裡的「綜合損益歸屬母公司」與權益餘額同名，不得當分母
             {
                 "date": "2026-03-31",
                 "type": "EquityAttributableToOwnersOfParent",
-                "value": "1000",
+                "value": "120",
             },
         ]
     )
+    balance = pd.DataFrame(
+        [{"date": "2026-03-31", "type": "EquityAttributableToOwnersOfParent", "value": "1000"}]
+    )
 
-    result = extract_financial_metrics(frame)
+    # 沒有資產負債表時不產生 ROE（避免誤用損益表的同名科目）
+    assert extract_financial_metrics(statements) == {"eps": 2.0}
+
+    result = extract_financial_metrics(statements, balance)
 
     assert result == {"eps": 2.0, "roe_pct": 40.0}
 
