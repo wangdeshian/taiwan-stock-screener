@@ -76,6 +76,9 @@ const REASON_LABELS = {
   trust_light_buying: "投信微幅買超",
   trust_streak_buying: "投信連續 3 日買超",
   bollinger_squeeze_extreme: "布林帶寬最低 10% 極度壓縮",
+  branch_concentration: "前十大分點連續集中買超",
+  day_trade_branch_churn: "⚠ 隔日沖分點進駐（紊亂期）",
+  short_squeeze_setup: "券資比高檔＋空單回補（軋空預備）",
   mild_ignition: "溫和點火（量 1.5~3 倍）",
   bullish_red_candle: "收紅站上月線",
   still_profitable: "EPS 為正",
@@ -209,6 +212,11 @@ function renderChipMetrics(item) {
         ${metricCard("融資餘額變化", pct(item.margin_balance_change_pct), Number(item.margin_balance_change_pct) < 0 ? "good" : "")}
         ${metricCard("近 5 日當沖率", pct(item.day_trade_ratio_pct))}
         ${metricCard("大戶持股增減 (8週)", item.big_holder_gain_pp === null || item.big_holder_gain_pp === undefined ? "-" : `${money(item.big_holder_gain_pp)} pp`, Number(item.big_holder_gain_pp) > 0 ? "good" : "")}
+        ${metricCard("券資比", pct(item.short_margin_ratio_pct), Number(item.short_margin_ratio_pct) >= 30 ? "good" : "")}
+        ${metricCard("分點集中度", item.branch_concentration_pct === null || item.branch_concentration_pct === undefined ? "-" : `${money(item.branch_concentration_pct)}%（連 ${item.branch_concentration_streak ?? 0} 日）`, Number(item.branch_concentration_streak) >= 3 ? "good" : "")}
+        ${metricCard("隔日沖分點佔比", pct(item.day_trade_branch_ratio_pct))}
+        ${metricCard("主力成本線", money(item.main_cost_line), item.main_cost_line && item.close_price && item.close_price >= item.main_cost_line ? "good" : "")}
+        ${metricCard("籌碼階段", item.chip_stage === "accumulation" ? "吸貨/回穩" : item.chip_stage === "churn" ? "⚠ 紊亂" : item.chip_stage === "quiet" ? "沉寂" : "-")}
       </div>
     </section>`;
 }

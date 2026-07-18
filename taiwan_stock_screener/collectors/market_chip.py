@@ -18,7 +18,15 @@ import requests
 # 計算 20 日餘額趨勢。無 FinMind token 時退回 TWSE openapi 的最新快照
 # （僅上市、僅融資，且盤後報表尚未發布時日期可能落後一日）。
 
-STORE_COLUMNS = ["date", "symbol", "margin_balance", "short_balance", "day_trade_volume", "total_volume"]
+STORE_COLUMNS = [
+    "date",
+    "symbol",
+    "margin_balance",
+    "short_balance",
+    "margin_short_balance",  # 融券餘額（券資比 = 融券/融資 用）
+    "day_trade_volume",
+    "total_volume",
+]
 KEEP_TRADING_DAYS = 45
 
 # FinMind 日期模式 dataset → 欄位對應（欄位名為 FinMind 固定英文名）
@@ -182,11 +190,11 @@ def fetch_finmind_chip_snapshot(finmind_fetch: Any, snapshot_date: date) -> pd.D
     merged = _merge_on_symbol(frames)
     if merged.empty:
         return merged
-    # 借券賣出餘額缺漏時退回融券餘額
+    # 借券賣出餘額缺漏時退回融券餘額；融券餘額本身保留（券資比計算用）
     if "short_balance" not in merged.columns or merged["short_balance"].isna().all():
         if "margin_short_balance" in merged.columns:
             merged["short_balance"] = merged["margin_short_balance"]
-    return merged.drop(columns=["margin_short_balance"], errors="ignore")
+    return merged
 
 
 def _merge_on_symbol(frames: list[pd.DataFrame]) -> pd.DataFrame:
@@ -326,7 +334,8 @@ def chip_rows_for(store: pd.DataFrame, symbol: str) -> pd.DataFrame:
         day_trade = pd.to_numeric(rows.get("day_trade_volume"), errors="coerce").astype(float)
         total = pd.to_numeric(rows.get("total_volume"), errors="coerce").astype(float)
         rows["day_trade_ratio_pct"] = day_trade / total.where(total > 0) * 100
-    keep = ["trade_date", "margin_balance", "short_balance", "day_trade_ratio_pct"]
+    wanted = ["trade_date", "margin_balance", "short_balance", "margin_short_balance", "day_trade_ratio_pct"]
+    keep = [column for column in wanted if column in rows.columns]
     return rows[keep].sort_values("trade_date")
 
 

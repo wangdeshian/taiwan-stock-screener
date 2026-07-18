@@ -24,6 +24,7 @@ from taiwan_stock_screener.collectors.sample import (  # noqa: E402
     sample_monthly_revenue,
     sample_stocks,
 )
+from taiwan_stock_screener.collectors.broker_flow import analyze_broker_flow  # noqa: E402
 from taiwan_stock_screener.collectors.market_chip import (  # noqa: E402
     chip_rows_for,
     prefilter_left_symbols,
@@ -818,6 +819,46 @@ def fetch_chip_finmind(symbol: str, price_history: pd.DataFrame) -> pd.DataFrame
 
 
 _HOLDERS_UNAVAILABLE = False
+_BROKER_FLOW_UNAVAILABLE = False
+
+
+def fetch_broker_flow_finmind(symbol: str, lookback_calendar_days: int = 21) -> pd.DataFrame:
+    """券商分點每日報表（TaiwanStockTradingDailyReport，需 FinMind Sponsor）。
+
+    回傳欄位：trade_date, securities_trader, buy, sell, price。
+    偵測到帳號等級不足後整輪跳過，避免對每檔入圍股白打 API。
+    """
+    global _BROKER_FLOW_UNAVAILABLE
+    if not FINMIND_TOKEN or _BROKER_FLOW_UNAVAILABLE:
+        return pd.DataFrame()
+
+    end = date.today()
+    start = end - timedelta(days=lookback_calendar_days)
+    params = {
+        "dataset": "TaiwanStockTradingDailyReport",
+        "data_id": symbol,
+        "start_date": start.isoformat(),
+        "end_date": end.isoformat(),
+    }
+    try:
+        payload = finmind_get(params, timeout=30)
+        data = payload.get("data", [])
+    except Exception as exc:
+        if "level" in str(exc).lower():
+            _BROKER_FLOW_UNAVAILABLE = True
+            print("WARN FinMind broker-flow dataset needs sponsor tier; skipping for the rest of this run")
+        else:
+            print(f"WARN FinMind broker flow failed for {symbol}: {exc}")
+        return pd.DataFrame()
+    if not data:
+        return pd.DataFrame()
+
+    frame = pd.DataFrame(data)
+    if "date" not in frame.columns or "securities_trader" not in frame.columns:
+        return pd.DataFrame()
+    frame = frame.rename(columns={"date": "trade_date"})
+    keep = [col for col in ("trade_date", "securities_trader", "buy", "sell", "price") if col in frame.columns]
+    return frame[keep]
 
 
 def fetch_holders_finmind(symbol: str) -> pd.DataFrame:
@@ -1060,11 +1101,21 @@ def left_side_metrics(chip_rows: pd.DataFrame | None, holder_rows: pd.DataFrame 
                 float(window.iloc[-1]["big_holder_ratio_pct"]) - float(window.iloc[0]["big_holder_ratio_pct"]), 2
             )
 
+    # 券資比＝最新融券餘額/融資餘額
+    short_margin_ratio: float | None = None
+    if chip_rows is not None and not chip_rows.empty and {"margin_short_balance", "margin_balance"}.issubset(chip_rows.columns):
+        sorted_rows = chip_rows.sort_values("trade_date")
+        shorts = pd.to_numeric(sorted_rows["margin_short_balance"], errors="coerce").dropna()
+        margins = pd.to_numeric(sorted_rows["margin_balance"], errors="coerce").dropna()
+        if not shorts.empty and not margins.empty and float(margins.iloc[-1]) > 0:
+            short_margin_ratio = round(float(shorts.iloc[-1]) / float(margins.iloc[-1]) * 100, 2)
+
     return {
         "short_balance_change_pct": chip_change_pct(chip_rows, "short_balance"),
         "margin_balance_change_pct": chip_change_pct(chip_rows, "margin_balance"),
         "day_trade_ratio_pct": day_trade_ratio,
         "big_holder_gain_pp": holder_gain,
+        "short_margin_ratio_pct": short_margin_ratio,
     }
 
 
@@ -1143,6 +1194,7 @@ def serialize_left_candidate(
     financial_row: dict[str, Any] | None = None,
     catalyst_row: dict[str, Any] | None = None,
     sector_row: dict[str, Any] | None = None,
+    broker_row: dict[str, Any] | None = None,
     chip_metrics: dict[str, float | None] | None = None,
     price_source: str | None = None,
     quote_date: str | None = None,
@@ -1155,6 +1207,7 @@ def serialize_left_candidate(
     roe_pct = round_optional((financial_row or {}).get("roe_pct"))
     catalyst = catalyst_row or {}
     sector = sector_row or empty_sector_payload()
+    broker = broker_row or {}
     return {
         "symbol": symbol,
         "name": name,
@@ -1189,6 +1242,12 @@ def serialize_left_candidate(
         "margin_balance_change_pct": metrics.get("margin_balance_change_pct"),
         "day_trade_ratio_pct": metrics.get("day_trade_ratio_pct"),
         "big_holder_gain_pp": metrics.get("big_holder_gain_pp"),
+        "short_margin_ratio_pct": metrics.get("short_margin_ratio_pct"),
+        "branch_concentration_pct": broker.get("branch_concentration_pct"),
+        "branch_concentration_streak": broker.get("branch_concentration_streak"),
+        "day_trade_branch_ratio_pct": broker.get("day_trade_branch_ratio_pct"),
+        "main_cost_line": broker.get("main_cost_line"),
+        "chip_stage": broker.get("chip_stage"),
         "revenue_yoy_pct": revenue_yoy_pct,
         "eps": eps,
         "roe_pct": roe_pct,
@@ -1505,6 +1564,9 @@ def run_left_side_screener(
     left_engine = LeftSideScoringEngine()
     thresholds = left_engine.thresholds
     catalyst_lookahead = int(thresholds["catalyst_lookahead_trading_days"])
+    day_trade_blacklist = [
+        str(entry) for entry in get_settings().raw["left_side"].get("day_trade_branch_blacklist", [])
+    ]
 
     universe = all_quotes[(all_quotes["close"] > LEFT_MIN_CLOSE) & (all_quotes["turnover"] > LEFT_MIN_TURNOVER)]
     payload: dict[str, Any] = {
@@ -1653,6 +1715,21 @@ def run_left_side_screener(
             if FINMIND_TOKEN:
                 time.sleep(0.15)
 
+            broker_row: dict[str, Any] | None = None
+            broker_frame = fetch_broker_flow_finmind(symbol, lookback_calendar_days=int(thresholds["branch_lookback_days"]) * 2)
+            if not broker_frame.empty:
+                broker_row = analyze_broker_flow(
+                    broker_frame,
+                    day_trade_blacklist=day_trade_blacklist,
+                    top_n=int(thresholds["branch_top_n"]),
+                    concentration_pct=float(thresholds["branch_concentration_pct"]),
+                    streak_days=int(thresholds["branch_streak_days"]),
+                    churn_max_ratio_pct=float(thresholds["branch_churn_max_ratio_pct"]),
+                    cost_lookback_days=int(thresholds["branch_lookback_days"]),
+                )
+            if FINMIND_TOKEN:
+                time.sleep(0.15)
+
             catalyst_row = nearest_catalyst_payload(
                 symbol=symbol,
                 events=catalyst_events,
@@ -1670,6 +1747,7 @@ def run_left_side_screener(
                 financial_row=financial_row,
                 catalyst_row=catalyst_row,
                 sector_row=sector_row,
+                broker_row=broker_row,
             )
             left_candidate = serialize_left_candidate(
                 symbol=symbol,
@@ -1682,6 +1760,7 @@ def run_left_side_screener(
                 financial_row=financial_row,
                 catalyst_row=catalyst_row,
                 sector_row=sector_row,
+                broker_row=broker_row,
                 chip_metrics=left_side_metrics(chip_rows, holder_rows),
                 price_source=price_source,
                 quote_date=str(quote.get("quote_date") or ""),
