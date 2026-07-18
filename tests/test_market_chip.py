@@ -184,5 +184,8 @@ def test_chip_rows_for_builds_engine_input() -> None:
     store = _synthetic_store()
     rows = chip_rows_for(store, "1111")
     assert list(rows.columns) == ["trade_date", "margin_balance", "short_balance", "day_trade_ratio_pct"]
+    # 含融券餘額欄位的 store 會多帶 margin_short_balance（券資比用）
+    store_with_short = store.assign(margin_short_balance=100.0)
+    assert "margin_short_balance" in chip_rows_for(store_with_short, "1111").columns
     assert rows["trade_date"].is_monotonic_increasing
     assert float(rows.iloc[-1]["day_trade_ratio_pct"]) == 4.0

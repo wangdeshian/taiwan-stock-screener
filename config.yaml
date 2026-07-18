@@ -84,6 +84,16 @@ left_side:
     catalyst_lookahead_trading_days: 10
     sector_rank_threshold_pct: 20
     sector_turnover_jump_pct: 50
+    short_margin_ratio_squeeze_pct: 30
+    branch_top_n: 10
+    branch_concentration_pct: 50
+    branch_streak_days: 3
+    branch_churn_max_ratio_pct: 15
+    branch_lookback_days: 10
+  # 知名隔日沖分點黑名單（正規化子字串比對，可自行增刪）
+  day_trade_branch_blacklist:
+    - 凱基-松山
+    - 元大-土城永寧
   weights:
     base_structure: 20
     ignition: 10

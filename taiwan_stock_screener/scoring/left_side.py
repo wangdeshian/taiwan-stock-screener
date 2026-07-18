@@ -51,6 +51,7 @@ class LeftSideScoringEngine:
         financial_row: pd.Series | None = None,
         catalyst_row: dict | pd.Series | None = None,
         sector_row: dict | pd.Series | None = None,
+        broker_row: dict | pd.Series | None = None,
         sentiment_ratio: float | None = None,
     ) -> LeftSideScoreBreakdown:
         if indicators.empty:
@@ -63,7 +64,7 @@ class LeftSideScoringEngine:
         base_structure = self._base_structure_score(indicators, reasons)
         short_covering = self._short_covering_score(chip_rows, reasons)
         retail_capitulation = self._retail_capitulation_score(latest, chip_rows, reasons)
-        smart_money = self._smart_money_score(holder_rows, institutional_rows, latest, reasons)
+        smart_money = self._smart_money_score(holder_rows, institutional_rows, latest, reasons, broker_row)
         fundamental_safety = self._fundamental_safety_score(revenue_row, financial_row, reasons)
         catalyst = self._catalyst_score(catalyst_row, reasons)
         sector_resonance = self._sector_resonance_score(sector_row, reasons)
@@ -145,12 +146,31 @@ class LeftSideScoringEngine:
             return 0.0
         drop_pct = (start - end) / start * 100
         required = float(self.thresholds["short_balance_drop_pct"])
+        score = 0.0
         if drop_pct >= required:
             reasons.append("short_covering")
-            return weight
+            score = weight
+        elif drop_pct > 0:
+            score = weight * min(1.0, drop_pct / required) * 0.5
+
+        # 券資比軋空訊號：融券/融資 ≥ 門檻且空單正在回補 → 軋空燃料充足
         if drop_pct > 0:
-            return weight * min(1.0, drop_pct / required) * 0.5
-        return 0.0
+            ratio = self._short_margin_ratio(chip_rows)
+            if ratio is not None and ratio >= float(self.thresholds["short_margin_ratio_squeeze_pct"]):
+                reasons.append("short_squeeze_setup")
+                score += weight * 0.3
+        return min(weight, score)
+
+    def _short_margin_ratio(self, chip_rows: pd.DataFrame | None) -> float | None:
+        """券資比（%）＝最新融券餘額 / 最新融資餘額。"""
+        shorts = self._chip_series(chip_rows, "margin_short_balance")
+        margins = self._chip_series(chip_rows, "margin_balance")
+        if shorts is None or margins is None:
+            return None
+        margin = float(margins.iloc[-1])
+        if margin <= 0:
+            return None
+        return float(shorts.iloc[-1]) / margin * 100
 
     def _retail_capitulation_score(
         self,
@@ -190,9 +210,19 @@ class LeftSideScoringEngine:
         institutional_rows: pd.DataFrame | None,
         latest: pd.Series,
         reasons: list[str],
+        broker_row: dict | pd.Series | None = None,
     ) -> float:
         weight = float(self.weights["smart_money"])
         score = 0.0
+
+        # 分點資金流（FinMind Sponsor）：主力吸貨補位加分、隔日沖紊亂只警示不給分
+        if broker_row is not None:
+            stage = str(self._get_value(broker_row, "chip_stage") or "")
+            if stage == "accumulation":
+                score += weight * 0.3
+                reasons.append("branch_concentration")
+            elif stage == "churn":
+                reasons.append("day_trade_branch_churn")
 
         if holder_rows is not None and not holder_rows.empty and "big_holder_ratio_pct" in holder_rows.columns:
             sorted_rows = holder_rows.sort_values("date")
