@@ -46,6 +46,14 @@ const LEFT_DIM_LABELS = {
   microstructure_score: "台股微結構",
 };
 
+const MICROSTRUCTURE_SCORE_KEYS = [
+  "microstructure_score",
+  "window_dressing_score",
+  "jailbreak_score",
+  "cb_signal_score",
+  "geographic_broker_score",
+];
+
 const REASON_LABELS = {
   close_above_ma20: "收盤價 > MA20",
   ma_bullish_alignment: "均線多頭排列",
@@ -138,6 +146,14 @@ function scoreValue(item, key) {
   if (item.strategy === "left_side" && key === "sentiment_score" && item.sentiment_available === false) {
     return "未接";
   }
+  if (item.strategy === "left_side" && MICROSTRUCTURE_SCORE_KEYS.includes(key) && item.microstructure_available === false) {
+    return "未接";
+  }
+  return money(item[key]);
+}
+
+function microstructureValue(item, key) {
+  if (item.microstructure_available === false) return "未接";
   return money(item[key]);
 }
 
@@ -231,13 +247,27 @@ function renderMicrostructureMetrics(item) {
     <section class="detail-section">
       <h3>台股微結構</h3>
       <div class="metric-grid">
-        ${metricCard("微結構總分", money(item.microstructure_score), Number(item.microstructure_score) > 0 ? "good" : "")}
-        ${metricCard("投信季底作帳", money(item.window_dressing_score), Number(item.window_dressing_score) > 0 ? "good" : "")}
-        ${metricCard("處置股出關", money(item.jailbreak_score), Number(item.jailbreak_score) > 0 ? "good" : "")}
-        ${metricCard("可轉債異常", money(item.cb_signal_score), Number(item.cb_signal_score) > 0 ? "good" : "")}
-        ${metricCard("地緣券商吃貨", money(item.geographic_broker_score), Number(item.geographic_broker_score) > 0 ? "good" : "")}
+        ${metricCard("微結構總分", microstructureValue(item, "microstructure_score"), Number(item.microstructure_score) > 0 ? "good" : "")}
+        ${metricCard("投信季底作帳", microstructureValue(item, "window_dressing_score"), Number(item.window_dressing_score) > 0 ? "good" : "")}
+        ${metricCard("處置股出關", microstructureValue(item, "jailbreak_score"), Number(item.jailbreak_score) > 0 ? "good" : "")}
+        ${metricCard("可轉債異常", microstructureValue(item, "cb_signal_score"), Number(item.cb_signal_score) > 0 ? "good" : "")}
+        ${metricCard("地緣券商吃貨", microstructureValue(item, "geographic_broker_score"), Number(item.geographic_broker_score) > 0 ? "good" : "")}
       </div>
     </section>`;
+}
+
+function normalizeLeftCandidate(item) {
+  const hasMicrostructureFields = MICROSTRUCTURE_SCORE_KEYS.some(key => Object.prototype.hasOwnProperty.call(item, key));
+  return {
+    microstructure_score: null,
+    window_dressing_score: null,
+    jailbreak_score: null,
+    cb_signal_score: null,
+    geographic_broker_score: null,
+    ...item,
+    strategy: "left_side",
+    microstructure_available: hasMicrostructureFields,
+  };
 }
 
 function renderTradePlan(item) {
@@ -459,6 +489,7 @@ function updateNotice() {
       if (latestData.left_side_mode === "observation_pool") {
         messages.push(`目前為潛伏觀察池，籌碼歷史已累積 ${latestData.left_side_chip_dates ?? 0} 個交易日。`);
       }
+      messages.push("V4 微結構欄位已上線：投信作帳、處置出關、CB 異常、地緣券商；資料源未接上時顯示未接。");
       if (latestData.left_side_note) {
         messages.push(latestData.left_side_note);
       }
@@ -484,6 +515,9 @@ function switchStrategy(next) {
   strategy = next;
   strategyMomentumBtn.classList.toggle("active", next === "momentum");
   strategyLeftBtn.classList.toggle("active", next === "left");
+  if (next === "left" && candidateSets.left.length && ![...expandedRows].some(key => key.startsWith("left:"))) {
+    expandedRows.add(expandKey(candidateSets.left[0]));
+  }
   renderCurrent();
 }
 
@@ -502,7 +536,7 @@ async function loadData() {
     latestData = data;
 
     const momentum = (data.top_candidates || []).map(item => ({ ...item, strategy: item.strategy || "momentum" }));
-    const left = (data.left_side_candidates || []).map(item => ({ ...item, strategy: "left_side" }));
+    const left = (data.left_side_candidates || []).map(normalizeLeftCandidate);
     candidateSets = {
       momentum: applyStableOrder("momentum", momentum),
       left: applyStableOrder("left", left),
