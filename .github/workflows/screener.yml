@@ -50,8 +50,11 @@ jobs:
           git add frontend/data/results.json frontend/data/history.json
           git add frontend/data/chip_history.csv 2>/dev/null || true
           git add frontend/data/sector_history.json 2>/dev/null || true
-          git diff --staged --quiet || git commit -m "chore: update screener results"
-          git push
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: update screener results"
+            git pull --rebase origin main
+            git push
+          fi
 
       - name: Publish frontend to GitHub Pages
         run: |
@@ -68,5 +71,8 @@ jobs:
           cd ../pages
           git add index.html app.js styles.css .nojekyll data/results.json data/history.json
           git add data/sector_history.json 2>/dev/null || true
-          git diff --staged --quiet || git commit -m "chore: update published screener site"
-          git push origin gh-pages
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: update published screener site"
+            git pull --rebase origin gh-pages
+            git push origin gh-pages
+          fi
