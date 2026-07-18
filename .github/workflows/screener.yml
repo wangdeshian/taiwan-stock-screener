@@ -58,6 +58,7 @@ jobs:
 
       - name: Publish frontend to GitHub Pages
         run: |
+          git pull --rebase origin main
           git fetch origin gh-pages:gh-pages
           git worktree add ../pages gh-pages
           cp frontend/index.html ../pages/index.html
