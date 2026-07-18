@@ -14,6 +14,13 @@
 
 ## 日誌（新的在上面）
 
+### 2026-07-18（三）| Codex
+- **做了**：合併 Claude 與 Codex 的協作規則，確認 `main` 為唯一正式版本；更新 `AGENTS.md`，要求每次開工先 `git status`、`git fetch`、看最新 commit、`git pull --rebase --autostash`，並保留 `docs/WORKLOG.md` 交接流程
+- **已驗證**：處理 `AGENTS.md` add/add rebase 衝突與 `docs/WORKLOG.md` 日誌衝突，保留 Claude 的 WORKLOG 機制、最新分點驗證紀錄，以及 Codex 的正式網站驗證規則
+- **未完成／進行中**：無程式邏輯變更，未重新觸發選股 workflow
+- **建議下一步**：接續 Claude 最新急件：分點提速，將 `SCREENER_BRANCH_ANALYZE_LIMIT` 預設 20，並評估 `branch_lookback_days` 10→5，目標整輪 <30 分鐘
+- **地雷提醒**：若 `git push` 出現 `fetch first`，先 `git pull --rebase --autostash origin main`，檢查衝突後再推
+
 ### 2026-07-18（二）| Claude
 - **做了**：分點資料**驗證完成**——17/20 檔入圍股有完整分點數據（其餘 3 檔為 ETF，正確跳過）
 - **驗證細節**：集中度 8~31%（皆低於 50% 門檻，全數判為「沉寂」階段——左側潛伏股本
