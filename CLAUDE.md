@@ -1,5 +1,12 @@
 # AI 協作者專案記憶（Claude / Codex 必讀）
 
+## 協作流程（先做這個）
+
+**開工前**：`git pull` 拿最新 main → `git log --oneline -10` 看別人剛做了什麼 →
+讀 `docs/WORKLOG.md` 最上面一筆（上一位的進度與建議下一步）。
+**完工後**：測試全綠 → 在 `docs/WORKLOG.md` 最上方補一筆交接紀錄。
+Codex 的對應入口是根目錄 `AGENTS.md`（內容同此流程）。
+
 ## 這個專案是什麼
 
 台股 AI 選股分析平台：GitHub Actions 每交易日 15:10（台北時間）執行
