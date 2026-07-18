@@ -822,9 +822,11 @@ _HOLDERS_UNAVAILABLE = False
 _BROKER_FLOW_UNAVAILABLE = False
 
 
-def fetch_broker_flow_finmind(symbol: str, lookback_calendar_days: int = 21) -> pd.DataFrame:
+def fetch_broker_flow_finmind(symbol: str, trading_days: int = 10) -> pd.DataFrame:
     """券商分點每日報表（TaiwanStockTradingDailyReport，需 FinMind Sponsor）。
 
+    此 dataset 資料量過大，FinMind 限制**一次只能查一天**（不得帶 end_date），
+    因此往回逐日抓滿 trading_days 個有資料的交易日。
     回傳欄位：trade_date, securities_trader, buy, sell, price。
     偵測到帳號等級不足後整輪跳過，避免對每檔入圍股白打 API。
     """
@@ -832,33 +834,44 @@ def fetch_broker_flow_finmind(symbol: str, lookback_calendar_days: int = 21) -> 
     if not FINMIND_TOKEN or _BROKER_FLOW_UNAVAILABLE:
         return pd.DataFrame()
 
-    end = date.today()
-    start = end - timedelta(days=lookback_calendar_days)
-    params = {
-        "dataset": "TaiwanStockTradingDailyReport",
-        "data_id": symbol,
-        "start_date": start.isoformat(),
-        "end_date": end.isoformat(),
-    }
-    try:
-        payload = finmind_get(params, timeout=30)
-        data = payload.get("data", [])
-    except Exception as exc:
-        if "level" in str(exc).lower():
-            _BROKER_FLOW_UNAVAILABLE = True
-            print("WARN FinMind broker-flow dataset needs sponsor tier; skipping for the rest of this run")
-        else:
-            print(f"WARN FinMind broker flow failed for {symbol}: {exc}")
-        return pd.DataFrame()
-    if not data:
-        return pd.DataFrame()
+    frames: list[pd.DataFrame] = []
+    day = date.today()
+    fetched = 0
+    attempts = 0
+    max_attempts = trading_days * 2 + 6  # 容納假日與偶發空日
+    while fetched < trading_days and attempts < max_attempts:
+        attempts += 1
+        if day.weekday() >= 5:
+            day -= timedelta(days=1)
+            continue
+        params = {
+            "dataset": "TaiwanStockTradingDailyReport",
+            "data_id": symbol,
+            "start_date": day.isoformat(),
+        }
+        try:
+            payload = finmind_get(params, timeout=30)
+            data = payload.get("data", [])
+        except Exception as exc:
+            if "level" in str(exc).lower():
+                _BROKER_FLOW_UNAVAILABLE = True
+                print("WARN FinMind broker-flow dataset needs sponsor tier; skipping for the rest of this run")
+                return pd.DataFrame()
+            print(f"WARN FinMind broker flow failed for {symbol} {day}: {exc}")
+            data = []
+        if data:
+            frame = pd.DataFrame(data)
+            if "date" in frame.columns and "securities_trader" in frame.columns:
+                frames.append(frame)
+                fetched += 1
+        day -= timedelta(days=1)
+        time.sleep(0.1)
 
-    frame = pd.DataFrame(data)
-    if "date" not in frame.columns or "securities_trader" not in frame.columns:
+    if not frames:
         return pd.DataFrame()
-    frame = frame.rename(columns={"date": "trade_date"})
-    keep = [col for col in ("trade_date", "securities_trader", "buy", "sell", "price") if col in frame.columns]
-    return frame[keep]
+    combined = pd.concat(frames, ignore_index=True).rename(columns={"date": "trade_date"})
+    keep = [col for col in ("trade_date", "securities_trader", "buy", "sell", "price") if col in combined.columns]
+    return combined[keep]
 
 
 def fetch_holders_finmind(symbol: str) -> pd.DataFrame:
@@ -1716,7 +1729,10 @@ def run_left_side_screener(
                 time.sleep(0.15)
 
             broker_row: dict[str, Any] | None = None
-            broker_frame = fetch_broker_flow_finmind(symbol, lookback_calendar_days=int(thresholds["branch_lookback_days"]) * 2)
+            broker_frame = pd.DataFrame()
+            # ETF 無分點分析意義，跳過以節省逐日 API 呼叫
+            if not infer_security_type(symbol, name):
+                broker_frame = fetch_broker_flow_finmind(symbol, trading_days=int(thresholds["branch_lookback_days"]))
             if not broker_frame.empty:
                 broker_row = analyze_broker_flow(
                     broker_frame,
