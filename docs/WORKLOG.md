@@ -14,6 +14,12 @@
 
 ## 日誌（新的在上面）
 
+### 2026-07-19（一）| Codex
+- **做了**：改善 V4 微結構在手機網頁的可見性：切到「左側潛伏」時自動展開第一檔；舊 `results.json` 尚未含微結構欄位時，卡片顯示「未接」而不是空白；頁首改為 V4 Decision Support System
+- **已驗證**：`node --check frontend/app.js` 通過
+- **發布方式**：需同步 `frontend/index.html`、`frontend/app.js` 到 `gh-pages`，讓正式網站立即可見
+- **未完成／進行中**：四個 V4 collector 尚未接上，未接欄位不給分
+
 ### 2026-07-18（四）| Codex
 - **做了**：接入 V4 台股微結構策略骨架：`left_side.py` 新增 `microstructure_score` 與四個子分數（投信作帳、處置出關、CB 異常、地緣券商）；前端左側明細新增「台股微結構」區塊與四個 reason 標籤；新增 `docs/V4_MICROSTRUCTURE_STRATEGIES.md`
 - **做了**：照前一輪急件完成分點提速：新增 env `SCREENER_BRANCH_ANALYZE_LIMIT`（預設 20），`branch_lookback_days` 10→5；輸出 `left_side_branch_analyze_limit`、`left_side_branch_lookback_days`、`left_side_branch_analyzed_count`
