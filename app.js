@@ -43,6 +43,7 @@ const LEFT_DIM_LABELS = {
   fundamental_safety_score: "基本面安全",
   catalyst_score: "催化事件",
   sector_resonance_score: "產業共振",
+  microstructure_score: "台股微結構",
 };
 
 const REASON_LABELS = {
@@ -86,6 +87,10 @@ const REASON_LABELS = {
   near_catalyst: "重大事件接近",
   sector_turnover_leader: "產業成交比重領先",
   sector_turnover_jump: "產業資金顯著跳升",
+  window_dressing_setup: "投信作帳中",
+  jailbreak_setup: "處置即將出關",
+  cb_abnormal_signal: "CB 異常訊號",
+  geographic_broker_accumulation: "地緣大戶進駐",
   sentiment_freeze: "網路聲量冰點",
   observation_pool: "潛伏觀察池",
 };
@@ -221,6 +226,20 @@ function renderChipMetrics(item) {
     </section>`;
 }
 
+function renderMicrostructureMetrics(item) {
+  return `
+    <section class="detail-section">
+      <h3>台股微結構</h3>
+      <div class="metric-grid">
+        ${metricCard("微結構總分", money(item.microstructure_score), Number(item.microstructure_score) > 0 ? "good" : "")}
+        ${metricCard("投信季底作帳", money(item.window_dressing_score), Number(item.window_dressing_score) > 0 ? "good" : "")}
+        ${metricCard("處置股出關", money(item.jailbreak_score), Number(item.jailbreak_score) > 0 ? "good" : "")}
+        ${metricCard("可轉債異常", money(item.cb_signal_score), Number(item.cb_signal_score) > 0 ? "good" : "")}
+        ${metricCard("地緣券商吃貨", money(item.geographic_broker_score), Number(item.geographic_broker_score) > 0 ? "good" : "")}
+      </div>
+    </section>`;
+}
+
 function renderTradePlan(item) {
   if (!item.entry_price) return "";
   return `
@@ -310,7 +329,7 @@ function buildDetailRow(item, colSpan) {
   td.innerHTML = `
     <div class="detail-grid">${renderScoreBreakdown(item)}</div>
     <div class="reason-tags">${renderReasonTags(item)}</div>
-    ${isLeft ? renderChipMetrics(item) + renderCatalystSectorMetrics(item) + renderFundamentalMetrics(item) : renderFundamentalMetrics(item) + renderStrengthMetrics(item)}
+    ${isLeft ? renderChipMetrics(item) + renderMicrostructureMetrics(item) + renderCatalystSectorMetrics(item) + renderFundamentalMetrics(item) : renderFundamentalMetrics(item) + renderStrengthMetrics(item)}
     ${renderTradePlan(item)}
     ${isLeft ? "" : renderLivermore(item)}
   `;
