@@ -68,6 +68,7 @@ SQUEEZE_SCAN_ENABLED = os.environ.get("SCREENER_SQUEEZE_SCAN", "1").lower() not 
 SQUEEZE_MIN_CLOSE = float(os.environ.get("SCREENER_SQUEEZE_MIN_CLOSE", "10"))
 SQUEEZE_MIN_TURNOVER = float(os.environ.get("SCREENER_SQUEEZE_MIN_TURNOVER", "100000000"))
 LEFT_FUNDAMENTAL_FETCH_LIMIT = int(os.environ.get("SCREENER_LEFT_FUNDAMENTAL_LIMIT", "12"))
+LEFT_BRANCH_ANALYZE_LIMIT = int(os.environ.get("SCREENER_BRANCH_ANALYZE_LIMIT", "20"))
 CHIP_STORE_PATH = ROOT / "frontend" / "data" / "chip_history.csv"
 CATALYST_EVENTS_PATH = ROOT / "frontend" / "data" / "catalysts.json"
 SECTOR_HISTORY_PATH = ROOT / "frontend" / "data" / "sector_history.json"
@@ -1236,6 +1237,11 @@ def serialize_left_candidate(
         "fundamental_safety_score": result.fundamental_safety_score,
         "catalyst_score": result.catalyst_score,
         "sector_resonance_score": result.sector_resonance_score,
+        "microstructure_score": result.microstructure_score,
+        "window_dressing_score": result.window_dressing_score,
+        "jailbreak_score": result.jailbreak_score,
+        "cb_signal_score": result.cb_signal_score,
+        "geographic_broker_score": result.geographic_broker_score,
         "sentiment_score": result.sentiment_score,
         "sentiment_available": False,
         "ignition_score": result.ignition_score,
@@ -1586,6 +1592,8 @@ def run_left_side_screener(
         "left_side_enabled": True,
         "left_side_threshold": left_engine.candidate_score,
         "left_side_universe_count": int(len(universe)),
+        "left_side_branch_analyze_limit": LEFT_BRANCH_ANALYZE_LIMIT,
+        "left_side_branch_lookback_days": int(thresholds["branch_lookback_days"]),
         "left_side_candidates": [],
     }
     # 觀察池備援時排除右側動能已抓取的熱門股，避免兩個分頁重疊
@@ -1667,15 +1675,16 @@ def run_left_side_screener(
     left_candidates: list[dict[str, Any]] = []
     is_observation_pool = payload["left_side_mode"] == "observation_pool"
     left_fundamental_fetches = 0
+    left_branch_fetches = 0
 
-    for index, pre_row in shortlist.iterrows():
+    for shortlist_index, (_, pre_row) in enumerate(shortlist.iterrows(), start=1):
         symbol = str(pre_row["symbol"])
         quote = quote_lookup.get(symbol)
         if quote is None:
             continue
         name = str(quote.get("name", symbol))
         market = str(quote.get("market", "TWSE"))
-        print(f"[left {index + 1:03d}/{len(shortlist):03d}] {symbol} {name}")
+        print(f"[left {shortlist_index:03d}/{len(shortlist):03d}] {symbol} {name}")
 
         cached = fundamentals_cache.get(symbol)
         try:
@@ -1731,7 +1740,8 @@ def run_left_side_screener(
             broker_row: dict[str, Any] | None = None
             broker_frame = pd.DataFrame()
             # ETF 無分點分析意義，跳過以節省逐日 API 呼叫
-            if not infer_security_type(symbol, name):
+            if not infer_security_type(symbol, name) and shortlist_index <= LEFT_BRANCH_ANALYZE_LIMIT:
+                left_branch_fetches += 1
                 broker_frame = fetch_broker_flow_finmind(symbol, trading_days=int(thresholds["branch_lookback_days"]))
             if not broker_frame.empty:
                 broker_row = analyze_broker_flow(
@@ -1802,6 +1812,7 @@ def run_left_side_screener(
             ).strip()
         else:
             payload["left_side_note"] = "沒有股票達到左側潛伏門檻，改顯示左側分數最高的排序。"
+    payload["left_side_branch_analyzed_count"] = left_branch_fetches
     payload["left_side_candidates"] = left_candidates[:MAX_OUTPUT]
     return payload
 
@@ -2074,6 +2085,11 @@ def update_history(output: dict[str, Any]) -> None:
                 "sector_turnover_share_pct": c.get("sector_turnover_share_pct"),
                 "sector_turnover_jump_pct": c.get("sector_turnover_jump_pct"),
                 "sector_resonance_score": c.get("sector_resonance_score"),
+                "microstructure_score": c.get("microstructure_score"),
+                "window_dressing_score": c.get("window_dressing_score"),
+                "jailbreak_score": c.get("jailbreak_score"),
+                "cb_signal_score": c.get("cb_signal_score"),
+                "geographic_broker_score": c.get("geographic_broker_score"),
             }
             for c in output.get("left_side_candidates", [])
         ],

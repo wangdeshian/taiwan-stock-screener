@@ -267,6 +267,7 @@ def refresh_chip_store(
     sources: list[str] = []
     new_frames: list[pd.DataFrame] = []
     today_text = date.today().isoformat()
+    finmind_unavailable = finmind_fetch is None
 
     if finmind_fetch is not None:
         existing = {
@@ -284,6 +285,7 @@ def refresh_chip_store(
                 # 或額度用盡，直接停止；假日空資料不常連續 3 天
                 if consecutive_failures >= 3 and backfilled == 0:
                     print("WARN FinMind bulk backfill unavailable (whole-market queries need sponsor tier); falling back to TWSE snapshot")
+                    finmind_unavailable = True
                     break
                 continue
             consecutive_failures = 0
@@ -293,7 +295,7 @@ def refresh_chip_store(
         if backfilled:
             sources.append(f"FinMind×{backfilled}")
 
-    if not new_frames:
+    if not new_frames and finmind_unavailable:
         # FinMind 批次不可用（無 token 或等級不足）：改用 TWSE openapi 最新
         # 報表逐日累積。注意 openapi 回「最新已發布」報表，盤後未發布時內容
         # 是前一交易日，日期會偏移一天；隨每日累積趨勢仍然成立。

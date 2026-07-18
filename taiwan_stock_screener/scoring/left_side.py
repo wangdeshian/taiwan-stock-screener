@@ -19,6 +19,11 @@ class LeftSideScoreBreakdown:
     fundamental_safety_score: float
     catalyst_score: float
     sector_resonance_score: float
+    microstructure_score: float
+    window_dressing_score: float
+    jailbreak_score: float
+    cb_signal_score: float
+    geographic_broker_score: float
     sentiment_score: float
     ignition_score: float
     is_candidate: bool
@@ -52,6 +57,7 @@ class LeftSideScoringEngine:
         catalyst_row: dict | pd.Series | None = None,
         sector_row: dict | pd.Series | None = None,
         broker_row: dict | pd.Series | None = None,
+        microstructure_row: dict | pd.Series | None = None,
         sentiment_ratio: float | None = None,
     ) -> LeftSideScoreBreakdown:
         if indicators.empty:
@@ -71,6 +77,7 @@ class LeftSideScoringEngine:
         sentiment = self._sentiment_score(sentiment_ratio, reasons)
         bandwidth_percentile = self._bandwidth_percentile(indicators)
         ignition = self._ignition_score(indicators, bandwidth_percentile, reasons)
+        microstructure = self._microstructure_score(microstructure_row, bandwidth_percentile, reasons)
 
         total = min(
             100.0,
@@ -81,7 +88,8 @@ class LeftSideScoringEngine:
             + fundamental_safety
             + catalyst
             + sector_resonance
-            + ignition,
+            + ignition
+            + microstructure["microstructure_score"],
         )
         plan = build_trade_plan(float(latest["close"]), float(latest.get("atr14", 0) or 0), total)
         return LeftSideScoreBreakdown(
@@ -94,6 +102,11 @@ class LeftSideScoringEngine:
             fundamental_safety_score=round(fundamental_safety, 2),
             catalyst_score=round(catalyst, 2),
             sector_resonance_score=round(sector_resonance, 2),
+            microstructure_score=round(microstructure["microstructure_score"], 2),
+            window_dressing_score=round(microstructure["window_dressing_score"], 2),
+            jailbreak_score=round(microstructure["jailbreak_score"], 2),
+            cb_signal_score=round(microstructure["cb_signal_score"], 2),
+            geographic_broker_score=round(microstructure["geographic_broker_score"], 2),
             sentiment_score=round(sentiment, 2),
             ignition_score=round(ignition, 2),
             is_candidate=total >= self.candidate_score,
@@ -306,6 +319,102 @@ class LeftSideScoringEngine:
             reasons.append("sector_turnover_jump")
         return min(weight, score)
 
+    def _microstructure_score(
+        self,
+        microstructure_row: dict | pd.Series | None,
+        bandwidth_percentile: float | None,
+        reasons: list[str],
+    ) -> dict[str, float]:
+        """V4 台股微結構策略。
+
+        這個構面只讀取已被 collector 明確填入的欄位；資料未接上時維持 0 分，
+        避免把推測值當成真訊號。
+        """
+        empty = {
+            "microstructure_score": 0.0,
+            "window_dressing_score": 0.0,
+            "jailbreak_score": 0.0,
+            "cb_signal_score": 0.0,
+            "geographic_broker_score": 0.0,
+        }
+        if microstructure_row is None:
+            return empty
+
+        per_strategy = float(self.thresholds.get("microstructure_strategy_points", 15))
+        cap = float(self.weights.get("microstructure", per_strategy))
+        scores = dict(empty)
+
+        days_to_quarter_end = self._float_value(microstructure_row, "days_to_quarter_end")
+        trust_holding_ratio = self._float_value(microstructure_row, "trust_holding_ratio_pct")
+        trust_net_buy_5d = self._float_value(microstructure_row, "trust_net_buy_5d")
+        if (
+            days_to_quarter_end is not None
+            and trust_holding_ratio is not None
+            and trust_net_buy_5d is not None
+            and days_to_quarter_end <= float(self.thresholds["window_dressing_days_to_quarter_end"])
+            and float(self.thresholds["window_dressing_trust_holding_min_pct"])
+            <= trust_holding_ratio
+            <= float(self.thresholds["window_dressing_trust_holding_max_pct"])
+            and trust_net_buy_5d > 0
+        ):
+            scores["window_dressing_score"] = per_strategy
+            reasons.append("window_dressing_setup")
+
+        disposition_days_to_end = self._float_value(microstructure_row, "disposition_days_to_end")
+        disposition_range_pct = self._float_value(microstructure_row, "disposition_range_pct")
+        big_holder_not_down = self._bool_value(microstructure_row, "big_holder_ratio_not_down")
+        big_holder_change = self._float_value(microstructure_row, "big_holder_ratio_change_pp")
+        if big_holder_not_down is None and big_holder_change is not None:
+            big_holder_not_down = big_holder_change >= 0
+        if (
+            disposition_days_to_end is not None
+            and disposition_range_pct is not None
+            and big_holder_not_down is True
+            and disposition_days_to_end <= float(self.thresholds["disposition_days_to_end"])
+            and disposition_range_pct < float(self.thresholds["disposition_max_range_pct"])
+        ):
+            scores["jailbreak_score"] = per_strategy
+            reasons.append("jailbreak_setup")
+
+        has_convertible_bond = self._bool_value(microstructure_row, "has_convertible_bond")
+        cb_price = self._float_value(microstructure_row, "cb_price")
+        cb_volume_ratio = self._float_value(microstructure_row, "cb_volume_ratio")
+        cb_bandwidth_percentile = self._float_value(microstructure_row, "bb_bandwidth_percentile")
+        if cb_bandwidth_percentile is None:
+            cb_bandwidth_percentile = bandwidth_percentile
+        cb_has_trigger = (
+            (cb_price is not None and cb_price > float(self.thresholds["cb_price_breakout"]))
+            or (cb_volume_ratio is not None and cb_volume_ratio > float(self.thresholds["cb_volume_ratio"]))
+        )
+        if (
+            has_convertible_bond is True
+            and cb_bandwidth_percentile is not None
+            and cb_bandwidth_percentile < float(self.thresholds["cb_squeeze_percentile"])
+            and cb_has_trigger
+        ):
+            scores["cb_signal_score"] = per_strategy
+            reasons.append("cb_abnormal_signal")
+
+        branch_streak_days = self._float_value(microstructure_row, "same_city_branch_buy_streak_days")
+        branch_volume_pct = self._float_value(microstructure_row, "same_city_branch_buy_volume_pct")
+        if (
+            branch_streak_days is not None
+            and branch_volume_pct is not None
+            and branch_streak_days >= float(self.thresholds["geo_branch_streak_days"])
+            and branch_volume_pct >= float(self.thresholds["geo_branch_volume_pct"])
+        ):
+            scores["geographic_broker_score"] = per_strategy
+            reasons.append("geographic_broker_accumulation")
+
+        raw_score = (
+            scores["window_dressing_score"]
+            + scores["jailbreak_score"]
+            + scores["cb_signal_score"]
+            + scores["geographic_broker_score"]
+        )
+        scores["microstructure_score"] = min(cap, raw_score)
+        return scores
+
     def _bandwidth_percentile(self, indicators: pd.DataFrame) -> float | None:
         """今日布林帶寬在近 N 日中的百分位（越低代表壓縮越極端）。"""
         bandwidth = self._bollinger_bandwidth(indicators)
@@ -371,6 +480,31 @@ class LeftSideScoringEngine:
         if isinstance(row, pd.Series):
             return row.get(key)
         return row.get(key)
+
+    def _float_value(self, row: dict | pd.Series, key: str) -> float | None:
+        value = self._get_value(row, key)
+        if value is None or pd.isna(value):
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    def _bool_value(self, row: dict | pd.Series, key: str) -> bool | None:
+        value = self._get_value(row, key)
+        if value is None or pd.isna(value):
+            return None
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"1", "true", "yes", "y"}:
+                return True
+            if normalized in {"0", "false", "no", "n"}:
+                return False
+        if isinstance(value, (int, float)):
+            return bool(value)
+        return None
 
     @staticmethod
     def _chip_series(chip_rows: pd.DataFrame | None, column: str) -> pd.Series | None:

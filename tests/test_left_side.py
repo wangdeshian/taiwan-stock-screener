@@ -202,6 +202,42 @@ def test_catalyst_and_sector_resonance_are_scored() -> None:
     assert "sector_turnover_jump" in result.reasons
 
 
+def test_v4_microstructure_strategies_are_scored() -> None:
+    prices = _squeeze_ignition_prices()
+    indicators = add_technical_indicators(prices)
+
+    result = LeftSideScoringEngine().score(
+        symbol="V4",
+        indicators=indicators,
+        microstructure_row={
+            "days_to_quarter_end": 12,
+            "trust_holding_ratio_pct": 5,
+            "trust_net_buy_5d": 1200,
+            "disposition_days_to_end": 1,
+            "disposition_range_pct": 8,
+            "big_holder_ratio_change_pp": 0.2,
+            "has_convertible_bond": True,
+            "cb_price": 106,
+            "cb_volume_ratio": 3.5,
+            "same_city_branch_buy_streak_days": 5,
+            "same_city_branch_buy_volume_pct": 12,
+        },
+    )
+
+    assert result.microstructure_score == 15
+    assert result.window_dressing_score == 15
+    assert result.jailbreak_score == 15
+    assert result.cb_signal_score == 15
+    assert result.geographic_broker_score == 15
+    for reason in (
+        "window_dressing_setup",
+        "jailbreak_setup",
+        "cb_abnormal_signal",
+        "geographic_broker_accumulation",
+    ):
+        assert reason in result.reasons
+
+
 def _squeeze_ignition_prices(days: int = 260) -> pd.DataFrame:
     """打底末端出現壓縮點火：波動遞減至今日最低、今日溫和放量收紅。"""
     dates = _trading_dates(days)

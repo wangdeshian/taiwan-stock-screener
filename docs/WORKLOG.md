@@ -14,6 +14,14 @@
 
 ## 日誌（新的在上面）
 
+### 2026-07-18（四）| Codex
+- **做了**：接入 V4 台股微結構策略骨架：`left_side.py` 新增 `microstructure_score` 與四個子分數（投信作帳、處置出關、CB 異常、地緣券商）；前端左側明細新增「台股微結構」區塊與四個 reason 標籤；新增 `docs/V4_MICROSTRUCTURE_STRATEGIES.md`
+- **做了**：照前一輪急件完成分點提速：新增 env `SCREENER_BRANCH_ANALYZE_LIMIT`（預設 20），`branch_lookback_days` 10→5；輸出 `left_side_branch_analyze_limit`、`left_side_branch_lookback_days`、`left_side_branch_analyzed_count`
+- **修正**：`refresh_chip_store` 在 FinMind 已正常回補時，週末不再 fallback 寫入 TWSE 當日快照，避免非交易日多出一筆日期
+- **已驗證**：`python -m pytest` 48 passed；`node --check frontend/app.js` 通過
+- **未完成／進行中**：四個 V4 策略的 collector 尚未全部接上；資料未接上時分數維持 0，不得用推測值補分
+- **建議下一步**：依序補 collector：投信持股比例 → 處置股公告 → 可轉債對照/成交 → 公司地址與券商分點地址對照表
+
 ### 2026-07-18（三）| Codex
 - **做了**：合併 Claude 與 Codex 的協作規則，確認 `main` 為唯一正式版本；更新 `AGENTS.md`，要求每次開工先 `git status`、`git fetch`、看最新 commit、`git pull --rebase --autostash`，並保留 `docs/WORKLOG.md` 交接流程
 - **已驗證**：處理 `AGENTS.md` add/add rebase 衝突與 `docs/WORKLOG.md` 日誌衝突，保留 Claude 的 WORKLOG 機制、最新分點驗證紀錄，以及 Codex 的正式網站驗證規則

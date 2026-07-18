@@ -53,12 +53,15 @@ git status --short
 
 - **右側動能**（`scoring/engine.py`）：趨勢/量能/法人/籌碼/基本面/產業/風報比，門檻 55（live）
 - **左側潛伏**（`scoring/left_side.py`）：底部結構 20／壓縮點火 10／空單回補 15／散戶絕望 10／
-  聰明錢 15／基本面安全 10／催化劑 10／產業共振 10，門檻 70；權重與門檻全在 `config.yaml`
+  聰明錢 15／基本面安全 10／催化劑 10／產業共振 10；另有 V4 台股微結構加分構面
+  （投信作帳、處置出關、CB 異常、地緣券商），門檻 70；權重與門檻全在 `config.yaml`
 - 左側兩段式漏斗：①布林壓縮點火海選（yfinance 批次）＋籌碼起手式（`market_chip.py` 滾動快照）
   → ②入圍前 50 檔完整評分。觀察池為最後備援（排除動能重疊股）
 - 分點資金流（`collectors/broker_flow.py`，Sponsor）：前十大分點集中度＋連續天數、
   隔日沖黑名單佔比（config `day_trade_branch_blacklist`）、主力成本線、
   籌碼階段 accumulation/churn/quiet；吸貨在聰明錢構面補位加分、紊亂只警示不給分
+- V4 微結構策略規格在 `docs/V4_MICROSTRUCTURE_STRATEGIES.md`。目前評分欄位與前端顯示已就緒；
+  尚未接上的資料源必須維持 0 分，不得用推測值補分。
 
 ## 資料源限制（重要，別重蹈覆轍）
 
@@ -69,7 +72,8 @@ git status --short
   「綜合損益歸屬」不是權益餘額；ROE 分母只能取自 `TaiwanStockBalanceSheet`。
   每輪執行會把兩個 dataset 的科目清單印進 log（自我診斷），科目異動先查 log 再改 mapping。
 - **分點 dataset 單日限制**：`TaiwanStockTradingDailyReport` 一次只能查一天
-  （帶 end_date 會 400），要逐日迴圈抓；ETF 跳過不抓。
+  （帶 end_date 會 400），要逐日迴圈抓；ETF 跳過不抓。為避免 workflow 過慢，左側分點預設只分析
+  入圍前 20 檔（env `SCREENER_BRANCH_ANALYZE_LIMIT`），回看 5 天。
 - **TWSE**：openapi（`openapi.twse.com.tw`）在 GitHub Actions 可用；`www.twse.com.tw` 的
   rwd 端點會回非 JSON（擋雲端 IP），別用。TWT93U/TWTB4U 的 openapi 路徑不存在。
 - **TPEx** openapi 偶發 5xx，已有重試；失敗時左側範圍剩上市股。

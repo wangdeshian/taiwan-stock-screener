@@ -89,7 +89,18 @@ left_side:
     branch_concentration_pct: 50
     branch_streak_days: 3
     branch_churn_max_ratio_pct: 15
-    branch_lookback_days: 10
+    branch_lookback_days: 5
+    microstructure_strategy_points: 15
+    window_dressing_days_to_quarter_end: 20
+    window_dressing_trust_holding_min_pct: 3
+    window_dressing_trust_holding_max_pct: 8
+    disposition_days_to_end: 2
+    disposition_max_range_pct: 15
+    cb_squeeze_percentile: 10
+    cb_price_breakout: 105
+    cb_volume_ratio: 3
+    geo_branch_streak_days: 5
+    geo_branch_volume_pct: 10
   # 知名隔日沖分點黑名單（正規化子字串比對，可自行增刪）
   day_trade_branch_blacklist:
     - 凱基-松山
@@ -103,6 +114,7 @@ left_side:
     fundamental_safety: 10
     catalyst: 10
     sector_resonance: 10
+    microstructure: 15
     sentiment: 0
 
 trade_plan:
