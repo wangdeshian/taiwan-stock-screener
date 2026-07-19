@@ -114,7 +114,13 @@
 
 - 已完成：評分引擎欄位、門檻設定、前端標籤與微結構卡片
 - 已完成：FinMind 分點 API 只分析入圍前 20 檔，降低 workflow 時間
-- 待補：投信持股比例 collector
-- 待補：處置股公告 collector
-- 待補：可轉債對照與成交資料 collector
-- 待補：公司地址與券商分點地址對照表
+- 已完成：處置股公告 collector（FinMind `TaiwanStockDispositionSecuritiesPeriod`，全市場一次）
+- 已完成：可轉債對照與成交 collector（`TaiwanStockConvertibleBondInfo` ＋ 每檔日成交；
+  CB 代號無股票欄位時以「去掉末碼」推導現股代號）
+- 已完成：公司縣市（公司基本資料 t187ap03 住址）×券商分點縣市（`TaiwanSecuritiesTraderInfo`）
+  對照，餵給地緣券商訊號
+- 已完成：投信近 5 日淨買超（沿用三大法人資料）
+- **待補：投信持股比例**——FinMind 無現成 dataset，投信作帳訊號在此欄位補上前不會觸發
+  （引擎規則：缺欄位不給分，不用估算值硬補）
+- 純計算集中在 `taiwan_stock_screener/collectors/microstructure.py`（有單元測試）；
+  抓取在 `scripts/run_screener.py`，dataset 名稱錯誤或等級不足會自我診斷並整輪跳過

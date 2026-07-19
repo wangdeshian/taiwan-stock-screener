@@ -25,6 +25,13 @@ from taiwan_stock_screener.collectors.sample import (  # noqa: E402
     sample_stocks,
 )
 from taiwan_stock_screener.collectors.broker_flow import analyze_broker_flow  # noqa: E402
+from taiwan_stock_screener.collectors.microstructure import (  # noqa: E402
+    build_microstructure_row,
+    cb_fields,
+    city_of_address,
+    disposition_fields,
+    geographic_fields,
+)
 from taiwan_stock_screener.collectors.market_chip import (  # noqa: E402
     chip_rows_for,
     prefilter_left_symbols,
@@ -237,6 +244,11 @@ def fetch_industry_map() -> dict[str, str]:
             industry = industry_label_from_code(industry_code)
             if symbol and industry:
                 mapping[symbol] = industry
+            # 順便記下公司所在縣市（地緣券商策略用）
+            address = next((row.get(key) for key in ("住址", "Address", "address") if row.get(key)), None)
+            city = city_of_address(address)
+            if symbol and city:
+                COMPANY_CITY_MAP[symbol] = city
         print(f"{label} industries: {sum(1 for row in rows if isinstance(row, dict))} rows")
     return mapping
 
@@ -821,6 +833,107 @@ def fetch_chip_finmind(symbol: str, price_history: pd.DataFrame) -> pd.DataFrame
 
 _HOLDERS_UNAVAILABLE = False
 _BROKER_FLOW_UNAVAILABLE = False
+_MICRO_DATASET_UNAVAILABLE: set[str] = set()
+_MICRO_DIAGNOSED: set[str] = set()
+# 公司代號 → 縣市（由 fetch_industry_map 的公司基本資料順便填入，地緣券商策略用）
+COMPANY_CITY_MAP: dict[str, str] = {}
+
+
+def _finmind_micro_dataset(
+    candidates: tuple[str, ...],
+    extra_params: dict[str, Any],
+    label: str,
+    timeout: int = 60,
+    quiet_empty: bool = False,
+) -> pd.DataFrame:
+    """V4 微結構資料集抓取：dataset 名稱逐一嘗試，錯誤自我診斷。
+
+    只有「等級不足」或「dataset 名稱無效」才整輪封鎖該名稱；其他錯誤僅警告。
+    首次成功時把欄位清單印進 log，之後欄位對不上可直接從執行紀錄查。
+    """
+    if not FINMIND_TOKEN:
+        return pd.DataFrame()
+    for dataset in candidates:
+        if dataset in _MICRO_DATASET_UNAVAILABLE:
+            continue
+        try:
+            payload = finmind_get({"dataset": dataset, **extra_params}, timeout=timeout)
+            data = payload.get("data", [])
+        except Exception as exc:
+            message = str(exc)
+            if "level" in message.lower() or "Input should be" in message:
+                _MICRO_DATASET_UNAVAILABLE.add(dataset)
+            print(f"WARN {label}: dataset {dataset} failed: {message[:200]}")
+            continue
+        if data:
+            frame = pd.DataFrame(data)
+            if label not in _MICRO_DIAGNOSED:
+                _MICRO_DIAGNOSED.add(label)
+                print(f"{label}: dataset {dataset} rows={len(frame)} columns={list(frame.columns)[:14]}")
+            return frame
+        if not quiet_empty:
+            print(f"WARN {label}: dataset {dataset} returned no data")
+    return pd.DataFrame()
+
+
+def fetch_disposition_finmind() -> pd.DataFrame:
+    """處置有價證券公告（近 120 天，全市場一次）。"""
+    start = (date.today() - timedelta(days=120)).isoformat()
+    return _finmind_micro_dataset(
+        ("TaiwanStockDispositionSecuritiesPeriod",),
+        {"start_date": start},
+        "micro-disposition",
+    )
+
+
+def fetch_cb_map_finmind() -> dict[str, str]:
+    """可轉債總覽 → 現股代號對照（一檔股票取一檔 CB）。"""
+    frame = _finmind_micro_dataset(("TaiwanStockConvertibleBondInfo",), {}, "micro-cb-info")
+    if frame.empty:
+        return {}
+    cb_col = next((c for c in ("cb_id", "bond_id", "code", "CBCode") if c in frame.columns), None)
+    if not cb_col:
+        return {}
+    stock_col = next((c for c in ("stock_id", "stock_code", "StockCode") if c in frame.columns), None)
+    mapping: dict[str, str] = {}
+    for _, row in frame.iterrows():
+        cb_id = str(row[cb_col]).strip()
+        if not cb_id:
+            continue
+        # 台灣 CB 代號慣例 = 股票代號 + 1 碼序號
+        stock = str(row[stock_col]).strip() if stock_col and pd.notna(row.get(stock_col)) else cb_id[:-1]
+        if stock and stock not in mapping:
+            mapping[stock] = cb_id
+    return mapping
+
+
+def fetch_cb_daily_finmind(cb_id: str) -> pd.DataFrame:
+    """單檔可轉債近 45 天日成交。"""
+    start = (date.today() - timedelta(days=45)).isoformat()
+    return _finmind_micro_dataset(
+        ("TaiwanStockConvertibleBondDailyOverview", "TaiwanStockConvertibleBondDaily"),
+        {"data_id": cb_id, "start_date": start},
+        "micro-cb-daily",
+        quiet_empty=True,
+    )
+
+
+def fetch_trader_city_map() -> dict[str, str]:
+    """券商（分點）基本資料 → 分點名稱對縣市。"""
+    frame = _finmind_micro_dataset(("TaiwanSecuritiesTraderInfo",), {}, "micro-trader-info")
+    if frame.empty:
+        return {}
+    name_col = next((c for c in ("securities_trader", "name") if c in frame.columns), None)
+    addr_col = next((c for c in ("address", "Address", "location") if c in frame.columns), None)
+    if not name_col or not addr_col:
+        return {}
+    mapping: dict[str, str] = {}
+    for _, row in frame.iterrows():
+        city = city_of_address(row.get(addr_col))
+        name = str(row.get(name_col) or "").strip()
+        if name and city:
+            mapping[name] = city
+    return mapping
 
 
 def fetch_broker_flow_finmind(symbol: str, trading_days: int = 10) -> pd.DataFrame:
@@ -1586,6 +1699,11 @@ def run_left_side_screener(
     day_trade_blacklist = [
         str(entry) for entry in get_settings().raw["left_side"].get("day_trade_branch_blacklist", [])
     ]
+    # V4 微結構的全市場資料（每輪各抓一次）
+    disposition_frame = fetch_disposition_finmind()
+    cb_map = fetch_cb_map_finmind()
+    trader_city_map = fetch_trader_city_map()
+    micro_today = datetime.now(TW_TZ).date()
 
     universe = all_quotes[(all_quotes["close"] > LEFT_MIN_CLOSE) & (all_quotes["turnover"] > LEFT_MIN_TURNOVER)]
     payload: dict[str, Any] = {
@@ -1763,6 +1881,17 @@ def run_left_side_screener(
                 lookahead_trading_days=catalyst_lookahead,
             )
             sector_row = sector_payloads.get(symbol, empty_sector_payload())
+
+            cb_id = cb_map.get(symbol)
+            cb_daily = fetch_cb_daily_finmind(cb_id) if cb_id else pd.DataFrame()
+            micro_row = build_microstructure_row(
+                today=micro_today,
+                institutional_rows=institutions if institutions is not None and not institutions.empty else None,
+                disposition=disposition_fields(symbol, disposition_frame, history, holder_rows, micro_today),
+                cb=cb_fields(cb_daily),
+                has_convertible_bond=bool(cb_id) if cb_map else None,
+                geographic=geographic_fields(broker_frame, trader_city_map, COMPANY_CITY_MAP.get(symbol)),
+            )
             left_result = left_engine.score(
                 symbol=symbol,
                 indicators=indicators,
@@ -1774,6 +1903,7 @@ def run_left_side_screener(
                 catalyst_row=catalyst_row,
                 sector_row=sector_row,
                 broker_row=broker_row,
+                microstructure_row=micro_row,
             )
             left_candidate = serialize_left_candidate(
                 symbol=symbol,
@@ -1792,6 +1922,7 @@ def run_left_side_screener(
                 quote_date=str(quote.get("quote_date") or ""),
                 quote_source=str(quote.get("quote_source") or market),
             )
+            left_candidate["microstructure_available"] = micro_row is not None
             if is_observation_pool:
                 left_candidate["reasons"] = ["observation_pool", *left_candidate.get("reasons", [])]
                 left_candidate["is_observation_pool"] = True
