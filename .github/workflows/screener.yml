@@ -45,11 +45,14 @@ jobs:
           PYTHONUNBUFFERED: "1"
         run: python scripts/run_screener.py
 
+      - name: Analyze signal outcomes
+        run: python scripts/analyze_signal_outcomes.py --min-samples 3
+
       - name: Commit generated results
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add frontend/data/results.json frontend/data/history.json
+          git add frontend/data/results.json frontend/data/history.json frontend/data/signal_backtest.json
           git add frontend/data/chip_history.csv 2>/dev/null || true
           git add frontend/data/sector_history.json 2>/dev/null || true
           if ! git diff --staged --quiet; then
@@ -70,9 +73,10 @@ jobs:
           mkdir -p ../pages/data
           cp frontend/data/results.json ../pages/data/results.json
           cp frontend/data/history.json ../pages/data/history.json
+          cp frontend/data/signal_backtest.json ../pages/data/signal_backtest.json
           if [ -f frontend/data/sector_history.json ]; then cp frontend/data/sector_history.json ../pages/data/sector_history.json; fi
           cd ../pages
-          git add index.html app.js styles.css .nojekyll data/results.json data/history.json
+          git add index.html app.js styles.css .nojekyll data/results.json data/history.json data/signal_backtest.json
           git add data/sector_history.json 2>/dev/null || true
           if ! git diff --staged --quiet; then
             git commit -m "chore: update published screener site"

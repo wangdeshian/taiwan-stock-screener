@@ -14,6 +14,22 @@
 
 ## 日誌（新的在上面）
 
+### 2026-07-21 | Codex
+- **做了**：新增事件回測腳本 `scripts/analyze_signal_outcomes.py`，讀取
+  `frontend/data/history.json`，比較候選股訊號後 1/2/3/5 個觀察交易日的後續報酬，
+  輸出 `frontend/data/signal_backtest.json`
+- **做了**：`update_history()` 開始保留 `quote_date`、`quote_source`、`close_price`、
+  `reasons` 與主要分數欄位，避免週末 workflow 或舊資料造成回測假訊號
+- **做了**：Daily Stock Screener workflow 會在跑完選股後自動更新
+  `signal_backtest.json`，並發布到 GitHub Pages
+- **初步結果**：目前僅 10 天歷史、250 筆事件，信心標為 `low`；
+  H1 暫看 `deep_washout_proxy` n=9、平均 +2.27%、勝率 88.9%，只能當校準線索，
+  不可視為穩定預測
+- **已驗證**：`python -m pytest` 63 passed；
+  `python scripts/analyze_signal_outcomes.py --min-samples 3` 可產出報告
+- **建議下一步**：累積至少 30～60 個交易日後，再把 `feature_summaries` 轉成權重調整；
+  短期可在前端新增「歷史訊號回測」區塊
+
 ### 2026-07-21（五）| Claude
 - **做了**：回測 7/12~7/21 自選潛伏股 vs history，發現今日漲停的揚博/景碩/創意/凌巨
   **全部提前進過左側名單**，共同勝利訊號＝`short_covering`（借券回補）＋`margin_flush`
