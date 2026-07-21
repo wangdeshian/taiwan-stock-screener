@@ -14,6 +14,17 @@
 
 ## 日誌（新的在上面）
 
+### 2026-07-21（二）| Claude
+- **做了**：催化劑自動化第一步——法說會接 TWSE/TPEx openapi（`t187ap38_L`／
+  `mopsfin_t187ap38_O`，自我診斷模式印筆數＋鍵名）；民國日期解析
+  `parse_roc_or_iso_date`；與手動 `catalysts.json` 合併去重（手動優先）
+- **做了**：前端「近期催化」區分三態：有事件／已接但近期無事件／未接
+  （靠新輸出欄位 `catalyst_event_count`）
+- **已驗證**：pytest 58 passed；`node --check frontend/app.js` 通過。openapi 端點名稱
+  沙箱不可外連、未實測——看下一輪 log 的 `catalyst-twse-conference` / `catalyst-tpex-conference`
+  行，若 404 或鍵名對不上照 log 修
+- **建議下一步**：確認法說會事件有進 results.json → 之後擴充除權息、股東會事件源
+
 ### 2026-07-21 | Claude
 - **做了**：讀 07-19 首輪 log 的微結構自我診斷，修正兩個 dataset mapping bug——
   ①處置股欄位實際是 `period_start`/`period_end`（原找 start_date/end_date 對不上→全 None）；

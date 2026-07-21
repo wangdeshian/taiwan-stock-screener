@@ -45,6 +45,7 @@ from taiwan_stock_screener.indicators.technical import (  # noqa: E402
 from taiwan_stock_screener.scoring.engine import ScoringEngine  # noqa: E402
 from taiwan_stock_screener.scoring.left_side import LeftSideScoringEngine  # noqa: E402
 from taiwan_stock_screener.catalysts.events import (  # noqa: E402
+    events_from_conference_rows,
     load_catalyst_events,
     nearest_catalyst_payload,
 )
@@ -936,6 +937,31 @@ def fetch_cb_daily_finmind(cb_id: str) -> pd.DataFrame:
         quiet_empty=True,
         require_any=("close", "Close", "closing_price"),
     )
+
+
+def fetch_investor_conferences(today: date) -> list[Any]:
+    """TWSE/TPEx openapi 法說會公告 → 催化事件（自我診斷模式）。
+
+    端點失敗只警告不中斷；成功時把筆數與鍵名印進 log，鍵名對不上照 log 修。
+    """
+    events: list[Any] = []
+    sources = (
+        ("catalyst-twse-conference", "https://openapi.twse.com.tw/v1/opendata/t187ap38_L"),
+        ("catalyst-tpex-conference", "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap38_O"),
+    )
+    for label, url in sources:
+        try:
+            response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=30)
+            response.raise_for_status()
+            rows = response.json()
+        except Exception as exc:
+            print(f"WARN {label}: fetch failed: {str(exc)[:160]}")
+            continue
+        parsed = events_from_conference_rows(rows, today=today)
+        keys = list(rows[0].keys())[:10] if isinstance(rows, list) and rows and isinstance(rows[0], dict) else []
+        print(f"{label}: rows={len(rows) if isinstance(rows, list) else 'n/a'} upcoming={len(parsed)} keys={keys}")
+        events.extend(parsed)
+    return events
 
 
 def fetch_trader_city_map() -> dict[str, str]:
@@ -2037,7 +2063,13 @@ def run_live_screener() -> dict[str, Any]:
     )
     if sector_snapshot:
         update_sector_history(SECTOR_HISTORY_PATH, now_tw.date(), sector_snapshot)
-    catalyst_events = load_catalyst_events(CATALYST_EVENTS_PATH)
+    manual_events = load_catalyst_events(CATALYST_EVENTS_PATH)
+    conference_events = fetch_investor_conferences(now_tw.date())
+    seen_events = {(e.symbol, e.event_date) for e in manual_events}
+    catalyst_events = manual_events + [
+        e for e in conference_events if (e.symbol, e.event_date) not in seen_events
+    ]
+    print(f"Catalyst events: manual {len(manual_events)} + conference {len(conference_events)} → {len(catalyst_events)}")
     today = fetch_today_universe(all_quotes)
     if today.empty:
         print("WARN no live universe found; keeping previous live output if available")
@@ -2190,6 +2222,7 @@ def run_live_screener() -> dict[str, Any]:
         "updated_at": now_tw.isoformat(),
         "screened_count": len(today),
         "candidate_count": len(candidates),
+        "catalyst_event_count": len(catalyst_events),
         "has_institutional_data": bool(FINMIND_TOKEN),
         "has_fugle_data": bool(FUGLE_API_KEY),
         "score_threshold": threshold,
