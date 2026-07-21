@@ -110,3 +110,34 @@ def test_extract_financial_metrics_reads_equity_from_balance_sheet() -> None:
     result = extract_financial_metrics(statements, balance)
 
     assert result == {"eps": 2.0, "roe_pct": 20.0}
+
+
+def test_previous_left_scores_prefers_full_score_map() -> None:
+    from scripts.run_screener import previous_left_scores
+
+    entries = [
+        {
+            "date": "2026-07-20",
+            "left_side_candidates": [{"symbol": "2493", "total_score": 63.5}],
+            "left_side_scores": {"2493": 63.5, "9999": 21.0},
+        },
+        {
+            "date": "2026-07-16",
+            "left_side_candidates": [{"symbol": "2493", "total_score": 23.5}],
+        },
+        # 超出視窗的舊資料要被忽略
+        {
+            "date": "2026-07-01",
+            "left_side_candidates": [{"symbol": "8888", "total_score": 80.0}],
+        },
+    ]
+
+    result = previous_left_scores(entries, "2026-07-21", window_days=5)
+    assert result["2493"] == {"date": "2026-07-20", "score": 63.5}
+    # 未進榜低分股也要有基準（來自 left_side_scores 全表）
+    assert result["9999"]["score"] == 21.0
+    assert "8888" not in result
+    # 今天（含）之後的資料不能當基準
+    entries.insert(0, {"date": "2026-07-21", "left_side_scores": {"2493": 99.0}})
+    assert previous_left_scores(entries, "2026-07-21", window_days=5)["2493"]["score"] == 63.5
+    assert previous_left_scores([], "2026-07-21", window_days=5) == {}

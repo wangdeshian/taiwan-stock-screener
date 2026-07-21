@@ -101,6 +101,10 @@ left_side:
     cb_volume_ratio: 3
     geo_branch_streak_days: 5
     geo_branch_volume_pct: 10
+    # 訊號加速：評分較前次出現大幅跳升（起手式完成的樣子，如 2493 漲停前 23.5→63.5）
+    acceleration_min_delta: 20
+    acceleration_window_days: 5
+    acceleration_min_score: 45
   # 知名隔日沖分點黑名單（正規化子字串比對，可自行增刪）
   day_trade_branch_blacklist:
     - 凱基-松山

@@ -14,6 +14,17 @@
 
 ## 日誌（新的在上面）
 
+### 2026-07-21（三）| Claude
+- **做了**：新增「⚡ 訊號加速」——左側評分與自己前幾天比、數日內大幅跳升就標記
+  （案例：2493 揚博 07-16 得 23.5 分、07-20 跳到 63.5、07-21 漲停——訊號其實提早出現，
+  但被 70 分絕對門檻埋掉；3189 景碩 07-18 得 54 分同型）。門檻在 config：
+  `acceleration_min_delta` 20 分／`acceleration_window_days` 5 天／`acceleration_min_score` 45
+- **做了**：history.json 新增 `left_side_scores` 全表（含未進榜低分股），讓隔日比對有完整基準；
+  前端列表分數旁顯示 ▲/▼ 變化徽章＋⚡ reason 標籤
+- **已驗證**：pytest 59 passed、node --check 通過
+- **注意**：加速訊號需要兩天以上的 history 才會開始出現；`left_side_scores` 07-21 起才有
+- **建議下一步**：觀察加速訊號的命中率；考慮把「score_delta 大＋股價還在跌」再細分成獨立標記
+
 ### 2026-07-21（二）| Claude
 - **做了**：催化劑自動化第一步——法說會接 TWSE/TPEx openapi（`t187ap38_L`／
   `mopsfin_t187ap38_O`，自我診斷模式印筆數＋鍵名）；民國日期解析
