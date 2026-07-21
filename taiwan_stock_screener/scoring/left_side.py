@@ -70,6 +70,7 @@ class LeftSideScoringEngine:
         base_structure = self._base_structure_score(indicators, reasons)
         short_covering = self._short_covering_score(chip_rows, reasons)
         retail_capitulation = self._retail_capitulation_score(latest, chip_rows, reasons)
+        washout_bonus = self._deep_washout_bonus(chip_rows, reasons)
         smart_money = self._smart_money_score(holder_rows, institutional_rows, latest, reasons, broker_row)
         fundamental_safety = self._fundamental_safety_score(revenue_row, financial_row, reasons)
         catalyst = self._catalyst_score(catalyst_row, reasons)
@@ -89,7 +90,8 @@ class LeftSideScoringEngine:
             + catalyst
             + sector_resonance
             + ignition
-            + microstructure["microstructure_score"],
+            + microstructure["microstructure_score"]
+            + washout_bonus,
         )
         plan = build_trade_plan(float(latest["close"]), float(latest.get("atr14", 0) or 0), total)
         return LeftSideScoreBreakdown(
@@ -150,14 +152,9 @@ class LeftSideScoringEngine:
         if series is None:
             return 0.0
         lookback = int(self.thresholds["short_balance_lookback_days"])
-        window = series.tail(lookback)
-        if len(window) < 2:
+        drop_pct = self._drop_pct(series, lookback)
+        if drop_pct is None:
             return 0.0
-        start = float(window.iloc[0])
-        end = float(window.iloc[-1])
-        if start <= 0:
-            return 0.0
-        drop_pct = (start - end) / start * 100
         required = float(self.thresholds["short_balance_drop_pct"])
         score = 0.0
         if drop_pct >= required:
@@ -173,6 +170,39 @@ class LeftSideScoringEngine:
                 reasons.append("short_squeeze_setup")
                 score += weight * 0.3
         return min(weight, score)
+
+    def _deep_washout_bonus(self, chip_rows: pd.DataFrame | None, reasons: list[str]) -> float:
+        """深度洗盤：空單回補＋融資大減「同時且夠深」的高勝率組合加分。
+
+        回測（2026-07 揚博/景碩/創意/凌巨 起漲前）顯示：這兩個訊號單獨出現很常見，
+        但同時且幅度深時（空方認輸回補、散戶斷頭殺融資，股價卻在低基期止穩）
+        是起漲前的共同特徵。門檻略高於各自單獨訊號，只有真正深跌才給獨立加權與標記。
+        """
+        short_series = self._chip_series(chip_rows, "short_balance")
+        margin_series = self._chip_series(chip_rows, "margin_balance")
+        if short_series is None or margin_series is None:
+            return 0.0
+        short_drop = self._drop_pct(short_series, int(self.thresholds["short_balance_lookback_days"]))
+        margin_drop = self._drop_pct(margin_series, int(self.thresholds["margin_lookback_days"]))
+        if short_drop is None or margin_drop is None:
+            return 0.0
+        if short_drop >= float(self.thresholds["washout_short_drop_pct"]) and margin_drop >= float(
+            self.thresholds["washout_margin_drop_pct"]
+        ):
+            reasons.append("deep_washout")
+            return float(self.thresholds["washout_combo_bonus"])
+        return 0.0
+
+    @staticmethod
+    def _drop_pct(series: pd.Series, lookback: int) -> float | None:
+        """近 lookback 筆的期初→期末跌幅（%）；期初值 <= 0 或資料不足回傳 None。"""
+        window = series.tail(lookback)
+        if len(window) < 2:
+            return None
+        start = float(window.iloc[0])
+        if start <= 0:
+            return None
+        return (start - float(window.iloc[-1])) / start * 100
 
     def _short_margin_ratio(self, chip_rows: pd.DataFrame | None) -> float | None:
         """券資比（%）＝最新融券餘額 / 最新融資餘額。"""

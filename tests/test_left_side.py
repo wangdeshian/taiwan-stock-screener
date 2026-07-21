@@ -167,6 +167,43 @@ def test_left_side_score_without_chip_data_is_limited() -> None:
     assert not result.is_candidate
 
 
+def _washout_chip_rows(dates: list[date], short_end: float, margin_end: float) -> pd.DataFrame:
+    count = len(dates)
+    return pd.DataFrame(
+        {
+            "trade_date": dates,
+            "short_balance": np.linspace(1_000_000, short_end, count),
+            "margin_balance": np.linspace(500_000, margin_end, count),
+            "day_trade_ratio_pct": 5.0,
+        }
+    )
+
+
+def test_deep_washout_bonus_requires_both_signals_deep() -> None:
+    prices = _bottoming_prices()
+    indicators = add_technical_indicators(prices)
+    recent = list(prices["trade_date"].tail(30))
+    engine = LeftSideScoringEngine()
+
+    # 空單回補 -40%、融資 -20% 同時深跌 → 觸發深度洗盤加分與標記
+    deep = engine.score(
+        symbol="DEEP",
+        indicators=indicators,
+        chip_rows=_washout_chip_rows(recent, short_end=600_000, margin_end=400_000),
+    )
+    assert "deep_washout" in deep.reasons
+
+    # 只有空單深跌、融資幾乎沒動（-2%）→ 不觸發組合
+    short_only = engine.score(
+        symbol="SHORT_ONLY",
+        indicators=indicators,
+        chip_rows=_washout_chip_rows(recent, short_end=600_000, margin_end=490_000),
+    )
+    assert "deep_washout" not in short_only.reasons
+    # 組合加分讓同底部結構下的總分更高
+    assert deep.total_score > short_only.total_score
+
+
 def test_sentiment_dimension_is_reserved_placeholder() -> None:
     prices = _bottoming_prices()
     indicators = add_technical_indicators(prices)
