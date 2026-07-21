@@ -557,7 +557,10 @@ async function loadData() {
     latestData = data;
 
     const momentum = (data.top_candidates || []).map(item => ({ ...item, strategy: item.strategy || "momentum" }));
-    const left = (data.left_side_candidates || []).map(normalizeLeftCandidate);
+    const momentumSymbols = new Set(momentum.map(item => String(item.symbol)));
+    const left = (data.left_side_candidates || [])
+      .map(normalizeLeftCandidate)
+      .filter(item => !momentumSymbols.has(String(item.symbol)));
     candidateSets = {
       momentum: applyStableOrder("momentum", momentum),
       left: applyStableOrder("left", left),
