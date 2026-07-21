@@ -1751,6 +1751,47 @@ def scan_bollinger_squeeze(
     return hits_frame, histories
 
 
+def previous_left_scores(
+    entries: list[dict[str, Any]],
+    today_str: str,
+    window_days: int,
+) -> dict[str, dict[str, Any]]:
+    """history.json → 每檔左側股最近一次（今天以前、window_days 內）的評分。
+
+    給「訊號加速」用：左側起手式完成時評分會在數日內大幅跳升
+    （例：2493 漲停前兩個交易日 23.5 → 63.5），單看絕對分數門檻會漏掉。
+    """
+    if not today_str:
+        return {}
+    try:
+        cutoff = (date.fromisoformat(today_str) - timedelta(days=window_days)).isoformat()
+    except ValueError:
+        return {}
+    latest: dict[str, dict[str, Any]] = {}
+
+    def record(symbol: str, score: Any, entry_date: str) -> None:
+        if not symbol or score is None:
+            return
+        prev = latest.get(symbol)
+        if prev is None or entry_date > prev["date"]:
+            latest[symbol] = {"date": entry_date, "score": float(score)}
+
+    for entry in entries or []:
+        entry_date = str(entry.get("date", ""))
+        if not entry_date or entry_date >= today_str or entry_date < cutoff:
+            continue
+        # 完整分數表（2026-07-21 起才有）優先，涵蓋未進榜的低分股
+        scores_map = entry.get("left_side_scores") or {}
+        if isinstance(scores_map, dict):
+            for symbol, score in scores_map.items():
+                record(str(symbol).strip(), score, entry_date)
+        for cand in entry.get("left_side_candidates", []) or []:
+            if not isinstance(cand, dict):
+                continue
+            record(str(cand.get("symbol", "")).strip(), cand.get("total_score"), entry_date)
+    return latest
+
+
 def run_left_side_screener(
     all_quotes: pd.DataFrame,
     fundamentals_cache: dict[str, dict[str, Any]],
@@ -1777,6 +1818,18 @@ def run_left_side_screener(
     cb_map = fetch_cb_map_finmind()
     trader_city_map = fetch_trader_city_map()
     micro_today = datetime.now(TW_TZ).date()
+
+    # 訊號加速：跟自己前幾天的左側評分比，跳升幅度大＝起手式正在完成
+    accel_min_delta = float(thresholds.get("acceleration_min_delta", 20))
+    accel_window_days = int(thresholds.get("acceleration_window_days", 5))
+    accel_min_score = float(thresholds.get("acceleration_min_score", 45))
+    history_entries: list[dict[str, Any]] = []
+    if HISTORY.exists():
+        try:
+            history_entries = json.loads(HISTORY.read_text(encoding="utf-8"))
+        except Exception:
+            history_entries = []
+    prev_left_scores = previous_left_scores(history_entries, micro_today.isoformat(), accel_window_days)
 
     universe = all_quotes[(all_quotes["close"] > LEFT_MIN_CLOSE) & (all_quotes["turnover"] > LEFT_MIN_TURNOVER)]
     payload: dict[str, Any] = {
@@ -2014,6 +2067,19 @@ def run_left_side_screener(
                 quote_source=str(quote.get("quote_source") or market),
             )
             left_candidate["microstructure_available"] = micro_row is not None
+            prev_entry = prev_left_scores.get(symbol)
+            score_delta = (
+                round(float(left_candidate["total_score"]) - prev_entry["score"], 1) if prev_entry else None
+            )
+            left_candidate["score_prev"] = prev_entry["score"] if prev_entry else None
+            left_candidate["score_prev_date"] = prev_entry["date"] if prev_entry else None
+            left_candidate["score_delta"] = score_delta
+            if (
+                score_delta is not None
+                and score_delta >= accel_min_delta
+                and float(left_candidate["total_score"]) >= accel_min_score
+            ):
+                left_candidate["reasons"] = ["signal_acceleration", *left_candidate.get("reasons", [])]
             if is_observation_pool:
                 left_candidate["reasons"] = ["observation_pool", *left_candidate.get("reasons", [])]
                 left_candidate["is_observation_pool"] = True
@@ -2036,6 +2102,10 @@ def run_left_side_screener(
             payload["left_side_note"] = "沒有股票達到左側潛伏門檻，改顯示左側分數最高的排序。"
     payload["left_side_branch_analyzed_count"] = left_branch_fetches
     payload["left_side_candidates"] = left_candidates[:MAX_OUTPUT]
+    # 完整評分名單的分數表（含未進榜低分股）：訊號加速需要隔日比對的基準
+    payload["left_side_scores"] = {
+        str(item["symbol"]): float(item["total_score"]) for item in left_scored
+    }
     return payload
 
 
@@ -2298,6 +2368,8 @@ def update_history(output: dict[str, Any]) -> None:
                 "market": c.get("market", "TWSE"),
                 "industry": c.get("industry"),
                 "total_score": c.get("total_score"),
+                "score_prev": c.get("score_prev"),
+                "score_delta": c.get("score_delta"),
                 "entry_price": c.get("entry_price"),
                 "stop_loss_price": c.get("stop_loss_price"),
                 "target_price_1": c.get("target_price_1"),
@@ -2322,6 +2394,7 @@ def update_history(output: dict[str, Any]) -> None:
             }
             for c in output.get("left_side_candidates", [])
         ],
+        "left_side_scores": output.get("left_side_scores", {}),
     }
 
     # Replace existing entry for today or prepend

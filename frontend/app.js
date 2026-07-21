@@ -95,6 +95,7 @@ const REASON_LABELS = {
   near_catalyst: "重大事件接近",
   sector_turnover_leader: "產業成交比重領先",
   sector_turnover_jump: "產業資金顯著跳升",
+  signal_acceleration: "⚡ 訊號加速（評分數日內大幅跳升）",
   window_dressing_setup: "投信作帳中",
   jailbreak_setup: "處置即將出關",
   cb_abnormal_signal: "CB 異常訊號",
@@ -155,6 +156,14 @@ function scoreValue(item, key) {
 function microstructureValue(item, key) {
   if (item.microstructure_available === false) return "未接";
   return money(item[key]);
+}
+
+function scoreDeltaBadge(item) {
+  const delta = Number(item.score_delta);
+  if (!Number.isFinite(delta) || delta === 0 || item.score_delta === null || item.score_delta === undefined) return "";
+  const cls = delta > 0 ? "delta-up" : "delta-down";
+  const arrow = delta > 0 ? "▲" : "▼";
+  return ` <span class="score-delta ${cls}" title="較上次（${item.score_prev_date || "-"}）${delta > 0 ? "+" : ""}${delta} 分">${arrow}${Math.abs(delta)}</span>`;
 }
 
 function renderCatalystSectorMetrics(item) {
@@ -441,7 +450,7 @@ function renderRows(rows) {
       <td>${item.name}</td>
       <td class="close-price">${money(item.close_price)}</td>
       <td>${item.industry || "-"}</td>
-      <td class="score">${money(item.total_score)}</td>
+      <td class="score">${money(item.total_score)}${scoreDeltaBadge(item)}</td>
       <td>${money(item.entry_price)}</td>
       <td>${money(item.stop_loss_price)}</td>
       <td>${money(item.target_price_1)}</td>
