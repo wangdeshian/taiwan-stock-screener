@@ -14,6 +14,21 @@
 
 ## 日誌（新的在上面）
 
+### 2026-07-21（四）| Claude
+- **驗證輪結果**（run 29790897551，帶 #16 修正）：
+  - ✅ 微結構資料流通：20/20 檔 microstructure_available=true；處置股欄位
+    period_start/period_end 確認；`TaiwanStockConvertibleBondDaily` 確認有 close
+  - ✅ 分點平行預抓：**20 檔 × 9 天只花 10 秒**（原序列版推測 1 小時的部分其實不是兇手）
+  - ❌ 整輪仍 3 小時 09 分——瓶頸不在分點！log 時間戳全被 Python 緩衝擠到最後，
+    無法定位慢的階段
+  - ⚠ 地緣券商命名對不上：分點名稱對縣市命中率僅 48/818
+- **做了**：workflow 加 `PYTHONUNBUFFERED=1`（log 每行帶真實時間戳）＋
+  `PHASE xxx: +Ns` 階段計時（quotes／industry+sector+catalyst／momentum／
+  left-chip-refresh／left-squeeze-scan／left-stage2-loop）；下一輪 log 直接看哪段吃掉 2.5 小時
+- **做了**：CB 成交量欄位補 `unit`（FinMind CB Daily 無 volume 欄）；地緣券商命中率低時
+  印雙邊名稱樣本，供設計正規化規則
+- **建議下一步（急）**：看 15:10 排程輪的 PHASE 計時抓真兇；照樣本修分點↔縣市名稱正規化
+
 ### 2026-07-21（三）| Claude
 - **做了**：新增「⚡ 訊號加速」——左側評分與自己前幾天比、數日內大幅跳升就標記
   （案例：2493 揚博 07-16 得 23.5 分、07-20 跳到 63.5、07-21 漲停——訊號其實提早出現，
