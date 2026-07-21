@@ -1807,6 +1807,7 @@ def run_left_side_screener(
     第二段：只對入圍股抓取法人、大戶持股並執行完整評分；歷史股價優先重用
     第一段已下載的快取。右側迴圈抓過的股票也直接重用。
     """
+    left_phase = _phase_timer()
     left_engine = LeftSideScoringEngine()
     thresholds = left_engine.thresholds
     catalyst_lookahead = int(thresholds["catalyst_lookahead_trading_days"])
@@ -1850,6 +1851,7 @@ def run_left_side_screener(
         finmind_fetch=finmind_fetch_bulk if FINMIND_TOKEN else None,
     )
     chip_summary = chip_store_summary(store)
+    left_phase("left-chip-refresh")
     payload["chip_sources"] = chip_sources
     payload["left_side_chip_dates"] = chip_summary["date_count"]
     payload["left_side_chip_rows"] = chip_summary["row_count"]
@@ -1877,6 +1879,7 @@ def run_left_side_screener(
         except Exception as exc:
             print(f"WARN squeeze scan failed: {exc}")
     payload["squeeze_hit_count"] = int(len(squeeze_hits))
+    left_phase("left-squeeze-scan")
 
     # 合併：壓縮點火命中優先，其次籌碼訊號，總數上限 LEFT_UNIVERSE_LIMIT
     frames = []
@@ -1936,6 +1939,11 @@ def run_left_side_screener(
         }
         matched = sum(1 for value in branch_names if value in trader_city_map)
         print(f"Branch trader-city match: {matched}/{len(branch_names)} branch names mapped to a city")
+        if matched < len(branch_names) / 2:
+            # 命中率過低＝兩邊命名格式不一致，印樣本供設計正規化規則
+            unmatched = sorted(value for value in branch_names if value not in trader_city_map)[:8]
+            print(f"  sample unmatched branch names: {unmatched}")
+            print(f"  sample trader-info names: {sorted(trader_city_map)[:8]}")
 
     left_scored: list[dict[str, Any]] = []
     left_candidates: list[dict[str, Any]] = []
@@ -2089,6 +2097,7 @@ def run_left_side_screener(
         except Exception as exc:
             print(f"WARN left-side scoring failed for {symbol}: {exc}")
 
+    left_phase("left-stage2-loop")
     left_scored.sort(key=lambda item: float(item["total_score"]), reverse=True)
     left_candidates.sort(key=lambda item: float(item["total_score"]), reverse=True)
     if not left_candidates and left_scored:
@@ -2109,9 +2118,24 @@ def run_left_side_screener(
     return payload
 
 
+def _phase_timer():
+    """整輪執行的階段計時（找出慢的階段用；log 時間戳因緩衝不可信）。"""
+    started = time.monotonic()
+    last = [started]
+
+    def mark(label: str) -> None:
+        now = time.monotonic()
+        print(f"PHASE {label}: +{now - last[0]:.0f}s (total {now - started:.0f}s)")
+        last[0] = now
+
+    return mark
+
+
 def run_live_screener() -> dict[str, Any]:
+    phase = _phase_timer()
     now_tw = datetime.now(TW_TZ)
     all_quotes = fetch_all_quotes()
+    phase("all-quotes")
     industry_map = fetch_industry_map()
     symbol_industries = {
         str(row["symbol"]): industry_for_symbol(str(row["symbol"]), str(row.get("name", "")), industry_map)
@@ -2140,6 +2164,7 @@ def run_live_screener() -> dict[str, Any]:
         e for e in conference_events if (e.symbol, e.event_date) not in seen_events
     ]
     print(f"Catalyst events: manual {len(manual_events)} + conference {len(conference_events)} → {len(catalyst_events)}")
+    phase("industry+sector+catalyst")
     today = fetch_today_universe(all_quotes)
     if today.empty:
         print("WARN no live universe found; keeping previous live output if available")
@@ -2243,6 +2268,7 @@ def run_live_screener() -> dict[str, Any]:
     scored_candidates.sort(key=lambda item: float(item["total_score"]), reverse=True)
     candidates.sort(key=lambda item: float(item["total_score"]), reverse=True)
     candidates = candidates[:MAX_OUTPUT]
+    phase("momentum-loop")
 
     if LEFT_SIDE_ENABLED:
         try:
@@ -2262,6 +2288,7 @@ def run_live_screener() -> dict[str, Any]:
             }
     else:
         left_payload = {"left_side_enabled": False, "left_side_candidates": []}
+    phase("left-side")
 
     if not candidates and scored_candidates:
         print("WARN no candidates met threshold; publishing relaxed live ranking")

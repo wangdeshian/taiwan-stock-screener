@@ -126,7 +126,8 @@ def cb_fields(cb_daily: pd.DataFrame | None, volume_avg_days: int = 20) -> dict[
         return empty
     date_col = _pick_column(cb_daily, ("date", "trade_date"))
     close_col = _pick_column(cb_daily, ("close", "Close", "closing_price"))
-    volume_col = _pick_column(cb_daily, ("volume", "Volume", "trading_volume", "Trading_Volume"))
+    # FinMind TaiwanStockConvertibleBondDaily 的成交量欄位是 unit（張），無 volume 欄
+    volume_col = _pick_column(cb_daily, ("volume", "Volume", "trading_volume", "Trading_Volume", "unit"))
     if not date_col or not close_col:
         return empty
 

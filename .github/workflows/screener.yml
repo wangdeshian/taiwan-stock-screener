@@ -41,6 +41,8 @@ jobs:
           FINMIND_TOKEN: ${{ secrets.FINMIND_TOKEN }}
           FUGLE_API_KEY: ${{ secrets.FUGLE_API_KEY }}
           SCREENER_FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.force_run || 'false' }}
+          # 不緩衝 stdout：讓 Actions log 每行帶真實時間戳，才能定位慢的階段
+          PYTHONUNBUFFERED: "1"
         run: python scripts/run_screener.py
 
       - name: Commit generated results
