@@ -105,6 +105,12 @@ left_side:
     acceleration_min_delta: 20
     acceleration_window_days: 5
     acceleration_min_score: 45
+    # 深度洗盤：空單回補＋融資大減「同時且夠深」——回測驗證的左側高勝率組合
+    # （2493 揚博／3189 景碩／3443 創意／8105 凌巨 起漲前共同特徵）。
+    # 門檻略高於各自單獨訊號（15/10），要兩者同時深跌才給加分與獨立標記。
+    washout_short_drop_pct: 20
+    washout_margin_drop_pct: 12
+    washout_combo_bonus: 10
   # 知名隔日沖分點黑名單（正規化子字串比對，可自行增刪）
   day_trade_branch_blacklist:
     - 凱基-松山

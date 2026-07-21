@@ -95,6 +95,7 @@ const REASON_LABELS = {
   near_catalyst: "重大事件接近",
   sector_turnover_leader: "產業成交比重領先",
   sector_turnover_jump: "產業資金顯著跳升",
+  deep_washout: "🔥 深度洗盤（空單回補＋融資大減同時深跌）",
   signal_acceleration: "⚡ 訊號加速（評分數日內大幅跳升）",
   window_dressing_setup: "投信作帳中",
   jailbreak_setup: "處置即將出關",
@@ -156,6 +157,14 @@ function scoreValue(item, key) {
 function microstructureValue(item, key) {
   if (item.microstructure_available === false) return "未接";
   return money(item[key]);
+}
+
+function signalBadges(item) {
+  const reasons = item.reasons || [];
+  let out = "";
+  if (reasons.includes("deep_washout")) out += ` <span class="sig-badge sig-washout" title="空單回補＋融資大減同時深跌">🔥</span>`;
+  if (reasons.includes("signal_acceleration")) out += ` <span class="sig-badge sig-accel" title="評分數日內大幅跳升">⚡</span>`;
+  return out;
 }
 
 function scoreDeltaBadge(item) {
@@ -447,7 +456,7 @@ function renderRows(rows) {
     tr.dataset.symbol = item.symbol;
     tr.innerHTML = `
       <td>${item.symbol} <span class="chevron${expandedRows.has(key) ? " open" : ""}">▶</span></td>
-      <td>${item.name}</td>
+      <td>${item.name}${signalBadges(item)}</td>
       <td class="close-price">${money(item.close_price)}</td>
       <td>${item.industry || "-"}</td>
       <td class="score">${money(item.total_score)}${scoreDeltaBadge(item)}</td>
