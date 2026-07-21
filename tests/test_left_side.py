@@ -407,6 +407,22 @@ def test_left_observation_shortlist_excludes_momentum_symbols() -> None:
     assert list(result["symbol"]) == ["1111"]
 
 
+def test_left_signal_shortlist_excludes_momentum_symbols() -> None:
+    from scripts.run_screener import exclude_symbols_from_shortlist
+
+    shortlist = pd.DataFrame(
+        [
+            {"symbol": "2059", "signal_score": 80.0},
+            {"symbol": "4551", "signal_score": 66.0},
+            {"symbol": "8046", "signal_score": 54.0},
+        ]
+    )
+
+    result = exclude_symbols_from_shortlist(shortlist, {"2059", "8046"})
+
+    assert list(result["symbol"]) == ["4551"]
+
+
 def test_chip_store_summary_handles_missing_optional_columns() -> None:
     from scripts.run_screener import chip_store_summary
 

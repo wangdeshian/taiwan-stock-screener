@@ -1383,6 +1383,13 @@ def build_left_observation_shortlist(
     return result[columns].reset_index(drop=True)
 
 
+def exclude_symbols_from_shortlist(frame: pd.DataFrame, exclude_symbols: set[str] | None) -> pd.DataFrame:
+    if frame.empty or not exclude_symbols or "symbol" not in frame.columns:
+        return frame
+    excluded = {str(symbol) for symbol in exclude_symbols}
+    return frame[~frame["symbol"].astype(str).isin(excluded)].copy()
+
+
 def serialize_left_candidate(
     symbol: str,
     name: str,
@@ -1798,6 +1805,7 @@ def run_left_side_screener(
     industry_map: dict[str, str],
     catalyst_events: list[Any],
     sector_payloads: dict[str, dict[str, Any]],
+    exclude_symbols: set[str] | None = None,
 ) -> dict[str, Any]:
     """左側潛伏全市場兩段式漏斗。
 
@@ -1842,7 +1850,8 @@ def run_left_side_screener(
         "left_side_candidates": [],
     }
     # 觀察池備援時排除右側動能已抓取的熱門股，避免兩個分頁重疊
-    momentum_symbols = set(fundamentals_cache.keys())
+    published_momentum_symbols = {str(symbol) for symbol in (exclude_symbols or set())}
+    observation_exclude_symbols = set(fundamentals_cache.keys()) | published_momentum_symbols
 
     today_volumes = {str(row["symbol"]): safe_float(row["volume"]) for _, row in all_quotes.iterrows()}
     store, chip_sources = refresh_chip_store(
@@ -1888,15 +1897,21 @@ def run_left_side_screener(
     if not chip_shortlist.empty:
         seen = set(squeeze_hits["symbol"].astype(str)) if not squeeze_hits.empty else set()
         frames.append(chip_shortlist[~chip_shortlist["symbol"].astype(str).isin(seen)])
-    shortlist = (
-        pd.concat(frames, ignore_index=True, sort=False).head(LEFT_UNIVERSE_LIMIT)
-        if frames
-        else pd.DataFrame()
-    )
+    if frames:
+        shortlist = pd.concat(frames, ignore_index=True, sort=False)
+        shortlist = exclude_symbols_from_shortlist(shortlist, published_momentum_symbols)
+        shortlist = shortlist.head(LEFT_UNIVERSE_LIMIT)
+    else:
+        shortlist = pd.DataFrame()
     payload["left_side_shortlist_count"] = int(len(shortlist))
+    payload["left_side_excluded_momentum_count"] = len(published_momentum_symbols)
 
     if shortlist.empty:
-        shortlist = build_left_observation_shortlist(universe, LEFT_UNIVERSE_LIMIT, exclude_symbols=momentum_symbols)
+        shortlist = build_left_observation_shortlist(
+            universe,
+            LEFT_UNIVERSE_LIMIT,
+            exclude_symbols=observation_exclude_symbols,
+        )
         payload["left_side_mode"] = "observation_pool"
         payload["left_side_shortlist_count"] = int(len(shortlist))
         payload["left_side_note"] = (
@@ -2267,6 +2282,7 @@ def run_live_screener() -> dict[str, Any]:
 
     scored_candidates.sort(key=lambda item: float(item["total_score"]), reverse=True)
     candidates.sort(key=lambda item: float(item["total_score"]), reverse=True)
+    momentum_candidate_symbols = {str(item["symbol"]) for item in candidates}
     candidates = candidates[:MAX_OUTPUT]
     phase("momentum-loop")
 
@@ -2278,6 +2294,7 @@ def run_live_screener() -> dict[str, Any]:
                 industry_map,
                 catalyst_events,
                 sector_payloads,
+                exclude_symbols=momentum_candidate_symbols,
             )
         except Exception as exc:
             print(f"WARN left-side screener failed: {exc}")
