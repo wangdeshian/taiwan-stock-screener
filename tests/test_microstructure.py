@@ -78,6 +78,16 @@ def test_disposition_fields_active_period() -> None:
     assert disposition_fields("9999", disposition, history, holders, today)["disposition_days_to_end"] is None
 
 
+def test_disposition_fields_finmind_period_columns() -> None:
+    # FinMind TaiwanStockDispositionSecuritiesPeriod 實際欄位名是 period_start / period_end
+    today = date(2026, 7, 19)
+    disposition = pd.DataFrame(
+        [{"stock_id": "1234", "period_start": "2026-07-08", "period_end": "2026-07-21"}]
+    )
+    result = disposition_fields("1234", disposition, None, None, today)
+    assert result["disposition_days_to_end"] == 2
+
+
 def test_cb_fields_price_and_volume_ratio() -> None:
     days = [date(2026, 6, 1) + timedelta(days=i) for i in range(25)]
     cb_daily = pd.DataFrame(

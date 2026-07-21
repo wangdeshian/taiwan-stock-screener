@@ -114,9 +114,13 @@
 
 - 已完成：評分引擎欄位、門檻設定、前端標籤與微結構卡片
 - 已完成：FinMind 分點 API 只分析入圍前 20 檔，降低 workflow 時間
-- 已完成：處置股公告 collector（FinMind `TaiwanStockDispositionSecuritiesPeriod`，全市場一次）
+- 已完成：處置股公告 collector（FinMind `TaiwanStockDispositionSecuritiesPeriod`，全市場一次；
+  **實際欄位是 `period_start` / `period_end`**，2026-07-19 首輪 log 驗證後已修正 mapping）
 - 已完成：可轉債對照與成交 collector（`TaiwanStockConvertibleBondInfo` ＋ 每檔日成交；
   CB 代號無股票欄位時以「去掉末碼」推導現股代號）
+- **陷阱**：`TaiwanStockConvertibleBondDailyOverview` 只有發行條件（轉換價/賣回日），
+  **沒有價量**——CB 價量必須用 `TaiwanStockConvertibleBondDaily`，fetch 端以
+  `require_any=("close", ...)` 驗證，缺欄位的 dataset 會整輪封鎖並換下一個候選
 - 已完成：公司縣市（公司基本資料 t187ap03 住址）×券商分點縣市（`TaiwanSecuritiesTraderInfo`）
   對照，餵給地緣券商訊號
 - 已完成：投信近 5 日淨買超（沿用三大法人資料）

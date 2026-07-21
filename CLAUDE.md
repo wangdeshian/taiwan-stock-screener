@@ -73,7 +73,13 @@ git status --short
   每輪執行會把兩個 dataset 的科目清單印進 log（自我診斷），科目異動先查 log 再改 mapping。
 - **分點 dataset 單日限制**：`TaiwanStockTradingDailyReport` 一次只能查一天
   （帶 end_date 會 400），要逐日迴圈抓；ETF 跳過不抓。為避免 workflow 過慢，左側分點預設只分析
-  入圍前 20 檔（env `SCREENER_BRANCH_ANALYZE_LIMIT`），回看 5 天。
+  入圍前 20 檔（env `SCREENER_BRANCH_ANALYZE_LIMIT`），回看 5 天；單次請求延遲極高，已改
+  執行緒池平行預抓（env `SCREENER_BRANCH_WORKERS` 預設 8、`SCREENER_BRANCH_TIME_BUDGET`
+  預設 600 秒，超時用部分資料）。
+- **V4 微結構 dataset 陷阱**（2026-07-19 首輪 log 驗證）：處置股
+  `TaiwanStockDispositionSecuritiesPeriod` 的期間欄位是 `period_start`/`period_end`（不是
+  start_date/end_date）；`TaiwanStockConvertibleBondDailyOverview` 只有發行條件**沒有價量**，
+  CB 價量要用 `TaiwanStockConvertibleBondDaily`。
 - **TWSE**：openapi（`openapi.twse.com.tw`）在 GitHub Actions 可用；`www.twse.com.tw` 的
   rwd 端點會回非 JSON（擋雲端 IP），別用。TWT93U/TWTB4U 的 openapi 路徑不存在。
 - **TPEx** openapi 偶發 5xx，已有重試；失敗時左側範圍剩上市股。
