@@ -413,6 +413,17 @@ tr.detail-row td {
   padding: 2px 7px;
   font-size: 11px;
 }
+.score-delta {
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.score-delta.delta-up {
+  color: #16a34a;
+}
+.score-delta.delta-down {
+  color: #94a3b8;
+}
 .detail-section {
   margin-top: 12px;
 }
