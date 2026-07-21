@@ -14,6 +14,23 @@
 
 ## 日誌（新的在上面）
 
+### 2026-07-21 | Claude
+- **做了**：讀 07-19 首輪 log 的微結構自我診斷，修正兩個 dataset mapping bug——
+  ①處置股欄位實際是 `period_start`/`period_end`（原找 start_date/end_date 對不上→全 None）；
+  ②CB 日成交誤用 `TaiwanStockConvertibleBondDailyOverview`（只有發行條件、無價量），
+  改以 `TaiwanStockConvertibleBondDaily` 為主＋`require_any` 欄位驗證
+- **做了**：分點改平行預抓（`prefetch_broker_flows`：ThreadPoolExecutor，env
+  `SCREENER_BRANCH_WORKERS` 預設 8、`SCREENER_BRANCH_TIME_BUDGET` 預設 600 秒，
+  超時用部分資料）——07-19 那輪整輪跑了 3 小時 11 分，分點序列抓是主因
+- **做了**：新增地緣券商命名健檢 log（分點名稱對縣市的命中率），驗證
+  `TaiwanSecuritiesTraderInfo` 與分點報表的名稱是否對得起來
+- **已驗證**：pytest 56 passed；07-19 log 確認四個 micro dataset 名稱全部有效
+  （disposition 689 筆、CB 對照 1800 筆、分點基本資料 1010 筆）
+- **注意**：微結構 0 分有一部分是**正常的**——投信作帳缺持股比例欄位不觸發、
+  現在距季底 >20 天也不會觸發；處置/CB/地緣修好後要等訊號股出現才有分
+- **建議下一步**：看下一輪 log 確認整輪時間 <30 分、`Branch trader-city match` 命中率、
+  micro-cb-daily 的 Daily 欄位清單；之後做權重 115→100 校準
+
 ### 2026-07-19 | Claude
 - **做了**：接上 V4 微結構四大資料源（Codex 骨架的「待補」清單）——處置股公告（全市場
   一次）、可轉債對照＋日成交（每檔 CB 一次）、公司縣市×分點縣市對照（地緣券商）、

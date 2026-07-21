@@ -71,8 +71,9 @@ def disposition_fields(
 
     frame = disposition_frame
     symbol_col = _pick_column(frame, ("stock_id", "symbol", "Code"))
-    start_col = _pick_column(frame, ("start_date", "DispositionStartDate", "startDate"))
-    end_col = _pick_column(frame, ("end_date", "DispositionEndDate", "endDate"))
+    # FinMind TaiwanStockDispositionSecuritiesPeriod 實際欄位是 period_start / period_end
+    start_col = _pick_column(frame, ("period_start", "start_date", "DispositionStartDate", "startDate"))
+    end_col = _pick_column(frame, ("period_end", "end_date", "DispositionEndDate", "endDate"))
     if not symbol_col or not end_col:
         return empty
 

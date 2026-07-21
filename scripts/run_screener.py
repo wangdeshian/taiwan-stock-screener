@@ -76,6 +76,9 @@ SQUEEZE_MIN_CLOSE = float(os.environ.get("SCREENER_SQUEEZE_MIN_CLOSE", "10"))
 SQUEEZE_MIN_TURNOVER = float(os.environ.get("SCREENER_SQUEEZE_MIN_TURNOVER", "100000000"))
 LEFT_FUNDAMENTAL_FETCH_LIMIT = int(os.environ.get("SCREENER_LEFT_FUNDAMENTAL_LIMIT", "12"))
 LEFT_BRANCH_ANALYZE_LIMIT = int(os.environ.get("SCREENER_BRANCH_ANALYZE_LIMIT", "20"))
+# 分點日報表單次請求延遲極高，改用執行緒池平行預抓＋總體時間預算（秒）
+BRANCH_FETCH_WORKERS = int(os.environ.get("SCREENER_BRANCH_WORKERS", "8"))
+BRANCH_TIME_BUDGET_SECONDS = int(os.environ.get("SCREENER_BRANCH_TIME_BUDGET", "600"))
 CHIP_STORE_PATH = ROOT / "frontend" / "data" / "chip_history.csv"
 CATALYST_EVENTS_PATH = ROOT / "frontend" / "data" / "catalysts.json"
 SECTOR_HISTORY_PATH = ROOT / "frontend" / "data" / "sector_history.json"
@@ -845,6 +848,7 @@ def _finmind_micro_dataset(
     label: str,
     timeout: int = 60,
     quiet_empty: bool = False,
+    require_any: tuple[str, ...] = (),
 ) -> pd.DataFrame:
     """V4 微結構資料集抓取：dataset 名稱逐一嘗試，錯誤自我診斷。
 
@@ -867,6 +871,17 @@ def _finmind_micro_dataset(
             continue
         if data:
             frame = pd.DataFrame(data)
+            if require_any and not any(col in frame.columns for col in require_any):
+                # dataset 有回資料但缺必要欄位（如 Overview 只有發行條件、無價量）→ 換下一個候選
+                key = f"{label}:{dataset}"
+                if key not in _MICRO_DIAGNOSED:
+                    _MICRO_DIAGNOSED.add(key)
+                    print(
+                        f"WARN {label}: dataset {dataset} lacks {require_any}; "
+                        f"columns={list(frame.columns)[:14]}"
+                    )
+                _MICRO_DATASET_UNAVAILABLE.add(dataset)
+                continue
             if label not in _MICRO_DIAGNOSED:
                 _MICRO_DIAGNOSED.add(label)
                 print(f"{label}: dataset {dataset} rows={len(frame)} columns={list(frame.columns)[:14]}")
@@ -908,13 +923,18 @@ def fetch_cb_map_finmind() -> dict[str, str]:
 
 
 def fetch_cb_daily_finmind(cb_id: str) -> pd.DataFrame:
-    """單檔可轉債近 45 天日成交。"""
+    """單檔可轉債近 45 天日成交。
+
+    注意：DailyOverview 只有發行條件（轉換價/賣回日），沒有價量，
+    必須用 Daily（實際成交）為主，並以 require_any 驗證有收盤價欄位。
+    """
     start = (date.today() - timedelta(days=45)).isoformat()
     return _finmind_micro_dataset(
-        ("TaiwanStockConvertibleBondDailyOverview", "TaiwanStockConvertibleBondDaily"),
+        ("TaiwanStockConvertibleBondDaily", "TaiwanStockConvertibleBondDailyOverview"),
         {"data_id": cb_id, "start_date": start},
         "micro-cb-daily",
         quiet_empty=True,
+        require_any=("close", "Close", "closing_price"),
     )
 
 
@@ -936,56 +956,83 @@ def fetch_trader_city_map() -> dict[str, str]:
     return mapping
 
 
-def fetch_broker_flow_finmind(symbol: str, trading_days: int = 10) -> pd.DataFrame:
-    """券商分點每日報表（TaiwanStockTradingDailyReport，需 FinMind Sponsor）。
-
-    此 dataset 資料量過大，FinMind 限制**一次只能查一天**（不得帶 end_date），
-    因此往回逐日抓滿 trading_days 個有資料的交易日。
-    回傳欄位：trade_date, securities_trader, buy, sell, price。
-    偵測到帳號等級不足後整輪跳過，避免對每檔入圍股白打 API。
-    """
+def _fetch_branch_day(symbol: str, day: date) -> tuple[str, pd.DataFrame | None]:
+    """抓單一股票單一天的分點報表（dataset 限制不得帶 end_date）。"""
     global _BROKER_FLOW_UNAVAILABLE
-    if not FINMIND_TOKEN or _BROKER_FLOW_UNAVAILABLE:
-        return pd.DataFrame()
-
-    frames: list[pd.DataFrame] = []
-    day = date.today()
-    fetched = 0
-    attempts = 0
-    max_attempts = trading_days * 2 + 6  # 容納假日與偶發空日
-    while fetched < trading_days and attempts < max_attempts:
-        attempts += 1
-        if day.weekday() >= 5:
-            day -= timedelta(days=1)
-            continue
-        params = {
-            "dataset": "TaiwanStockTradingDailyReport",
-            "data_id": symbol,
-            "start_date": day.isoformat(),
-        }
-        try:
-            payload = finmind_get(params, timeout=30)
-            data = payload.get("data", [])
-        except Exception as exc:
-            if "level" in str(exc).lower():
+    if _BROKER_FLOW_UNAVAILABLE:
+        return symbol, None
+    params = {
+        "dataset": "TaiwanStockTradingDailyReport",
+        "data_id": symbol,
+        "start_date": day.isoformat(),
+    }
+    try:
+        payload = finmind_get(params, timeout=45)
+        data = payload.get("data", [])
+    except Exception as exc:
+        if "level" in str(exc).lower():
+            if not _BROKER_FLOW_UNAVAILABLE:
                 _BROKER_FLOW_UNAVAILABLE = True
                 print("WARN FinMind broker-flow dataset needs sponsor tier; skipping for the rest of this run")
-                return pd.DataFrame()
-            print(f"WARN FinMind broker flow failed for {symbol} {day}: {exc}")
-            data = []
-        if data:
-            frame = pd.DataFrame(data)
-            if "date" in frame.columns and "securities_trader" in frame.columns:
-                frames.append(frame)
-                fetched += 1
-        day -= timedelta(days=1)
-        time.sleep(0.1)
+        else:
+            print(f"WARN FinMind broker flow failed for {symbol} {day}: {str(exc)[:160]}")
+        return symbol, None
+    if not data:
+        return symbol, None
+    frame = pd.DataFrame(data)
+    if "date" not in frame.columns or "securities_trader" not in frame.columns:
+        return symbol, None
+    return symbol, frame
 
-    if not frames:
-        return pd.DataFrame()
-    combined = pd.concat(frames, ignore_index=True).rename(columns={"date": "trade_date"})
-    keep = [col for col in ("trade_date", "securities_trader", "buy", "sell", "price") if col in combined.columns]
-    return combined[keep]
+
+def prefetch_broker_flows(symbols: list[str], trading_days: int) -> dict[str, pd.DataFrame]:
+    """平行預抓入圍名單的分點日報表。
+
+    分點 dataset 單次請求延遲很高（伺服器要撈整天數百筆分點明細），逐檔逐日
+    序列抓會讓整輪執行超過一小時；改為 (股票, 日期) 全展開後用執行緒池平行抓，
+    並設總體時間預算，超時就用已到手的部分資料，不讓分點拖垮每日排程。
+    """
+    if not FINMIND_TOKEN or _BROKER_FLOW_UNAVAILABLE or not symbols:
+        return {}
+
+    days: list[date] = []
+    cursor = date.today()
+    while len(days) < trading_days + 4:  # 多取 4 天緩衝假日
+        if cursor.weekday() < 5:
+            days.append(cursor)
+        cursor -= timedelta(days=1)
+
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    started = time.monotonic()
+    collected: dict[str, list[pd.DataFrame]] = {}
+    tasks = [(symbol, day) for symbol in symbols for day in days]
+    with ThreadPoolExecutor(max_workers=BRANCH_FETCH_WORKERS) as pool:
+        futures = [pool.submit(_fetch_branch_day, symbol, day) for symbol, day in tasks]
+        for future in as_completed(futures):
+            if time.monotonic() - started > BRANCH_TIME_BUDGET_SECONDS:
+                print(
+                    f"WARN branch prefetch exceeded {BRANCH_TIME_BUDGET_SECONDS}s budget; "
+                    "continuing with partial data"
+                )
+                pool.shutdown(wait=False, cancel_futures=True)
+                break
+            symbol, frame = future.result()
+            if frame is not None:
+                collected.setdefault(symbol, []).append(frame)
+
+    result: dict[str, pd.DataFrame] = {}
+    for symbol, parts in collected.items():
+        combined = pd.concat(parts, ignore_index=True).rename(columns={"date": "trade_date"})
+        recent_days = sorted(combined["trade_date"].unique())[-trading_days:]
+        combined = combined[combined["trade_date"].isin(recent_days)]
+        keep = [c for c in ("trade_date", "securities_trader", "buy", "sell", "price") if c in combined.columns]
+        result[symbol] = combined[keep]
+    print(
+        f"Branch prefetch: {len(symbols)} symbols × {len(days)} days → "
+        f"{len(result)} with data in {time.monotonic() - started:.0f}s"
+    )
+    return result
 
 
 def fetch_holders_finmind(symbol: str) -> pd.DataFrame:
@@ -1789,6 +1836,28 @@ def run_left_side_screener(
         return payload
 
     quote_lookup = universe.set_index(universe["symbol"].astype(str)).to_dict("index")
+
+    # 分點日報表平行預抓：只抓入圍前 LEFT_BRANCH_ANALYZE_LIMIT 檔非 ETF
+    branch_symbols: list[str] = []
+    for _, pre_row in shortlist.iterrows():
+        sym = str(pre_row["symbol"])
+        quote = quote_lookup.get(sym)
+        if quote is None or infer_security_type(sym, str(quote.get("name", sym))):
+            continue
+        branch_symbols.append(sym)
+        if len(branch_symbols) >= LEFT_BRANCH_ANALYZE_LIMIT:
+            break
+    branch_frames = prefetch_broker_flows(branch_symbols, int(thresholds["branch_lookback_days"]))
+    if branch_frames and trader_city_map:
+        # 地緣券商策略的命名對照健檢：分點報表名稱有多少能對到縣市
+        branch_names = {
+            str(value).strip()
+            for frame in branch_frames.values()
+            for value in frame["securities_trader"].astype(str)
+        }
+        matched = sum(1 for value in branch_names if value in trader_city_map)
+        print(f"Branch trader-city match: {matched}/{len(branch_names)} branch names mapped to a city")
+
     left_scored: list[dict[str, Any]] = []
     left_candidates: list[dict[str, Any]] = []
     is_observation_pool = payload["left_side_mode"] == "observation_pool"
@@ -1856,12 +1925,10 @@ def run_left_side_screener(
                 time.sleep(0.15)
 
             broker_row: dict[str, Any] | None = None
-            broker_frame = pd.DataFrame()
-            # ETF 無分點分析意義，跳過以節省逐日 API 呼叫
-            if not infer_security_type(symbol, name) and shortlist_index <= LEFT_BRANCH_ANALYZE_LIMIT:
-                left_branch_fetches += 1
-                broker_frame = fetch_broker_flow_finmind(symbol, trading_days=int(thresholds["branch_lookback_days"]))
+            # 分點資料已在迴圈前平行預抓（ETF 與超出上限者不在 branch_frames 內）
+            broker_frame = branch_frames.get(symbol, pd.DataFrame())
             if not broker_frame.empty:
+                left_branch_fetches += 1
                 broker_row = analyze_broker_flow(
                     broker_frame,
                     day_trade_blacklist=day_trade_blacklist,
@@ -1871,8 +1938,6 @@ def run_left_side_screener(
                     churn_max_ratio_pct=float(thresholds["branch_churn_max_ratio_pct"]),
                     cost_lookback_days=int(thresholds["branch_lookback_days"]),
                 )
-            if FINMIND_TOKEN:
-                time.sleep(0.15)
 
             catalyst_row = nearest_catalyst_payload(
                 symbol=symbol,
