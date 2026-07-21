@@ -158,9 +158,12 @@ function microstructureValue(item, key) {
 }
 
 function renderCatalystSectorMetrics(item) {
+  const catalystFeedConnected = Number(latestData?.catalyst_event_count) > 0;
   const catalystText = item.catalyst_available
     ? `${item.nearest_catalyst_type || "事件"}，倒數 ${money(item.catalyst_days_left)} 個交易日`
-    : "未接";
+    : catalystFeedConnected
+      ? "近期無事件"
+      : "未接";
   const sectorText = item.sector_resonance_available
     ? `排名前 ${money(item.sector_turnover_rank_pct)}%`
     : "-";

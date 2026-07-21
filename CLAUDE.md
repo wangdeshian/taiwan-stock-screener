@@ -84,8 +84,10 @@ git status --short
   rwd 端點會回非 JSON（擋雲端 IP），別用。TWT93U/TWTB4U 的 openapi 路徑不存在。
 - **TPEx** openapi 偶發 5xx，已有重試；失敗時左側範圍剩上市股。
 - **ETF/ETN 不是產業**：產業資金共振已排除，別再讓 ETF 吃板塊加分。
-- 催化劑資料源：目前讀 `frontend/data/catalysts.json`（手動維護），格式
-  `[{"symbol","event_type","event_date"}]`；MOPS 爬蟲未實作。
+- 催化劑資料源：法說會已自動接 TWSE/TPEx openapi（`t187ap38_L`／`mopsfin_t187ap38_O`，
+  自我診斷模式，端點失敗只警告）；`frontend/data/catalysts.json`（手動維護）仍可疊加
+  其他事件，格式 `[{"symbol","event_type","event_date"}]`，同檔同日以手動為準。
+  openapi 日期多為民國格式（YYYMMDD／YYY/MM/DD），`parse_roc_or_iso_date` 已處理。
 
 ## 工程慣例
 
