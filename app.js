@@ -1,5 +1,6 @@
 const RESULTS_URL = "./data/results.json";
 const HISTORY_URL = "./data/history.json";
+const SIGNAL_BACKTEST_URL = "./data/signal_backtest.json";
 
 const candidateRows = document.getElementById("candidateRows");
 const candidateCount = document.getElementById("candidateCount");
@@ -10,9 +11,12 @@ const searchInput = document.getElementById("searchInput");
 const notice = document.getElementById("notice");
 const todayView = document.getElementById("todayView");
 const historyView = document.getElementById("historyView");
+const backtestView = document.getElementById("backtestView");
 const historyContent = document.getElementById("historyContent");
+const backtestContent = document.getElementById("backtestContent");
 const tabToday = document.getElementById("tabToday");
 const tabHistory = document.getElementById("tabHistory");
+const tabBacktest = document.getElementById("tabBacktest");
 const strategyMomentumBtn = document.getElementById("strategyMomentum");
 const strategyLeftBtn = document.getElementById("strategyLeft");
 
@@ -22,6 +26,7 @@ let candidateSets = { momentum: [], left: [] };
 let rowOrder      = { momentum: [], left: [] };  // 保持列位置：以代號記住顯示順序
 let expandedRows  = new Set();            // key: `${strategy}:${symbol}`
 let historyLoaded = false;
+let backtestLoaded = false;
 let budget        = 0;   // 使用者投入預算（台幣）
 
 const DIM_LABELS = {
@@ -105,6 +110,28 @@ const REASON_LABELS = {
   observation_pool: "潛伏觀察池",
 };
 
+const BACKTEST_TAG_LABELS = {
+  deep_washout_proxy: "深度洗盤",
+  margin_flush_proxy: "融資洗清",
+  "margin_drop>=12": "融資大減 >= 12%",
+  "short_drop>=20": "借券回補 >= 20%",
+  short_covering_proxy: "空單回補",
+  "score>=80": "總分 80 以上",
+  "score70-80": "總分 70-80",
+  "score60-70": "總分 60-70",
+  "score50-60": "總分 50-60",
+  "score_delta>=20": "分數加速 >= 20",
+  "score_delta10-20": "分數加速 10-20",
+  "strategy:left_side": "左側潛伏",
+  "strategy:momentum": "右側動能",
+  "sector_resonance>0": "產業共振",
+  "microstructure>0": "台股微結構",
+  "rs20>0": "20 日相對強勢",
+  "rs60>0": "60 日相對強勢",
+  "peg<1": "PEG < 1",
+  "roe>=10": "ROE >= 10%",
+};
+
 function money(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
   return Number(value).toLocaleString("zh-TW", { maximumFractionDigits: 2 });
@@ -113,6 +140,29 @@ function money(value) {
 function pct(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
   return `${money(value)}%`;
+}
+
+function signedPct(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
+  const n = Number(value);
+  return `${n > 0 ? "+" : ""}${money(n)}%`;
+}
+
+function tagLabel(tag) {
+  return BACKTEST_TAG_LABELS[tag] || REASON_LABELS[tag?.replace(/^reason:/, "")] || tag || "-";
+}
+
+function formatDateTime(value) {
+  if (!value) return "-";
+  const dt = new Date(value);
+  if (Number.isNaN(dt.getTime())) return value;
+  return dt.toLocaleString("zh-TW", {
+    timeZone: "Asia/Taipei",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function setNotice(message = "") {
@@ -593,12 +643,17 @@ async function loadData() {
 
 function switchTab(tab) {
   const today = tab === "today";
+  const history = tab === "history";
+  const backtest = tab === "backtest";
   todayView.hidden = !today;
-  historyView.hidden = today;
+  historyView.hidden = !history;
+  backtestView.hidden = !backtest;
   tabToday.classList.toggle("active", today);
-  tabHistory.classList.toggle("active", !today);
+  tabHistory.classList.toggle("active", history);
+  tabBacktest.classList.toggle("active", backtest);
   refreshButton.hidden = !today;
-  if (!today && !historyLoaded) loadHistory();
+  if (history && !historyLoaded) loadHistory();
+  if (backtest && !backtestLoaded) loadBacktest();
 }
 
 async function loadHistory() {
@@ -689,8 +744,164 @@ function toggleHistEntry(button) {
   button.setAttribute("aria-expanded", String(!isOpen));
 }
 
+async function loadBacktest() {
+  backtestContent.innerHTML = `<p class="empty" style="padding:20px;text-align:center;color:#64748b">讀取訊號回測中...</p>`;
+  try {
+    const response = await fetch(`${SIGNAL_BACKTEST_URL}?t=${Date.now()}`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    backtestLoaded = true;
+    renderBacktest(data);
+  } catch (error) {
+    console.error(error);
+    backtestContent.innerHTML = `
+      <p class="empty" style="padding:20px;text-align:center;color:#b45309">
+        讀取訊號回測失敗，請重新執行 GitHub Actions。
+      </p>`;
+  }
+}
+
+function renderBacktest(data) {
+  const summaries = data?.feature_summaries || [];
+  if (!summaries.length) {
+    backtestContent.innerHTML = `<p class="empty" style="padding:20px;text-align:center;color:#64748b">目前沒有可用的訊號回測資料</p>`;
+    return;
+  }
+
+  const dataWindow = data.data_window || {};
+  const confidence = data.confidence === "low" ? "低" : data.confidence || "-";
+  const dateRange = (dataWindow.observed_trade_dates || []).length
+    ? `${dataWindow.observed_trade_dates[0]} ～ ${dataWindow.observed_trade_dates[dataWindow.observed_trade_dates.length - 1]}`
+    : "-";
+
+  const byHorizon = [1, 2, 3, 5].map(days => {
+    const rows = summaries
+      .filter(item => Number(item.horizon_observed_days) === days)
+      .slice(0, 8);
+    return { days, rows };
+  }).filter(group => group.rows.length);
+
+  const matchRows = (data.latest_candidate_matches || []).slice(0, 12);
+
+  backtestContent.innerHTML = `
+    <section class="backtest-hero">
+      <div class="backtest-card">
+        <span class="metric-label">信心等級</span>
+        <strong class="${data.confidence === "low" ? "risk-text" : ""}">${confidence}</strong>
+      </div>
+      <div class="backtest-card">
+        <span class="metric-label">歷史天數</span>
+        <strong>${money(dataWindow.history_date_count)}</strong>
+      </div>
+      <div class="backtest-card">
+        <span class="metric-label">訊號事件</span>
+        <strong>${money(dataWindow.event_count)}</strong>
+      </div>
+      <div class="backtest-card">
+        <span class="metric-label">股票數</span>
+        <strong>${money(dataWindow.unique_symbol_count)}</strong>
+      </div>
+    </section>
+
+    <section class="notice backtest-note">
+      觀察區間 ${dateRange}。目前是候選股事件紀錄回測，不是全市場完整回測；資料仍少，先當作權重校準線索，不直接視為預測。
+    </section>
+
+    <section class="backtest-panel">
+      <div class="panel-title">
+        <h2>歷史訊號表現</h2>
+        <span>更新 ${formatDateTime(data.generated_at)}</span>
+      </div>
+      ${byHorizon.map(group => backtestTable(group.days, group.rows)).join("")}
+    </section>
+
+    <section class="backtest-panel">
+      <div class="panel-title">
+        <h2>目前候選股對照</h2>
+        <span>比對最新候選股身上的歷史訊號</span>
+      </div>
+      ${candidateEvidenceTable(matchRows)}
+    </section>`;
+}
+
+function backtestTable(days, rows) {
+  return `
+    <div class="horizon-block">
+      <h3>後續 ${days} 個觀察交易日</h3>
+      <div class="table-wrap">
+        <table class="backtest-table">
+          <thead>
+            <tr>
+              <th>訊號</th>
+              <th>樣本</th>
+              <th>平均</th>
+              <th>中位數</th>
+              <th>勝率</th>
+              <th>最好</th>
+              <th>最差</th>
+              <th>覆蓋率</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(row => `
+              <tr>
+                <td><span class="signal-chip">${tagLabel(row.tag)}</span></td>
+                <td>${money(row.sample_count)}</td>
+                <td class="${Number(row.avg_return_pct) >= 0 ? "pos" : "neg"}">${signedPct(row.avg_return_pct)}</td>
+                <td class="${Number(row.median_return_pct) >= 0 ? "pos" : "neg"}">${signedPct(row.median_return_pct)}</td>
+                <td>${pct(row.win_rate_pct)}</td>
+                <td class="pos">${signedPct(row.best_return_pct)}</td>
+                <td class="neg">${signedPct(row.worst_return_pct)}</td>
+                <td>${pct(row.coverage_pct)}</td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function candidateEvidenceTable(rows) {
+  if (!rows.length) {
+    return `<p class="empty" style="padding:12px">目前沒有候選股訊號對照資料</p>`;
+  }
+  return `
+    <div class="table-wrap">
+      <table class="backtest-table">
+        <thead>
+          <tr>
+            <th>代號</th>
+            <th>名稱</th>
+            <th>策略</th>
+            <th>總分</th>
+            <th>歷史訊號</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(row => `
+            <tr>
+              <td>${row.symbol}</td>
+              <td>${row.name}</td>
+              <td>${row.strategy === "left_side" ? "左側潛伏" : "右側動能"}</td>
+              <td class="score">${money(row.total_score)}</td>
+              <td>${evidenceChips(row.matched_evidence || [])}</td>
+            </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function evidenceChips(evidence) {
+  if (!evidence.length) return "-";
+  return evidence.slice(0, 3).map(item => `
+    <span class="evidence-chip">
+      ${tagLabel(item.tag)}：${signedPct(item.avg_return_pct)} / 勝率 ${pct(item.win_rate_pct)} / n=${money(item.sample_count)}
+    </span>
+  `).join("");
+}
+
 tabToday.addEventListener("click", () => switchTab("today"));
 tabHistory.addEventListener("click", () => switchTab("history"));
+tabBacktest.addEventListener("click", () => switchTab("backtest"));
 strategyMomentumBtn.addEventListener("click", () => switchStrategy("momentum"));
 strategyLeftBtn.addEventListener("click", () => switchStrategy("left"));
 refreshButton.addEventListener("click", loadData);
