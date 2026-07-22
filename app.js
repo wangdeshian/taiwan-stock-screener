@@ -106,6 +106,16 @@ const REASON_LABELS = {
   jailbreak_setup: "處置即將出關",
   cb_abnormal_signal: "CB 異常訊號",
   geographic_broker_accumulation: "地緣大戶進駐",
+  tech_new_high_momentum: "創新高動能股",
+  tech_ma_cluster_breakout: "突破均線糾結",
+  tech_mtm_60d_breakout: "MTM 創高動能",
+  tech_dual_kd_reversal: "雙 KD 向上",
+  tech_ma20_kd_reversal: "抄底求翻身",
+  tech_volume_kd_low_reversal: "一線間",
+  tech_high_close_three_soldiers: "創高出貨潮",
+  tech_low_close_three_crows: "黑三鴉弱勢",
+  tech_kd_overheat_reversal: "KD 高檔轉弱",
+  tech_new_low_kd_margin_reversal: "築底等時機",
   sentiment_freeze: "網路聲量冰點",
   observation_pool: "潛伏觀察池",
 };
@@ -130,6 +140,19 @@ const BACKTEST_TAG_LABELS = {
   "rs60>0": "60 日相對強勢",
   "peg<1": "PEG < 1",
   "roe>=10": "ROE >= 10%",
+  "tech:new_high_momentum": "創新高動能股",
+  "tech:ma_cluster_breakout": "突破均線糾結",
+  "tech:mtm_60d_breakout": "MTM 創高動能",
+  "tech:dual_kd_reversal": "雙 KD 向上",
+  "tech:ma20_kd_reversal": "抄底求翻身",
+  "tech:volume_kd_low_reversal": "一線間",
+  "tech:high_close_three_soldiers": "創高出貨潮",
+  "tech:low_close_three_crows": "黑三鴉弱勢",
+  "tech:kd_overheat_reversal": "KD 高檔轉弱",
+  "tech:new_low_kd_margin_reversal": "築底等時機",
+  "tech_direction:bullish": "技術多方",
+  "tech_direction:caution": "技術警訊",
+  "tech_direction:bearish": "技術空方",
 };
 
 function money(value) {
@@ -327,6 +350,23 @@ function renderMicrostructureMetrics(item) {
     </section>`;
 }
 
+function renderTechnicalSignals(item) {
+  const signals = item.technical_signals || [];
+  if (!signals.length) return "";
+  return `
+    <section class="detail-section">
+      <h3>技術策略命中</h3>
+      <div class="tech-signal-list">
+        ${signals.map(signal => `
+          <div class="tech-signal ${signal.direction || ""}">
+            <strong>${signal.name || signal.id}</strong>
+            <span>${(signal.conditions || []).map(condition => condition.label).join("、")}</span>
+          </div>
+        `).join("")}
+      </div>
+    </section>`;
+}
+
 function normalizeLeftCandidate(item) {
   const hasMicrostructureFields = MICROSTRUCTURE_SCORE_KEYS.some(key => Object.prototype.hasOwnProperty.call(item, key));
   return {
@@ -430,6 +470,7 @@ function buildDetailRow(item, colSpan) {
   td.innerHTML = `
     <div class="detail-grid">${renderScoreBreakdown(item)}</div>
     <div class="reason-tags">${renderReasonTags(item)}</div>
+    ${renderTechnicalSignals(item)}
     ${isLeft ? renderChipMetrics(item) + renderMicrostructureMetrics(item) + renderCatalystSectorMetrics(item) + renderFundamentalMetrics(item) : renderFundamentalMetrics(item) + renderStrengthMetrics(item)}
     ${renderTradePlan(item)}
     ${isLeft ? "" : renderLivermore(item)}

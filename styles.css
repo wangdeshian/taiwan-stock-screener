@@ -555,6 +555,41 @@ tr.detail-row td {
   color: var(--text);
   font-size: 15px;
 }
+.tech-signal-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+.tech-signal {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+}
+.tech-signal.bullish {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+.tech-signal.caution {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+.tech-signal.bearish {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+.tech-signal strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #334155;
+  font-size: 13px;
+}
+.tech-signal span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: normal;
+}
 .chevron {
   display: inline-block;
   transition: transform 0.2s;
