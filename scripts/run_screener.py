@@ -59,6 +59,10 @@ from taiwan_stock_screener.strategy.technical_templates import (  # noqa: E402
     evaluate_technical_templates,
     technical_reason_ids,
 )
+from taiwan_stock_screener.strategy.chip_templates import (  # noqa: E402
+    chip_reason_ids,
+    evaluate_chip_templates,
+)
 
 TW_TZ = timezone(timedelta(hours=8))
 FINMIND_TOKEN = os.environ.get("FINMIND_TOKEN", "").replace("\r", "").replace("\n", "").strip()
@@ -1113,13 +1117,61 @@ def fetch_holders_finmind(symbol: str) -> pd.DataFrame:
         except ValueError:
             return False
 
+    def level_bounds(level: str) -> tuple[int | None, int | None]:
+        text = str(level).strip().lower()
+        cleaned = text.replace(",", "")
+        numbers: list[int] = []
+        buf = ""
+        for char in cleaned:
+            if char.isdigit():
+                buf += char
+            elif buf:
+                numbers.append(int(buf))
+                buf = ""
+        if buf:
+            numbers.append(int(buf))
+        if not numbers:
+            return None, None
+        lower = numbers[0]
+        upper = numbers[1] if len(numbers) >= 2 else None
+        if "more than" in text or "over" in text or "above" in text or "以上" in text:
+            upper = None
+        return lower, upper
+
     frame["percent"] = pd.to_numeric(frame["percent"], errors="coerce").fillna(0)
-    big = frame[frame["HoldingSharesLevel"].apply(is_big_holder_level)]
-    if big.empty:
+    bounds = frame["HoldingSharesLevel"].map(level_bounds)
+    frame["level_lower"] = bounds.map(lambda item: item[0])
+    frame["level_upper"] = bounds.map(lambda item: item[1])
+    level_text = frame["HoldingSharesLevel"].astype(str).str.lower()
+    frame = frame[~level_text.str.contains("total|總", na=False)].copy()
+    if frame.empty:
         return pd.DataFrame()
-    grouped = big.groupby("date")["percent"].sum().reset_index()
-    grouped = grouped.rename(columns={"percent": "big_holder_ratio_pct"})
+
+    big_400 = frame[frame["HoldingSharesLevel"].apply(is_big_holder_level)]
+    big_1000 = frame[
+        (frame["level_lower"].fillna(0) >= 1_000_001)
+        | (frame["level_upper"].isna() & (frame["level_lower"].fillna(0) >= 1_000_001))
+    ]
+    small_200 = frame[frame["level_upper"].fillna(float("inf")) <= 200_000]
+
+    grouped = pd.DataFrame({"date": sorted(frame["date"].unique())})
+    for source, column in (
+        (big_400, "big_holder_ratio_pct"),
+        (big_1000, "holder_1000_plus_pct"),
+        (small_200, "holder_200_minus_pct"),
+    ):
+        if source.empty:
+            grouped[column] = pd.NA
+        else:
+            grouped = grouped.merge(
+                source.groupby("date")["percent"].sum().rename(column),
+                on="date",
+                how="left",
+            )
     grouped["date"] = pd.to_datetime(grouped["date"])
+    grouped[["big_holder_ratio_pct", "holder_1000_plus_pct", "holder_200_minus_pct"]] = grouped[
+        ["big_holder_ratio_pct", "holder_1000_plus_pct", "holder_200_minus_pct"]
+    ].apply(pd.to_numeric, errors="coerce")
     return grouped.sort_values("date")
 
 
@@ -1231,6 +1283,21 @@ def extract_financial_metrics(
         # 年化估算超出 ±100% 幾乎都是抓錯科目或單位不一致，寧缺勿錯
         if -100 <= roe_pct <= 100:
             result["roe_pct"] = round(roe_pct, 2)
+
+    if balance_frame is not None:
+        share_capital = _latest_statement_value(
+            balance_frame,
+            [
+                "CAPITALSTOCK",
+                "COMMONSTOCK",
+                "ORDINARYSHARE",
+                "ORDINARYSHARES",
+                "SHARECAPITAL",
+                "CAPITAL",
+            ],
+        )
+        if share_capital is not None and share_capital > 0:
+            result["share_capital_twd"] = share_capital
 
     return result if result else None
 
@@ -1411,6 +1478,7 @@ def serialize_left_candidate(
     quote_date: str | None = None,
     quote_source: str | None = None,
     technical_signals: list[dict[str, Any]] | None = None,
+    chip_signals: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     plan = result.trade_plan
     metrics = chip_metrics or {}
@@ -1450,6 +1518,8 @@ def serialize_left_candidate(
         "quote_source": quote_source,
         "technical_signals": technical_signals or [],
         "technical_signal_count": len(technical_signals or []),
+        "chip_signals": chip_signals or [],
+        "chip_signal_count": len(chip_signals or []),
         "entry_price": plan.entry_price if plan else None,
         "alternate_entry_price": plan.alternate_entry_price if plan else None,
         "stop_loss_price": plan.stop_loss_price if plan else None,
@@ -1464,6 +1534,10 @@ def serialize_left_candidate(
         "short_margin_ratio_pct": metrics.get("short_margin_ratio_pct"),
         "branch_concentration_pct": broker.get("branch_concentration_pct"),
         "branch_concentration_streak": broker.get("branch_concentration_streak"),
+        "buy_branch_count": broker.get("buy_branch_count"),
+        "sell_branch_count": broker.get("sell_branch_count"),
+        "sell_branch_count_ratio": broker.get("sell_branch_count_ratio"),
+        "sell_branch_count_streak": broker.get("sell_branch_count_streak"),
         "day_trade_branch_ratio_pct": broker.get("day_trade_branch_ratio_pct"),
         "main_cost_line": broker.get("main_cost_line"),
         "chip_stage": broker.get("chip_stage"),
@@ -1510,6 +1584,12 @@ def demo_output() -> dict[str, Any]:
         )
         technical_signals = evaluate_technical_templates(indicators)
         result.reasons.extend(technical_reason_ids(technical_signals))
+        chip_signals = evaluate_chip_templates(
+            indicators=indicators,
+            institutional_rows=institutional_rows,
+            financial_row=financial_row,
+        )
+        result.reasons.extend(chip_reason_ids(chip_signals))
         plan = result.trade_plan
         stock = stock_lookup.get(str(symbol), {})
         candidates.append(
@@ -1521,6 +1601,7 @@ def demo_output() -> dict[str, Any]:
                 result=result,
                 plan=plan,
                 technical_signals=technical_signals,
+                chip_signals=chip_signals,
             )
         )
 
@@ -1537,6 +1618,13 @@ def demo_output() -> dict[str, Any]:
         )
         left_technical_signals = evaluate_technical_templates(indicators, chip_rows)
         left_result.reasons.extend(technical_reason_ids(left_technical_signals))
+        left_chip_signals = evaluate_chip_templates(
+            indicators=indicators,
+            institutional_rows=institutional_rows,
+            holder_rows=holder_rows,
+            financial_row=financial_row,
+        )
+        left_result.reasons.extend(chip_reason_ids(left_chip_signals))
         left_candidates.append(
             serialize_left_candidate(
                 symbol=str(symbol),
@@ -1549,6 +1637,7 @@ def demo_output() -> dict[str, Any]:
                 quote_date=None,
                 quote_source="demo",
                 technical_signals=left_technical_signals,
+                chip_signals=left_chip_signals,
             )
         )
 
@@ -1626,6 +1715,7 @@ def serialize_candidate(
     quote_date: str | None = None,
     quote_source: str | None = None,
     technical_signals: list[dict[str, Any]] | None = None,
+    chip_signals: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     revenue_yoy_pct = round_optional((revenue_row or {}).get("revenue_yoy_pct"))
     eps = round_optional((financial_row or {}).get("eps"))
@@ -1653,6 +1743,8 @@ def serialize_candidate(
         "quote_source": quote_source,
         "technical_signals": technical_signals or [],
         "technical_signal_count": len(technical_signals or []),
+        "chip_signals": chip_signals or [],
+        "chip_signal_count": len(chip_signals or []),
         "entry_price": plan.entry_price if plan else None,
         "alternate_entry_price": plan.alternate_entry_price if plan else None,
         "stop_loss_price": plan.stop_loss_price if plan else None,
@@ -2090,6 +2182,14 @@ def run_left_side_screener(
             )
             technical_signals = evaluate_technical_templates(indicators, chip_rows)
             left_result.reasons.extend(technical_reason_ids(technical_signals))
+            chip_signals = evaluate_chip_templates(
+                indicators=indicators,
+                institutional_rows=institutions if institutions is not None and not institutions.empty else None,
+                holder_rows=holder_rows if not holder_rows.empty else None,
+                broker_row=broker_row,
+                financial_row=financial_row,
+            )
+            left_result.reasons.extend(chip_reason_ids(chip_signals))
             left_candidate = serialize_left_candidate(
                 symbol=symbol,
                 name=name,
@@ -2107,6 +2207,7 @@ def run_left_side_screener(
                 quote_date=str(quote.get("quote_date") or ""),
                 quote_source=str(quote.get("quote_source") or market),
                 technical_signals=technical_signals,
+                chip_signals=chip_signals,
             )
             left_candidate["microstructure_available"] = micro_row is not None
             prev_entry = prev_left_scores.get(symbol)
@@ -2274,6 +2375,12 @@ def run_live_screener() -> dict[str, Any]:
                 result.reasons.append("relative_strength_60d")
             technical_signals = evaluate_technical_templates(indicators)
             result.reasons.extend(technical_reason_ids(technical_signals))
+            chip_signals = evaluate_chip_templates(
+                indicators=indicators,
+                institutional_rows=institutions if not institutions.empty else None,
+                financial_row=financial_row,
+            )
+            result.reasons.extend(chip_reason_ids(chip_signals))
         except Exception as exc:
             print(f"WARN scoring failed for {symbol}: {exc}")
             continue
@@ -2296,6 +2403,7 @@ def run_live_screener() -> dict[str, Any]:
             quote_date=str(row.get("quote_date") or ""),
             quote_source=str(row.get("quote_source") or market),
             technical_signals=technical_signals,
+            chip_signals=chip_signals,
         )
         scored_candidates.append(candidate)
 
@@ -2423,6 +2531,8 @@ def update_history(output: dict[str, Any]) -> None:
                 "reasons": c.get("reasons", []),
                 "technical_signals": c.get("technical_signals", []),
                 "technical_signal_count": c.get("technical_signal_count", 0),
+                "chip_signals": c.get("chip_signals", []),
+                "chip_signal_count": c.get("chip_signal_count", 0),
                 "trend_score": c.get("trend_score"),
                 "volume_score": c.get("volume_score"),
                 "institutional_score": c.get("institutional_score"),
@@ -2453,6 +2563,8 @@ def update_history(output: dict[str, Any]) -> None:
                 "reasons": c.get("reasons", []),
                 "technical_signals": c.get("technical_signals", []),
                 "technical_signal_count": c.get("technical_signal_count", 0),
+                "chip_signals": c.get("chip_signals", []),
+                "chip_signal_count": c.get("chip_signal_count", 0),
                 "score_prev": c.get("score_prev"),
                 "score_delta": c.get("score_delta"),
                 "entry_price": c.get("entry_price"),
@@ -2470,6 +2582,10 @@ def update_history(output: dict[str, Any]) -> None:
                 "margin_balance_change_pct": c.get("margin_balance_change_pct"),
                 "day_trade_ratio_pct": c.get("day_trade_ratio_pct"),
                 "big_holder_gain_pp": c.get("big_holder_gain_pp"),
+                "buy_branch_count": c.get("buy_branch_count"),
+                "sell_branch_count": c.get("sell_branch_count"),
+                "sell_branch_count_ratio": c.get("sell_branch_count_ratio"),
+                "sell_branch_count_streak": c.get("sell_branch_count_streak"),
                 "nearest_catalyst_type": c.get("nearest_catalyst_type"),
                 "nearest_catalyst_date": c.get("nearest_catalyst_date"),
                 "catalyst_days_left": c.get("catalyst_days_left"),

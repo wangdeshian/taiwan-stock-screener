@@ -15,6 +15,23 @@
 ## 日誌（新的在上面）
 
 ### 2026-07-22 | Codex
+- **做了**：將使用者提供的 10 張「策略選股(台股)」籌碼條件截圖轉成
+  `taiwan_stock_screener/strategy/chip_templates.py`，目前作為候選股籌碼策略標籤與回測特徵，
+  不直接改總分
+- **新增模板**：重點持股大增留意股、千張大戶進場散戶出、董監持股大戶留意股、投信掃貨、
+  中小型投信連買、法人同步做空、投信出貨、重點持股大減留意股、中小型投信賣超、軋空行情
+- **做了**：右側動能與左側潛伏候選股輸出 `chip_signals` / `chip_signal_count`，
+  並把命中模板寫成 `chip_*` reason；`signal_backtest.json` 後續可統計 `chip:*` 標籤表現
+- **做了**：FinMind 集保資料整理擴充 `holder_1000_plus_pct` 與 `holder_200_minus_pct`，
+  財報欄位嘗試補 `share_capital_twd`，分點分析補買賣分點數與賣方優勢連續天數
+- **做了**：前端個股展開列新增「籌碼策略命中」區塊，多方／警訊／空方以不同底色呈現；
+  訊號回測頁新增 `chip:*` 標籤翻譯
+- **已驗證**：`python -m pytest` 68 passed；`node --check frontend/app.js` 通過
+- **注意**：董監持股／內部人月變化目前仍是資料缺口；有欄位才會觸發，不會用假資料補分
+- **建議下一步**：讓 Daily Stock Screener 跑一輪產生新的 `results.json`，
+  再觀察「訊號回測」中 `chip:*` 標籤 1/2/3/5 日表現
+
+### 2026-07-22 | Codex
 - **做了**：將使用者提供的 10 張「策略選股(台股)」技術條件截圖轉成
   `taiwan_stock_screener/strategy/technical_templates.py`，目前作為候選股技術策略標籤與回測特徵，
   不直接改總分

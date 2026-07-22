@@ -65,7 +65,12 @@ def analyze_broker_flow(
 
     # 每日前 top_n 買超集中度：淨買超前 top_n 分點的淨買合計 / 當日全體 gross 的一半（≈成交量）
     daily_concentration: list[float] = []
+    daily_buy_branch_counts: list[int] = []
+    daily_sell_branch_counts: list[int] = []
     for _, day_rows in rows.groupby("trade_date"):
+        by_trader = day_rows.groupby("securities_trader")["net"].sum()
+        daily_buy_branch_counts.append(int((by_trader > 0).sum()))
+        daily_sell_branch_counts.append(int((by_trader < 0).sum()))
         day_volume = float(day_rows["gross"].sum()) / 2
         if day_volume <= 0:
             daily_concentration.append(0.0)
@@ -78,6 +83,18 @@ def analyze_broker_flow(
     for value in reversed(daily_concentration):
         if value >= concentration_pct:
             streak += 1
+        else:
+            break
+
+    latest_buy_branch_count = daily_buy_branch_counts[-1] if daily_buy_branch_counts else 0
+    latest_sell_branch_count = daily_sell_branch_counts[-1] if daily_sell_branch_counts else 0
+    sell_branch_count_ratio = (
+        latest_sell_branch_count / latest_buy_branch_count if latest_buy_branch_count > 0 else None
+    )
+    sell_branch_count_streak = 0
+    for buy_count, sell_count in reversed(list(zip(daily_buy_branch_counts, daily_sell_branch_counts, strict=False))):
+        if sell_count > buy_count:
+            sell_branch_count_streak += 1
         else:
             break
 
@@ -110,6 +127,10 @@ def analyze_broker_flow(
     return {
         "branch_concentration_pct": round(latest_concentration, 2),
         "branch_concentration_streak": int(streak),
+        "buy_branch_count": latest_buy_branch_count,
+        "sell_branch_count": latest_sell_branch_count,
+        "sell_branch_count_ratio": None if sell_branch_count_ratio is None else round(sell_branch_count_ratio, 2),
+        "sell_branch_count_streak": int(sell_branch_count_streak),
         "day_trade_branch_ratio_pct": round(day_trade_ratio, 2),
         "main_cost_line": None if main_cost_line is None else round(main_cost_line, 2),
         "chip_stage": stage,

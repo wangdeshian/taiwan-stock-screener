@@ -114,20 +114,23 @@ def sample_big_holder_ratios(weeks: int = 12) -> pd.DataFrame:
     end = date.today()
     week_dates = [end - timedelta(weeks=weeks - 1 - i) for i in range(weeks)]
     profiles = {
-        "2330": (78.0, 0.0),
-        "2454": (70.0, 0.1),
-        "2317": (62.0, 1.4),
-        "2303": (55.0, 1.8),
-        "6488": (66.0, 0.6),
+        "2330": (78.0, 0.0, 62.0, 0.0, 18.0, 0.0),
+        "2454": (70.0, 0.1, 48.0, 0.1, 22.0, -0.1),
+        "2317": (62.0, 1.4, 34.0, 1.1, 30.0, -1.2),
+        "2303": (55.0, 1.8, 28.0, 1.4, 38.0, -1.5),
+        "6488": (66.0, 0.6, 42.0, 0.4, 24.0, -0.4),
     }
     records: list[dict[str, object]] = []
-    for symbol, (base, total_gain) in profiles.items():
+    for symbol, (base, total_gain, holder_1000_base, holder_1000_gain, holder_200_base, holder_200_gain) in profiles.items():
         for idx, week_date in enumerate(week_dates):
+            progress = idx / max(weeks - 1, 1)
             records.append(
                 {
                     "symbol": symbol,
                     "date": week_date,
-                    "big_holder_ratio_pct": round(base + total_gain * idx / max(weeks - 1, 1), 2),
+                    "big_holder_ratio_pct": round(base + total_gain * progress, 2),
+                    "holder_1000_plus_pct": round(holder_1000_base + holder_1000_gain * progress, 2),
+                    "holder_200_minus_pct": round(holder_200_base + holder_200_gain * progress, 2),
                 }
             )
     return pd.DataFrame(records)
@@ -148,10 +151,10 @@ def sample_monthly_revenue() -> pd.DataFrame:
 def sample_financials() -> pd.DataFrame:
     return pd.DataFrame(
         [
-            {"symbol": "2330", "year": date.today().year, "quarter": 1, "eps": 9.8, "roe_pct": 29.0, "gross_margin_pct": 54.2, "operating_margin_pct": 43.1, "net_margin_pct": 38.0},
-            {"symbol": "2454", "year": date.today().year, "quarter": 1, "eps": 17.2, "roe_pct": 23.4, "gross_margin_pct": 48.0, "operating_margin_pct": 21.4, "net_margin_pct": 19.5},
-            {"symbol": "2317", "year": date.today().year, "quarter": 1, "eps": 2.1, "roe_pct": 10.7, "gross_margin_pct": 6.5, "operating_margin_pct": 3.0, "net_margin_pct": 2.4},
-            {"symbol": "2303", "year": date.today().year, "quarter": 1, "eps": 0.42, "roe_pct": 5.8, "gross_margin_pct": 24.0, "operating_margin_pct": 8.1, "net_margin_pct": 7.0},
-            {"symbol": "6488", "year": date.today().year, "quarter": 1, "eps": 5.6, "roe_pct": 18.1, "gross_margin_pct": 35.4, "operating_margin_pct": 25.1, "net_margin_pct": 21.0},
+            {"symbol": "2330", "year": date.today().year, "quarter": 1, "eps": 9.8, "roe_pct": 29.0, "gross_margin_pct": 54.2, "operating_margin_pct": 43.1, "net_margin_pct": 38.0, "share_capital_twd": 259_000_000_000},
+            {"symbol": "2454", "year": date.today().year, "quarter": 1, "eps": 17.2, "roe_pct": 23.4, "gross_margin_pct": 48.0, "operating_margin_pct": 21.4, "net_margin_pct": 19.5, "share_capital_twd": 15_900_000_000},
+            {"symbol": "2317", "year": date.today().year, "quarter": 1, "eps": 2.1, "roe_pct": 10.7, "gross_margin_pct": 6.5, "operating_margin_pct": 3.0, "net_margin_pct": 2.4, "share_capital_twd": 138_600_000_000},
+            {"symbol": "2303", "year": date.today().year, "quarter": 1, "eps": 0.42, "roe_pct": 5.8, "gross_margin_pct": 24.0, "operating_margin_pct": 8.1, "net_margin_pct": 7.0, "share_capital_twd": 125_000_000_000},
+            {"symbol": "6488", "year": date.today().year, "quarter": 1, "eps": 5.6, "roe_pct": 18.1, "gross_margin_pct": 35.4, "operating_margin_pct": 25.1, "net_margin_pct": 21.0, "share_capital_twd": 4_400_000_000},
         ]
     )

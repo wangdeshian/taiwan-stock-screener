@@ -97,6 +97,13 @@ def signal_tags(candidate: dict[str, Any], strategy: str) -> tuple[str, ...]:
             direction = signal.get("direction")
             if direction:
                 tags.append(f"tech_direction:{direction}")
+    for signal in candidate.get("chip_signals") or []:
+        signal_id = signal.get("id") if isinstance(signal, dict) else None
+        if signal_id:
+            tags.append(f"chip:{signal_id}")
+            direction = signal.get("direction")
+            if direction:
+                tags.append(f"chip_direction:{direction}")
 
     score_delta = safe_float(candidate.get("score_delta"))
     if score_delta is not None:

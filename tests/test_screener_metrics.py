@@ -105,11 +105,16 @@ def test_extract_financial_metrics_reads_equity_from_balance_sheet() -> None:
             {"date": "2026-03-31", "type": "IncomeAfterTaxes", "value": "50"},
         ]
     )
-    balance = pd.DataFrame([{"date": "2026-03-31", "type": "Equity", "value": "1000"}])
+    balance = pd.DataFrame(
+        [
+            {"date": "2026-03-31", "type": "Equity", "value": "1000"},
+            {"date": "2026-03-31", "type": "CapitalStock", "value": "500"},
+        ]
+    )
 
     result = extract_financial_metrics(statements, balance)
 
-    assert result == {"eps": 2.0, "roe_pct": 20.0}
+    assert result == {"eps": 2.0, "roe_pct": 20.0, "share_capital_twd": 500.0}
 
 
 def test_previous_left_scores_prefers_full_score_map() -> None:
