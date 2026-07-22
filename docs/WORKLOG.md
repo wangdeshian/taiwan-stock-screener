@@ -14,6 +14,21 @@
 
 ## 日誌（新的在上面）
 
+### 2026-07-22 | Codex
+- **做了**：將使用者提供的 10 張「策略選股(台股)」技術條件截圖轉成
+  `taiwan_stock_screener/strategy/technical_templates.py`，目前作為候選股技術策略標籤與回測特徵，
+  不直接改總分
+- **新增模板**：創新高動能股、突破均線糾結、MTM 創高動能、雙 KD 向上、抄底求翻身、
+  一線間、創高出貨潮、黑三鴉弱勢、KD 高檔轉弱、築底等時機
+- **做了**：右側動能與左側潛伏候選股輸出 `technical_signals` / `technical_signal_count`，
+  並把命中模板寫成 `tech_*` reason；`signal_backtest.json` 後續可統計 `tech:*` 標籤表現
+- **做了**：前端個股展開列新增「技術策略命中」區塊，多方／警訊／空方以不同底色呈現
+- **做了**：`docs/DOMAIN_KNOWLEDGE.md` 補入本次截圖匯入條件與資料限制；
+  盤中創高／創低目前用日 K high/low 近似，待即時資料源後升級
+- **已驗證**：`python -m pytest` 65 passed；`node --check frontend/app.js` 通過
+- **建議下一步**：讓 Daily Stock Screener 跑一輪產生新的 `results.json`，
+  再觀察「訊號回測」中 `tech:*` 標籤 1/2/3/5 日表現，避免未回測就直接加權
+
 ### 2026-07-21 | Codex
 - **做了**：前端新增第三個分頁「訊號回測」，讀取 `data/signal_backtest.json`
   顯示資料信心、歷史天數、訊號事件數、股票數、1/2/3/5 個觀察交易日的訊號表現

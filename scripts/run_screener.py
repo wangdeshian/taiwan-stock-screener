@@ -55,6 +55,10 @@ from taiwan_stock_screener.sector.resonance import (  # noqa: E402
     load_sector_history,
     update_sector_history,
 )
+from taiwan_stock_screener.strategy.technical_templates import (  # noqa: E402
+    evaluate_technical_templates,
+    technical_reason_ids,
+)
 
 TW_TZ = timezone(timedelta(hours=8))
 FINMIND_TOKEN = os.environ.get("FINMIND_TOKEN", "").replace("\r", "").replace("\n", "").strip()
@@ -1406,6 +1410,7 @@ def serialize_left_candidate(
     price_source: str | None = None,
     quote_date: str | None = None,
     quote_source: str | None = None,
+    technical_signals: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     plan = result.trade_plan
     metrics = chip_metrics or {}
@@ -1443,6 +1448,8 @@ def serialize_left_candidate(
         "close_price": round_optional(close, 2),
         "quote_date": quote_date,
         "quote_source": quote_source,
+        "technical_signals": technical_signals or [],
+        "technical_signal_count": len(technical_signals or []),
         "entry_price": plan.entry_price if plan else None,
         "alternate_entry_price": plan.alternate_entry_price if plan else None,
         "stop_loss_price": plan.stop_loss_price if plan else None,
@@ -1501,6 +1508,8 @@ def demo_output() -> dict[str, Any]:
             financial_row=financial_row,
             industry_rank_pct=1,
         )
+        technical_signals = evaluate_technical_templates(indicators)
+        result.reasons.extend(technical_reason_ids(technical_signals))
         plan = result.trade_plan
         stock = stock_lookup.get(str(symbol), {})
         candidates.append(
@@ -1511,6 +1520,7 @@ def demo_output() -> dict[str, Any]:
                 industry=stock.get("industry"),
                 result=result,
                 plan=plan,
+                technical_signals=technical_signals,
             )
         )
 
@@ -1525,6 +1535,8 @@ def demo_output() -> dict[str, Any]:
             revenue_row=revenue_row,
             financial_row=financial_row,
         )
+        left_technical_signals = evaluate_technical_templates(indicators, chip_rows)
+        left_result.reasons.extend(technical_reason_ids(left_technical_signals))
         left_candidates.append(
             serialize_left_candidate(
                 symbol=str(symbol),
@@ -1536,6 +1548,7 @@ def demo_output() -> dict[str, Any]:
                 chip_metrics=left_side_metrics(chip_rows, holder_rows),
                 quote_date=None,
                 quote_source="demo",
+                technical_signals=left_technical_signals,
             )
         )
 
@@ -1612,6 +1625,7 @@ def serialize_candidate(
     price_source: str | None = None,
     quote_date: str | None = None,
     quote_source: str | None = None,
+    technical_signals: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     revenue_yoy_pct = round_optional((revenue_row or {}).get("revenue_yoy_pct"))
     eps = round_optional((financial_row or {}).get("eps"))
@@ -1637,6 +1651,8 @@ def serialize_candidate(
         "close_price": round_optional(close, 2),
         "quote_date": quote_date,
         "quote_source": quote_source,
+        "technical_signals": technical_signals or [],
+        "technical_signal_count": len(technical_signals or []),
         "entry_price": plan.entry_price if plan else None,
         "alternate_entry_price": plan.alternate_entry_price if plan else None,
         "stop_loss_price": plan.stop_loss_price if plan else None,
@@ -2072,6 +2088,8 @@ def run_left_side_screener(
                 broker_row=broker_row,
                 microstructure_row=micro_row,
             )
+            technical_signals = evaluate_technical_templates(indicators, chip_rows)
+            left_result.reasons.extend(technical_reason_ids(technical_signals))
             left_candidate = serialize_left_candidate(
                 symbol=symbol,
                 name=name,
@@ -2088,6 +2106,7 @@ def run_left_side_screener(
                 price_source=price_source,
                 quote_date=str(quote.get("quote_date") or ""),
                 quote_source=str(quote.get("quote_source") or market),
+                technical_signals=technical_signals,
             )
             left_candidate["microstructure_available"] = micro_row is not None
             prev_entry = prev_left_scores.get(symbol)
@@ -2253,6 +2272,8 @@ def run_live_screener() -> dict[str, Any]:
                 result.reasons.append("relative_strength_20d")
             if (strength_metrics.get("relative_strength_60d_pct") or 0) > 0:
                 result.reasons.append("relative_strength_60d")
+            technical_signals = evaluate_technical_templates(indicators)
+            result.reasons.extend(technical_reason_ids(technical_signals))
         except Exception as exc:
             print(f"WARN scoring failed for {symbol}: {exc}")
             continue
@@ -2274,6 +2295,7 @@ def run_live_screener() -> dict[str, Any]:
             price_source=price_source,
             quote_date=str(row.get("quote_date") or ""),
             quote_source=str(row.get("quote_source") or market),
+            technical_signals=technical_signals,
         )
         scored_candidates.append(candidate)
 
@@ -2399,6 +2421,8 @@ def update_history(output: dict[str, Any]) -> None:
                 "target_price_1": c.get("target_price_1"),
                 "risk_reward_ratio": c.get("risk_reward_ratio"),
                 "reasons": c.get("reasons", []),
+                "technical_signals": c.get("technical_signals", []),
+                "technical_signal_count": c.get("technical_signal_count", 0),
                 "trend_score": c.get("trend_score"),
                 "volume_score": c.get("volume_score"),
                 "institutional_score": c.get("institutional_score"),
@@ -2427,6 +2451,8 @@ def update_history(output: dict[str, Any]) -> None:
                 "quote_source": c.get("quote_source"),
                 "close_price": c.get("close_price"),
                 "reasons": c.get("reasons", []),
+                "technical_signals": c.get("technical_signals", []),
+                "technical_signal_count": c.get("technical_signal_count", 0),
                 "score_prev": c.get("score_prev"),
                 "score_delta": c.get("score_delta"),
                 "entry_price": c.get("entry_price"),
