@@ -116,6 +116,16 @@ const REASON_LABELS = {
   tech_low_close_three_crows: "黑三鴉弱勢",
   tech_kd_overheat_reversal: "KD 高檔轉弱",
   tech_new_low_kd_margin_reversal: "築底等時機",
+  chip_institutional_accumulation_watch: "重點持股大增留意股",
+  chip_small_cap_foreign_accumulation: "千張大戶進場散戶出",
+  chip_insider_alignment: "董監持股大戶留意股",
+  chip_large_holder_accumulation_retail_exit: "投信掃貨",
+  chip_trust_small_cap_accumulation: "中小型投信連買",
+  chip_broker_synchronized_short: "法人同步做空",
+  chip_large_holder_distribution_retail_in: "投信出貨",
+  chip_institutional_distribution_watch: "重點持股大減留意股",
+  chip_trust_distribution_small_cap: "中小型投信賣超",
+  chip_insider_divergence_short_squeeze: "軋空行情",
   sentiment_freeze: "網路聲量冰點",
   observation_pool: "潛伏觀察池",
 };
@@ -153,6 +163,19 @@ const BACKTEST_TAG_LABELS = {
   "tech_direction:bullish": "技術多方",
   "tech_direction:caution": "技術警訊",
   "tech_direction:bearish": "技術空方",
+  "chip:institutional_accumulation_watch": "重點持股大增留意股",
+  "chip:small_cap_foreign_accumulation": "千張大戶進場散戶出",
+  "chip:insider_alignment": "董監持股大戶留意股",
+  "chip:large_holder_accumulation_retail_exit": "投信掃貨",
+  "chip:trust_small_cap_accumulation": "中小型投信連買",
+  "chip:broker_synchronized_short": "法人同步做空",
+  "chip:large_holder_distribution_retail_in": "投信出貨",
+  "chip:institutional_distribution_watch": "重點持股大減留意股",
+  "chip:trust_distribution_small_cap": "中小型投信賣超",
+  "chip:insider_divergence_short_squeeze": "軋空行情",
+  "chip_direction:bullish": "籌碼多方",
+  "chip_direction:caution": "籌碼警訊",
+  "chip_direction:bearish": "籌碼空方",
 };
 
 function money(value) {
@@ -367,6 +390,23 @@ function renderTechnicalSignals(item) {
     </section>`;
 }
 
+function renderChipSignals(item) {
+  const signals = item.chip_signals || [];
+  if (!signals.length) return "";
+  return `
+    <section class="detail-section">
+      <h3>籌碼策略命中</h3>
+      <div class="chip-signal-list">
+        ${signals.map(signal => `
+          <div class="chip-signal ${signal.direction || ""}">
+            <strong>${signal.name || signal.id}</strong>
+            <span>${(signal.conditions || []).map(condition => condition.label).join("、")}</span>
+          </div>
+        `).join("")}
+      </div>
+    </section>`;
+}
+
 function normalizeLeftCandidate(item) {
   const hasMicrostructureFields = MICROSTRUCTURE_SCORE_KEYS.some(key => Object.prototype.hasOwnProperty.call(item, key));
   return {
@@ -471,6 +511,7 @@ function buildDetailRow(item, colSpan) {
     <div class="detail-grid">${renderScoreBreakdown(item)}</div>
     <div class="reason-tags">${renderReasonTags(item)}</div>
     ${renderTechnicalSignals(item)}
+    ${renderChipSignals(item)}
     ${isLeft ? renderChipMetrics(item) + renderMicrostructureMetrics(item) + renderCatalystSectorMetrics(item) + renderFundamentalMetrics(item) : renderFundamentalMetrics(item) + renderStrengthMetrics(item)}
     ${renderTradePlan(item)}
     ${isLeft ? "" : renderLivermore(item)}
