@@ -1,0 +1,5 @@
+# 只有「系統匣模式」需要這些；--once / --watch / --probe / --json 都只用標準函式庫。
+pystray>=0.19
+pillow>=10.0
+# Windows 沒有內建時區資料庫，Gemini 的太平洋時間換日需要它
+tzdata>=2024.1
