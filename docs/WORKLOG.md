@@ -14,6 +14,25 @@
 
 ## 日誌（新的在上面）
 
+### 2026-08-02 | Claude
+- **做了**：新增 `tools/quota-menubar/`（QuotaBar）——macOS 選單列小工具，
+  同時顯示 Codex / Claude Code / Gemini 的本機用量。與台股選股主線無關，
+  獨立的 SwiftPM 專案，不影響 `pytest` 或 GitHub Actions
+- **架構**：`QuotaCore`（純 Foundation，含全部解析邏輯與單元測試）
+  ＋ `QuotaBar`（SwiftUI 選單列 UI，`Package.swift` 用 `#if os(macOS)` 只在 macOS 納入建置）
+- **資料來源**：Codex 讀 `~/.codex/sessions/**/*.jsonl` 的 `rate_limits`（官方數字）；
+  Claude 讀 `~/.claude/projects/**/*.jsonl` 的 `message.usage` 加總（**本機統計，非官方額度**，
+  沒設 token 預算就不顯示百分比）；Gemini 讀 `~/.gemini/tmp/*/logs.json` 算請求數
+- **設計原則**：抓不到資料一律顯示「—」並在面板寫出原因，不用推測值補數字
+  （沿用本專案「資料源沒接上就維持 0 分」的規則）
+- **未驗證（重要）**：本容器是 Linux 且 `download.swift.org` 被網路政策擋掉（403），
+  **Swift 完全沒編譯過**。已附 29 個單元測試與 `--probe` 診斷模式，
+  請在 Mac 上先跑 `swift build` / `swift test` / `swift run quotabar --probe`
+- **未實作**：原版 GlassQuota 那種用 macOS 輔助功能讀 Gemini 官方桌面 App 畫面的做法；
+  目前只支援 Gemini CLI
+- **建議下一步**：在 Mac 上跑 `--probe`，把三家最後一行原始 JSON 對照解析結果，
+  格式有出入再修 `Sources/QuotaCore/*Provider.swift`
+
 ### 2026-07-22 | Codex
 - **做了**：將使用者提供的 10 張「策略選股(台股)」籌碼條件截圖轉成
   `taiwan_stock_screener/strategy/chip_templates.py`，目前作為候選股籌碼策略標籤與回測特徵，
