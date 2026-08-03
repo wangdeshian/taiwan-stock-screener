@@ -47,6 +47,11 @@ def report(config: AppConfig, now: datetime | None = None) -> str:
     lines += _section("Claude", claude.directories, suffix=".jsonl")
     lines += _section("Gemini", gemini.directories, name="logs.json")
 
+    lines += ["", "深入診斷", THIN]
+    lines += _codex_detail(codex)
+    lines += _claude_detail(claude, moment)
+    lines += _gemini_detail(gemini)
+
     lines += ["", "解析結果", THIN]
     service = QuotaService(config, roots)
     for snapshot in service.snapshots(moment):
@@ -69,6 +74,61 @@ def report(config: AppConfig, now: datetime | None = None) -> str:
         lines.append("")
 
     return "\n".join(lines)
+
+
+def _codex_detail(codex: CodexProvider) -> list[str]:
+    lines = ["", "▸ Codex：實際命中的 rate_limits"]
+    if not codex.directories:
+        return lines + ["  （沒有目錄，略過）"]
+
+    info = codex.diagnostics()
+    if not info.get("matched"):
+        return lines + [f"  掃了 {info['files']} 個檔案，沒有任何一行含 rate_limits"]
+
+    lines.append(f"  來源檔：{info['file']}")
+    lines.append(f"  區間鍵：{info['keys']}")
+    lines.append("  原始 JSON：")
+    lines.append(f"    {info['limits_json']}")
+    return lines
+
+
+def _claude_detail(claude: ClaudeProvider, now: datetime) -> list[str]:
+    lines = ["", "▸ Claude：記錄在哪一層被過濾掉"]
+    if not claude.directories:
+        return lines + ["  （沒有目錄，略過）"]
+
+    info = claude.diagnostics(now)
+    stats = info["stats"]
+    lines.append(
+        f"  檔案：共 {info['files_total']} 個，"
+        f"最近 8 天內 {info['files_recent']} 個，"
+        f"因太舊跳過 {info['files_skipped_by_age']} 個"
+    )
+    lines.append(f"  掃描行數：{stats['lines']}")
+    lines.append(f"  含 \"usage\" 字樣：{stats['with_usage_marker']}")
+    lines.append(f"    ├ JSON 解析失敗：{stats['json_error']}")
+    lines.append(f"    ├ 沒有 message.usage：{stats['no_message_usage']}")
+    lines.append(f"    ├ token 全為 0：{stats['zero_tokens']}")
+    lines.append(f"    ├ 沒有可解析的 timestamp：{stats['no_timestamp']}")
+    lines.append(f"    └ 採用：{stats['accepted']}")
+    lines.append(
+        f"  去重後：{info['unique_entries']} 筆（移除重複 {info['duplicates_removed']} 筆）"
+    )
+    if info["oldest"] and info["newest"]:
+        lines.append(f"  最舊一筆：{info['oldest'].astimezone():%Y-%m-%d %H:%M:%S}")
+        lines.append(f"  最新一筆：{info['newest'].astimezone():%Y-%m-%d %H:%M:%S}")
+    return lines
+
+
+def _gemini_detail(gemini: GeminiProvider) -> list[str]:
+    lines = ["", "▸ Gemini：.gemini 目錄狀態"]
+    for base in gemini.diagnostics()["bases"]:
+        if base["exists"]:
+            lines.append(f"  {base['path']}  [存在]")
+            lines.append(f"    內容：{base['children'] or '（空的）'}")
+        else:
+            lines.append(f"  {base['path']}  [不存在 → 應該是沒裝 Gemini CLI]")
+    return lines
 
 
 def _section(

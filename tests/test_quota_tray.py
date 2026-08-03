@@ -282,6 +282,95 @@ def test_claude_ignores_user_lines_and_broken_json(tmp_path):
     assert snapshot.windows[0].detail == "10 tokens · 1 則回應"
 
 
+def test_claude_parse_stats_pinpoint_each_filter(tmp_path):
+    """`--probe` 要能指出記錄在哪一層被丟掉，不然數字不對時只能用猜的。"""
+    lines = [
+        json.dumps({"type": "user", "message": {"content": "沒有 usage 字樣"}}),
+        '{ "usage" broken json',
+        # 工具結果裡也可能出現 "usage"，但它不在 message 底下，不該被算進去
+        json.dumps({"type": "user", "toolUseResult": {"usage": {"input_tokens": 9}}}),
+        json.dumps(
+            {
+                "type": "assistant",
+                "timestamp": stamp(NOW),
+                "message": {"id": "z", "usage": {"input_tokens": 0, "output_tokens": 0}},
+            }
+        ),
+        json.dumps(
+            {
+                "type": "assistant",
+                "message": {"id": "n", "usage": {"input_tokens": 5, "output_tokens": 5}},
+            }
+        ),
+        assistant_line(NOW, "ok", "r1", input=10, output=0),
+    ]
+
+    entries, stats = ClaudeProvider.parse_entries_with_stats(lines)
+
+    assert stats["lines"] == 6
+    assert stats["with_usage_marker"] == 5
+    assert stats["json_error"] == 1
+    assert stats["no_message_usage"] == 1
+    assert stats["zero_tokens"] == 1
+    assert stats["no_timestamp"] == 1
+    assert stats["accepted"] == 1
+    assert len(entries) == 1
+
+
+def test_claude_diagnostics_reports_dedupe_and_range(tmp_path):
+    # Claude Code 會把同一則回應的多個 content block 寫成多行、共用 message.id，
+    # 不去重就會把同一次用量算兩次。
+    duplicated = assistant_line(NOW, "same", "r1", input=1000, output=0)
+    older = assistant_line(NOW - timedelta(days=2), "old", "r0", input=10, output=0)
+    write(
+        tmp_path / ".claude/projects/proj/session.jsonl",
+        "\n".join([older, duplicated, duplicated]),
+    )
+
+    info = claude_provider(tmp_path).diagnostics(NOW)
+
+    assert info["stats"]["accepted"] == 3
+    assert info["unique_entries"] == 2
+    assert info["duplicates_removed"] == 1
+    assert info["oldest"] == NOW - timedelta(days=2)
+    assert info["newest"] == NOW
+
+
+def test_codex_diagnostics_exposes_raw_limits(tmp_path):
+    write(
+        tmp_path / ".codex/sessions/rollout.jsonl",
+        "\n".join(
+            [
+                json.dumps({"rate_limits": {"primary": {"used_percent": 4}}}),
+                json.dumps({"type": "event_msg", "payload": {"type": "task_complete"}}),
+            ]
+        ),
+    )
+
+    info = codex_provider(tmp_path).diagnostics()
+
+    # 最後一行不是 rate_limits，診斷仍要找出真正命中的那一行。
+    assert info["matched"] is True
+    assert info["keys"] == ["primary"]
+    assert '"used_percent": 4' in info["limits_json"]
+
+
+def test_gemini_diagnostics_distinguishes_missing_cli_from_unused(tmp_path):
+    installed = tmp_path / "installed"
+    (installed / ".gemini/tmp").mkdir(parents=True)
+    never_run = tmp_path / "never_run"
+    (never_run / ".gemini").mkdir(parents=True)
+    absent = tmp_path / "absent"
+    absent.mkdir()
+
+    provider = GeminiProvider(GeminiConfig(), [installed, never_run, absent])
+    bases = provider.diagnostics()["bases"]
+
+    assert bases[0]["exists"] and bases[0]["children"] == ["tmp"]
+    assert bases[1]["exists"] and bases[1]["children"] == []
+    assert bases[2]["exists"] is False
+
+
 def test_claude_missing_directory_is_unavailable(tmp_path):
     snapshot = claude_provider(tmp_path).snapshot(NOW)
     assert not snapshot.available
@@ -606,10 +695,10 @@ def test_icon_image_renders_at_tray_size():
     assert image.size == (16, 16)
     assert image.mode == "RGBA"
     # 有資料時環上要真的有顏色，不能是全透明。
-    assert any(pixel[3] > 0 for pixel in image.getdata())
+    assert image.getchannel("A").getextrema()[1] > 0
 
     # 無資料的圖示要跟 0% 明顯不同，避免「沒讀到」被誤看成「用完了」。
-    assert list(make_icon_image(None, 16).getdata()) != list(make_icon_image(0, 16).getdata())
+    assert make_icon_image(None, 16).tobytes() != make_icon_image(0, 16).tobytes()
 
 
 def test_service_isolates_a_failing_provider(tmp_path):

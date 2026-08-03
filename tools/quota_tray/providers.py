@@ -189,6 +189,15 @@ class CodexProvider:
         )
 
     def _latest_rate_limits(self, files: list[ScannedFile]) -> tuple[dict, Path] | None:
+        found = self._latest_rate_limits_raw(files)
+        if found is None:
+            return None
+        limits, path, _raw = found
+        return limits, path
+
+    def _latest_rate_limits_raw(
+        self, files: list[ScannedFile]
+    ) -> tuple[dict, Path, str] | None:
         for item in files[: max(1, self.config.max_files_to_scan)]:
             for line in reversed(read_lines(item.path)):
                 # 先做便宜的字串比對再解析 JSON；兩種命名都要接受。
@@ -200,8 +209,28 @@ class CodexProvider:
                     continue
                 limits = find_nested(payload, ("rate_limits", "rateLimits"))
                 if limits:
-                    return limits, item.path
+                    return limits, item.path, line
         return None
+
+    def diagnostics(self) -> dict:
+        """給 --probe 用：把實際找到的 rate_limits 原始 JSON 交出來。
+
+        Codex 的欄位會隨版本改，只印「最後一行」通常抓不到那筆事件，
+        必須把真正命中的那一行印出來才看得出格式對不對。
+        """
+        files = scan_files(self.directories, suffix=".jsonl")
+        found = self._latest_rate_limits_raw(files)
+        if found is None:
+            return {"files": len(files), "matched": False}
+        limits, path, raw = found
+        return {
+            "files": len(files),
+            "matched": True,
+            "file": path.name,
+            "keys": sorted(limits),
+            "limits_json": json.dumps(limits, ensure_ascii=False, sort_keys=True),
+            "raw_head": raw[:300],
+        }
 
     @staticmethod
     def _window(entry: dict, now: datetime, fallback_label: str) -> QuotaWindow | None:
@@ -371,23 +400,43 @@ class ClaudeProvider:
 
     @staticmethod
     def parse_entries(lines: list[str]) -> list[UsageEntry]:
+        return ClaudeProvider.parse_entries_with_stats(lines)[0]
+
+    @staticmethod
+    def parse_entries_with_stats(lines: list[str]) -> tuple[list[UsageEntry], dict[str, int]]:
+        """解析並回報每一層丟掉了幾行。
+
+        `stats` 是給 `--probe` 用的：記錄數字看起來不對時，可以直接指出是哪一關過濾掉的，
+        而不用猜。
+        """
+        stats = {
+            "lines": len(lines),
+            "with_usage_marker": 0,
+            "json_error": 0,
+            "no_message_usage": 0,
+            "zero_tokens": 0,
+            "no_timestamp": 0,
+            "accepted": 0,
+        }
         entries: list[UsageEntry] = []
         for line in lines:
             # 先做便宜的字串檢查，避免對每一行都做 JSON 解析。
             if '"usage"' not in line:
                 continue
+            stats["with_usage_marker"] += 1
             try:
                 payload = json.loads(line)
             except json.JSONDecodeError:
+                stats["json_error"] += 1
                 continue
             if not isinstance(payload, dict):
+                stats["json_error"] += 1
                 continue
 
             message = payload.get("message")
-            if not isinstance(message, dict):
-                continue
-            usage = message.get("usage")
+            usage = message.get("usage") if isinstance(message, dict) else None
             if not isinstance(usage, dict):
+                stats["no_message_usage"] += 1
                 continue
 
             total = 0
@@ -399,10 +448,12 @@ class ClaudeProvider:
             ):
                 total += as_int(pick(usage, *field_names)) or 0
             if total == 0:
+                stats["zero_tokens"] += 1
                 continue
 
             when = parse_iso(payload.get("timestamp"))
             if when is None:
+                stats["no_timestamp"] += 1
                 continue
 
             # 同一則回應可能因為 resume 或複製專案而出現在多個檔案，用 id + requestId 去重。
@@ -413,8 +464,48 @@ class ClaudeProvider:
             else:
                 dedupe_key = f"{when.timestamp()}|{total}"
 
+            stats["accepted"] += 1
             entries.append(UsageEntry(when=when, key=dedupe_key, total=total))
-        return entries
+        return entries, stats
+
+    def diagnostics(self, now: datetime) -> dict:
+        """給 --probe 用：逐檔統計，指出記錄在哪一層被過濾掉。"""
+        directories = self.directories
+        cutoff = (now - timedelta(days=8)).timestamp()
+        files = scan_files(directories, suffix=".jsonl", modified_after=cutoff)
+        all_files = scan_files(directories, suffix=".jsonl")
+
+        totals = {
+            "lines": 0,
+            "with_usage_marker": 0,
+            "json_error": 0,
+            "no_message_usage": 0,
+            "zero_tokens": 0,
+            "no_timestamp": 0,
+            "accepted": 0,
+        }
+        entries: list[UsageEntry] = []
+        for item in files:
+            parsed, stats = self.parse_entries_with_stats(read_lines(item.path))
+            for key, value in stats.items():
+                totals[key] += value
+            entries.extend(parsed)
+
+        unique: dict[str, UsageEntry] = {}
+        for entry in entries:
+            unique.setdefault(entry.key, entry)
+        deduped = list(unique.values())
+
+        return {
+            "files_total": len(all_files),
+            "files_recent": len(files),
+            "files_skipped_by_age": len(all_files) - len(files),
+            "stats": totals,
+            "unique_entries": len(deduped),
+            "duplicates_removed": len(entries) - len(deduped),
+            "oldest": min((e.when for e in deduped), default=None),
+            "newest": max((e.when for e in deduped), default=None),
+        }
 
 
 class GeminiProvider:
@@ -488,6 +579,24 @@ class GeminiProvider:
             windows=windows,
             note=note,
         )
+
+    def diagnostics(self) -> dict:
+        """給 --probe 用：`.gemini/tmp` 不存在時，看看 `.gemini` 本身在不在。
+
+        兩者的意義完全不同：`.gemini` 不存在＝沒裝 Gemini CLI；
+        `.gemini` 在但沒有 `tmp`＝裝了但還沒在任何專案跑過。
+        """
+        bases = []
+        for root in self.roots:
+            base = root / ".gemini"
+            info: dict = {"path": str(base), "exists": base.is_dir(), "children": []}
+            if info["exists"]:
+                try:
+                    info["children"] = sorted(child.name for child in base.iterdir())[:20]
+                except OSError as exc:
+                    info["children"] = [f"(無法列出：{exc})"]
+            bases.append(info)
+        return {"bases": bases}
 
     @staticmethod
     def user_message_times(path: Path) -> list[datetime]:
