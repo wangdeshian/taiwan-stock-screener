@@ -33,6 +33,7 @@ from taiwan_stock_screener.collectors.microstructure import (  # noqa: E402
     geographic_fields,
 )
 from taiwan_stock_screener.collectors.market_chip import (  # noqa: E402
+    load_chip_store,
     chip_rows_for,
     prefilter_left_symbols,
     refresh_chip_store,
@@ -1971,11 +1972,28 @@ def run_left_side_screener(
     observation_exclude_symbols = set(fundamentals_cache.keys()) | published_momentum_symbols
 
     today_volumes = {str(row["symbol"]): safe_float(row["volume"]) for _, row in all_quotes.iterrows()}
-    store, chip_sources = refresh_chip_store(
-        CHIP_STORE_PATH,
-        today_volumes=today_volumes,
-        finmind_fetch=finmind_fetch_bulk if FINMIND_TOKEN else None,
-    )
+    # 籌碼快照更新牽涉多個外部 API（FinMind／TWSE），任一個卡住就會讓整輪執行被拖到
+    # 6 小時上限才被 GitHub 砍掉。這裡設硬性上限，超時就沿用磁碟上既有的快照跑完當日流程。
+    from concurrent.futures import ThreadPoolExecutor as _ChipPool
+    from concurrent.futures import TimeoutError as _ChipTimeout
+
+    _chip_refresh_budget = 1200
+    _chip_executor = _ChipPool(max_workers=1)
+    try:
+        store, chip_sources = _chip_executor.submit(
+            refresh_chip_store,
+            CHIP_STORE_PATH,
+            today_volumes=today_volumes,
+            finmind_fetch=finmind_fetch_bulk if FINMIND_TOKEN else None,
+        ).result(timeout=_chip_refresh_budget)
+    except _ChipTimeout:
+        print(f"WARN chip refresh exceeded {_chip_refresh_budget}s; reusing existing chip store")
+        store, chip_sources = load_chip_store(CHIP_STORE_PATH), ["chip-store-cache"]
+    except Exception as exc:
+        print(f"WARN chip refresh failed: {str(exc)[:200]}; reusing existing chip store")
+        store, chip_sources = load_chip_store(CHIP_STORE_PATH), ["chip-store-cache"]
+    finally:
+        _chip_executor.shutdown(wait=False, cancel_futures=True)
     chip_summary = chip_store_summary(store)
     left_phase("left-chip-refresh")
     payload["chip_sources"] = chip_sources
