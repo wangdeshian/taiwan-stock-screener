@@ -1037,23 +1037,32 @@ def prefetch_broker_flows(symbols: list[str], trading_days: int) -> dict[str, pd
         cursor -= timedelta(days=1)
 
     from concurrent.futures import ThreadPoolExecutor, as_completed
+    from concurrent.futures import TimeoutError as FuturesTimeout
 
     started = time.monotonic()
     collected: dict[str, list[pd.DataFrame]] = {}
     tasks = [(symbol, day) for symbol in symbols for day in days]
-    with ThreadPoolExecutor(max_workers=BRANCH_FETCH_WORKERS) as pool:
+    # 不用 with：離開 with 時會 join 仍卡在網路 I/O 的 worker，時間預算等於失效。
+    pool = ThreadPoolExecutor(max_workers=BRANCH_FETCH_WORKERS)
+    try:
         futures = [pool.submit(_fetch_branch_day, symbol, day) for symbol, day in tasks]
-        for future in as_completed(futures):
-            if time.monotonic() - started > BRANCH_TIME_BUDGET_SECONDS:
-                print(
-                    f"WARN branch prefetch exceeded {BRANCH_TIME_BUDGET_SECONDS}s budget; "
-                    "continuing with partial data"
-                )
-                pool.shutdown(wait=False, cancel_futures=True)
-                break
-            symbol, frame = future.result()
-            if frame is not None:
-                collected.setdefault(symbol, []).append(frame)
+        try:
+            # as_completed 一定要帶 timeout：當沒有任何 future 完成時（FinMind 不回應），
+            # 舊寫法會永遠停在這一行，下面的預算判斷根本不會被執行到。
+            for future in as_completed(futures, timeout=BRANCH_TIME_BUDGET_SECONDS):
+                if time.monotonic() - started > BRANCH_TIME_BUDGET_SECONDS:
+                    raise FuturesTimeout
+                symbol, frame = future.result()
+                if frame is not None:
+                    collected.setdefault(symbol, []).append(frame)
+        except FuturesTimeout:
+            print(
+                f"WARN branch prefetch exceeded {BRANCH_TIME_BUDGET_SECONDS}s budget; "
+                "continuing with partial data"
+            )
+    finally:
+        # wait=False：不等仍在網路 I/O 的執行緒，避免整支腳本被拖住
+        pool.shutdown(wait=False, cancel_futures=True)
 
     result: dict[str, pd.DataFrame] = {}
     for symbol, parts in collected.items():
