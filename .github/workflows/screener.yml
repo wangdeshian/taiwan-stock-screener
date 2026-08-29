@@ -60,6 +60,8 @@ jobs:
 
       - name: Analyze signal outcomes
         timeout-minutes: 20
+        # 訊號回測失敗不該阻擋當日結果的 commit 與發佈
+        continue-on-error: true
         run: python scripts/analyze_signal_outcomes.py --min-samples 3
 
       - name: Commit generated results
