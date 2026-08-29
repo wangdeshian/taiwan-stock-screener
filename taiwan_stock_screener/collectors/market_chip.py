@@ -277,8 +277,27 @@ def refresh_chip_store(
         missing = [day for day in _recent_weekdays(backfill_days) if day.isoformat() not in existing]
         consecutive_failures = 0
         backfilled = 0
+        # requests 的 timeout 只管單次 socket 讀取，伺服器慢慢吐資料時仍可能卡住數小時，
+        # 因此每天的回補再包一層硬性上限，並替整個回補迴圈設總時間預算。
+        from concurrent.futures import ThreadPoolExecutor
+        from concurrent.futures import TimeoutError as FuturesTimeout
+
+        chip_day_timeout = 90
+        chip_total_budget = 900
+        chip_started = time.monotonic()
+        chip_pool = ThreadPoolExecutor(max_workers=1)
         for day in missing[-max_backfill_dates:]:
-            frame = fetch_finmind_chip_snapshot(finmind_fetch, day)
+            if time.monotonic() - chip_started > chip_total_budget:
+                print(f"WARN chip backfill exceeded {chip_total_budget}s budget; continuing with partial data")
+                break
+            try:
+                frame = chip_pool.submit(fetch_finmind_chip_snapshot, finmind_fetch, day).result(timeout=chip_day_timeout)
+            except FuturesTimeout:
+                print(f"WARN chip backfill for {day.isoformat()} timed out after {chip_day_timeout}s")
+                frame = pd.DataFrame()
+            except Exception as exc:
+                print(f"WARN chip backfill for {day.isoformat()} failed: {str(exc)[:160]}")
+                frame = pd.DataFrame()
             if frame.empty:
                 consecutive_failures += 1
                 # 連續失敗多為帳號等級不足（全市場查詢需 FinMind Sponsor）
@@ -292,6 +311,7 @@ def refresh_chip_store(
             backfilled += 1
             frame["date"] = day.isoformat()
             new_frames.append(frame)
+        chip_pool.shutdown(wait=False, cancel_futures=True)
         if backfilled:
             sources.append(f"FinMind×{backfilled}")
 
