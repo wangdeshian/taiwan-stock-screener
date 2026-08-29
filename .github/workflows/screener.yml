@@ -18,25 +18,38 @@ on:
 permissions:
   contents: write
 
+# 同一時間只允許一個 screener 在跑，避免前一天卡住的 job 與今天的互相搶 push。
+concurrency:
+  group: daily-screener
+  cancel-in-progress: false
+
 jobs:
   screen:
     runs-on: ubuntu-latest
+    # 硬上限 5 小時：超過就明確失敗並寄通知，不再默默燒滿 GitHub 的 6 小時才被砍。
+    timeout-minutes: 300
+
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        # v4 使用 Node 20（已淘汰），升到 v5 走 Node 24
+        uses: actions/checkout@v5
 
       - name: Setup Python 3.12
-        uses: actions/setup-python@v5
+        # v5 使用 Node 20（已淘汰），升到 v6 走 Node 24
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
 
       - name: Install dependencies
+        timeout-minutes: 15
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Run screener
+        # 抓取階段自己的上限，留 30 分鐘給後面的 commit / publish 步驟
+        timeout-minutes: 270
         env:
           FINMIND_TOKEN: ${{ secrets.FINMIND_TOKEN }}
           FUGLE_API_KEY: ${{ secrets.FUGLE_API_KEY }}
@@ -46,9 +59,11 @@ jobs:
         run: python scripts/run_screener.py
 
       - name: Analyze signal outcomes
+        timeout-minutes: 20
         run: python scripts/analyze_signal_outcomes.py --min-samples 3
 
       - name: Commit generated results
+        timeout-minutes: 10
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -62,6 +77,7 @@ jobs:
           fi
 
       - name: Publish frontend to GitHub Pages
+        timeout-minutes: 10
         run: |
           git pull --rebase origin main
           git fetch origin gh-pages:gh-pages
