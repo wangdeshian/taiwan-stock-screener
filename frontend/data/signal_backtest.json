@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-10-09T17:13:24.951737+00:00",
+  "generated_at": "2026-10-12T19:26:54.177417+00:00",
   "history_path": "frontend/data/history.json",
   "confidence": "medium",
   "data_window": {
-    "history_entry_count": 29,
-    "history_date_count": 29,
+    "history_entry_count": 30,
+    "history_date_count": 30,
     "observed_trade_dates": [
       "2026-07-13",
       "2026-07-14",
@@ -33,7 +33,7 @@
       "2026-10-07",
       "2026-10-08"
     ],
-    "event_count": 827,
+    "event_count": 834,
     "unique_symbol_count": 245
   },
   "methodology": {
@@ -135,11 +135,11 @@
       "tag": "reason:tech_new_high_momentum",
       "horizon_observed_days": 1,
       "eligible_event_count": 23,
-      "coverage_pct": 30.4,
-      "sample_count": 7,
-      "avg_return_pct": 7.78,
+      "coverage_pct": 39.1,
+      "sample_count": 9,
+      "avg_return_pct": 6.46,
       "median_return_pct": 2.45,
-      "win_rate_pct": 85.7,
+      "win_rate_pct": 77.8,
       "best_return_pct": 33.63,
       "worst_return_pct": -5.29,
       "examples": [
@@ -184,11 +184,11 @@
       "tag": "tech:new_high_momentum",
       "horizon_observed_days": 1,
       "eligible_event_count": 23,
-      "coverage_pct": 30.4,
-      "sample_count": 7,
-      "avg_return_pct": 7.78,
+      "coverage_pct": 39.1,
+      "sample_count": 9,
+      "avg_return_pct": 6.46,
       "median_return_pct": 2.45,
-      "win_rate_pct": 85.7,
+      "win_rate_pct": 77.8,
       "best_return_pct": 33.63,
       "worst_return_pct": -5.29,
       "examples": [
@@ -233,11 +233,11 @@
       "tag": "tech_direction:bullish",
       "horizon_observed_days": 1,
       "eligible_event_count": 31,
-      "coverage_pct": 32.3,
-      "sample_count": 10,
-      "avg_return_pct": 5.86,
+      "coverage_pct": 38.7,
+      "sample_count": 12,
+      "avg_return_pct": 5.19,
       "median_return_pct": 2.41,
-      "win_rate_pct": 80.0,
+      "win_rate_pct": 75.0,
       "best_return_pct": 33.63,
       "worst_return_pct": -5.29,
       "examples": [
@@ -751,6 +751,104 @@
           "symbol": "00715L",
           "name": "期街口布蘭特正2",
           "return_pct": 1.62
+        }
+      ]
+    },
+    {
+      "tag": "reason:chip_small_cap_foreign_accumulation",
+      "horizon_observed_days": 1,
+      "eligible_event_count": 18,
+      "coverage_pct": 33.3,
+      "sample_count": 6,
+      "avg_return_pct": 8.08,
+      "median_return_pct": 3.61,
+      "win_rate_pct": 66.7,
+      "best_return_pct": 33.63,
+      "worst_return_pct": -0.6,
+      "examples": [
+        {
+          "date": "2026-07-23",
+          "target_date": "2026-07-24",
+          "symbol": "6414",
+          "name": "樺漢",
+          "return_pct": -0.6
+        },
+        {
+          "date": "2026-08-06",
+          "target_date": "2026-08-07",
+          "symbol": "3006",
+          "name": "晶豪科",
+          "return_pct": -0.58
+        },
+        {
+          "date": "2026-09-24",
+          "target_date": "2026-10-05",
+          "symbol": "6672",
+          "name": "騰輝電子-KY",
+          "return_pct": 33.63
+        },
+        {
+          "date": "2026-10-05",
+          "target_date": "2026-10-06",
+          "symbol": "8021",
+          "name": "尖點",
+          "return_pct": 0.18
+        },
+        {
+          "date": "2026-10-06",
+          "target_date": "2026-10-07",
+          "symbol": "6278",
+          "name": "台表科",
+          "return_pct": 7.05
+        }
+      ]
+    },
+    {
+      "tag": "chip:small_cap_foreign_accumulation",
+      "horizon_observed_days": 1,
+      "eligible_event_count": 18,
+      "coverage_pct": 33.3,
+      "sample_count": 6,
+      "avg_return_pct": 8.08,
+      "median_return_pct": 3.61,
+      "win_rate_pct": 66.7,
+      "best_return_pct": 33.63,
+      "worst_return_pct": -0.6,
+      "examples": [
+        {
+          "date": "2026-07-23",
+          "target_date": "2026-07-24",
+          "symbol": "6414",
+          "name": "樺漢",
+          "return_pct": -0.6
+        },
+        {
+          "date": "2026-08-06",
+          "target_date": "2026-08-07",
+          "symbol": "3006",
+          "name": "晶豪科",
+          "return_pct": -0.58
+        },
+        {
+          "date": "2026-09-24",
+          "target_date": "2026-10-05",
+          "symbol": "6672",
+          "name": "騰輝電子-KY",
+          "return_pct": 33.63
+        },
+        {
+          "date": "2026-10-05",
+          "target_date": "2026-10-06",
+          "symbol": "8021",
+          "name": "尖點",
+          "return_pct": 0.18
+        },
+        {
+          "date": "2026-10-06",
+          "target_date": "2026-10-07",
+          "symbol": "6278",
+          "name": "台表科",
+          "return_pct": 7.05
         }
       ]
     },
@@ -1511,51 +1609,51 @@
       ]
     },
     {
-      "tag": "peg<1",
+      "tag": "chip_direction:bullish",
       "horizon_observed_days": 1,
-      "eligible_event_count": 241,
-      "coverage_pct": 57.7,
-      "sample_count": 139,
-      "avg_return_pct": 2.3,
-      "median_return_pct": 0.92,
-      "win_rate_pct": 56.1,
-      "best_return_pct": 61.0,
-      "worst_return_pct": -9.97,
+      "eligible_event_count": 99,
+      "coverage_pct": 50.5,
+      "sample_count": 50,
+      "avg_return_pct": 3.67,
+      "median_return_pct": 0.3,
+      "win_rate_pct": 56.0,
+      "best_return_pct": 40.56,
+      "worst_return_pct": -9.87,
       "examples": [
         {
-          "date": "2026-07-13",
-          "target_date": "2026-07-14",
-          "symbol": "2891",
-          "name": "中信金",
-          "return_pct": -2.26
+          "date": "2026-07-22",
+          "target_date": "2026-07-23",
+          "symbol": "2377",
+          "name": "微星",
+          "return_pct": -1.94
         },
         {
-          "date": "2026-07-13",
-          "target_date": "2026-07-14",
-          "symbol": "6669",
-          "name": "緯穎",
-          "return_pct": -1.11
+          "date": "2026-07-22",
+          "target_date": "2026-07-23",
+          "symbol": "3665",
+          "name": "貿聯-KY",
+          "return_pct": 8.04
         },
         {
-          "date": "2026-07-14",
-          "target_date": "2026-07-15",
-          "symbol": "2382",
-          "name": "廣達",
-          "return_pct": 0.26
+          "date": "2026-07-23",
+          "target_date": "2026-07-24",
+          "symbol": "2317",
+          "name": "鴻海",
+          "return_pct": -1.94
         },
         {
-          "date": "2026-07-14",
-          "target_date": "2026-07-15",
-          "symbol": "3167",
-          "name": "大量",
-          "return_pct": 2.53
+          "date": "2026-07-23",
+          "target_date": "2026-07-24",
+          "symbol": "3653",
+          "name": "健策",
+          "return_pct": -7.55
         },
         {
-          "date": "2026-07-14",
-          "target_date": "2026-07-15",
-          "symbol": "6669",
-          "name": "緯穎",
-          "return_pct": 3.87
+          "date": "2026-07-23",
+          "target_date": "2026-07-24",
+          "symbol": "3665",
+          "name": "貿聯-KY",
+          "return_pct": -3.5
         }
       ]
     },
@@ -1563,11 +1661,11 @@
       "tag": "roe>=10",
       "horizon_observed_days": 1,
       "eligible_event_count": 348,
-      "coverage_pct": 62.4,
-      "sample_count": 217,
-      "avg_return_pct": 2.26,
-      "median_return_pct": 0.81,
-      "win_rate_pct": 55.8,
+      "coverage_pct": 63.2,
+      "sample_count": 220,
+      "avg_return_pct": 2.25,
+      "median_return_pct": 0.83,
+      "win_rate_pct": 55.9,
       "best_return_pct": 61.0,
       "worst_return_pct": -9.97,
       "examples": [
@@ -1605,6 +1703,55 @@
           "symbol": "2382",
           "name": "廣達",
           "return_pct": -2.92
+        }
+      ]
+    },
+    {
+      "tag": "peg<1",
+      "horizon_observed_days": 1,
+      "eligible_event_count": 241,
+      "coverage_pct": 58.1,
+      "sample_count": 140,
+      "avg_return_pct": 2.26,
+      "median_return_pct": 0.9,
+      "win_rate_pct": 55.7,
+      "best_return_pct": 61.0,
+      "worst_return_pct": -9.97,
+      "examples": [
+        {
+          "date": "2026-07-13",
+          "target_date": "2026-07-14",
+          "symbol": "2891",
+          "name": "中信金",
+          "return_pct": -2.26
+        },
+        {
+          "date": "2026-07-13",
+          "target_date": "2026-07-14",
+          "symbol": "6669",
+          "name": "緯穎",
+          "return_pct": -1.11
+        },
+        {
+          "date": "2026-07-14",
+          "target_date": "2026-07-15",
+          "symbol": "2382",
+          "name": "廣達",
+          "return_pct": 0.26
+        },
+        {
+          "date": "2026-07-14",
+          "target_date": "2026-07-15",
+          "symbol": "3167",
+          "name": "大量",
+          "return_pct": 2.53
+        },
+        {
+          "date": "2026-07-14",
+          "target_date": "2026-07-15",
+          "symbol": "6669",
+          "name": "緯穎",
+          "return_pct": 3.87
         }
       ]
     },
@@ -1661,11 +1808,11 @@
       "tag": "reason:healthy_roe",
       "horizon_observed_days": 1,
       "eligible_event_count": 306,
-      "coverage_pct": 60.8,
-      "sample_count": 186,
-      "avg_return_pct": 2.27,
-      "median_return_pct": 0.65,
-      "win_rate_pct": 54.8,
+      "coverage_pct": 61.8,
+      "sample_count": 189,
+      "avg_return_pct": 2.25,
+      "median_return_pct": 0.67,
+      "win_rate_pct": 55.0,
       "best_return_pct": 61.0,
       "worst_return_pct": -9.97,
       "examples": [
@@ -1707,112 +1854,14 @@
       ]
     },
     {
-      "tag": "reason:revenue_yoy_growth",
-      "horizon_observed_days": 1,
-      "eligible_event_count": 316,
-      "coverage_pct": 58.9,
-      "sample_count": 186,
-      "avg_return_pct": 2.22,
-      "median_return_pct": 0.65,
-      "win_rate_pct": 54.3,
-      "best_return_pct": 61.0,
-      "worst_return_pct": -9.97,
-      "examples": [
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-23",
-          "symbol": "2059",
-          "name": "川湖",
-          "return_pct": 0.92
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-23",
-          "symbol": "2301",
-          "name": "光寶科",
-          "return_pct": 0.0
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-23",
-          "symbol": "2317",
-          "name": "鴻海",
-          "return_pct": 2.39
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-23",
-          "symbol": "2357",
-          "name": "華碩",
-          "return_pct": 1.59
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-23",
-          "symbol": "2382",
-          "name": "廣達",
-          "return_pct": 2.13
-        }
-      ]
-    },
-    {
-      "tag": "strategy:momentum",
-      "horizon_observed_days": 1,
-      "eligible_event_count": 485,
-      "coverage_pct": 57.1,
-      "sample_count": 277,
-      "avg_return_pct": 1.75,
-      "median_return_pct": 0.63,
-      "win_rate_pct": 54.2,
-      "best_return_pct": 61.0,
-      "worst_return_pct": -10.0,
-      "examples": [
-        {
-          "date": "2026-07-13",
-          "target_date": "2026-07-14",
-          "symbol": "1303",
-          "name": "南亞",
-          "return_pct": 5.26
-        },
-        {
-          "date": "2026-07-13",
-          "target_date": "2026-07-14",
-          "symbol": "2634",
-          "name": "漢翔",
-          "return_pct": 5.17
-        },
-        {
-          "date": "2026-07-13",
-          "target_date": "2026-07-14",
-          "symbol": "2891",
-          "name": "中信金",
-          "return_pct": -2.26
-        },
-        {
-          "date": "2026-07-13",
-          "target_date": "2026-07-14",
-          "symbol": "3026",
-          "name": "禾伸堂",
-          "return_pct": -9.94
-        },
-        {
-          "date": "2026-07-13",
-          "target_date": "2026-07-14",
-          "symbol": "3034",
-          "name": "聯詠",
-          "return_pct": 0.11
-        }
-      ]
-    },
-    {
       "tag": "reason:ma_bullish_alignment",
       "horizon_observed_days": 1,
       "eligible_event_count": 212,
-      "coverage_pct": 62.3,
-      "sample_count": 132,
+      "coverage_pct": 64.2,
+      "sample_count": 136,
       "avg_return_pct": 2.6,
-      "median_return_pct": 0.46,
-      "win_rate_pct": 53.8,
+      "median_return_pct": 0.6,
+      "win_rate_pct": 54.4,
       "best_return_pct": 61.0,
       "worst_return_pct": -10.0,
       "examples": [
@@ -1854,14 +1903,112 @@
       ]
     },
     {
+      "tag": "strategy:momentum",
+      "horizon_observed_days": 1,
+      "eligible_event_count": 485,
+      "coverage_pct": 58.1,
+      "sample_count": 282,
+      "avg_return_pct": 1.75,
+      "median_return_pct": 0.63,
+      "win_rate_pct": 54.3,
+      "best_return_pct": 61.0,
+      "worst_return_pct": -10.0,
+      "examples": [
+        {
+          "date": "2026-07-13",
+          "target_date": "2026-07-14",
+          "symbol": "1303",
+          "name": "南亞",
+          "return_pct": 5.26
+        },
+        {
+          "date": "2026-07-13",
+          "target_date": "2026-07-14",
+          "symbol": "2634",
+          "name": "漢翔",
+          "return_pct": 5.17
+        },
+        {
+          "date": "2026-07-13",
+          "target_date": "2026-07-14",
+          "symbol": "2891",
+          "name": "中信金",
+          "return_pct": -2.26
+        },
+        {
+          "date": "2026-07-13",
+          "target_date": "2026-07-14",
+          "symbol": "3026",
+          "name": "禾伸堂",
+          "return_pct": -9.94
+        },
+        {
+          "date": "2026-07-13",
+          "target_date": "2026-07-14",
+          "symbol": "3034",
+          "name": "聯詠",
+          "return_pct": 0.11
+        }
+      ]
+    },
+    {
+      "tag": "reason:revenue_yoy_growth",
+      "horizon_observed_days": 1,
+      "eligible_event_count": 316,
+      "coverage_pct": 60.1,
+      "sample_count": 190,
+      "avg_return_pct": 2.18,
+      "median_return_pct": 0.65,
+      "win_rate_pct": 54.2,
+      "best_return_pct": 61.0,
+      "worst_return_pct": -9.97,
+      "examples": [
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-23",
+          "symbol": "2059",
+          "name": "川湖",
+          "return_pct": 0.92
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-23",
+          "symbol": "2301",
+          "name": "光寶科",
+          "return_pct": 0.0
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-23",
+          "symbol": "2317",
+          "name": "鴻海",
+          "return_pct": 2.39
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-23",
+          "symbol": "2357",
+          "name": "華碩",
+          "return_pct": 1.59
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-23",
+          "symbol": "2382",
+          "name": "廣達",
+          "return_pct": 2.13
+        }
+      ]
+    },
+    {
       "tag": "rs20>0",
       "horizon_observed_days": 1,
       "eligible_event_count": 381,
-      "coverage_pct": 60.6,
-      "sample_count": 231,
-      "avg_return_pct": 1.83,
-      "median_return_pct": 0.52,
-      "win_rate_pct": 53.7,
+      "coverage_pct": 61.9,
+      "sample_count": 236,
+      "avg_return_pct": 1.82,
+      "median_return_pct": 0.58,
+      "win_rate_pct": 53.8,
       "best_return_pct": 61.0,
       "worst_return_pct": -10.0,
       "examples": [
@@ -1903,17 +2050,24 @@
       ]
     },
     {
-      "tag": "chip_direction:bullish",
+      "tag": "reason:near_60d_high",
       "horizon_observed_days": 1,
-      "eligible_event_count": 99,
-      "coverage_pct": 49.5,
-      "sample_count": 49,
-      "avg_return_pct": 3.4,
-      "median_return_pct": 0.19,
+      "eligible_event_count": 152,
+      "coverage_pct": 63.2,
+      "sample_count": 96,
+      "avg_return_pct": 1.95,
+      "median_return_pct": 0.31,
       "win_rate_pct": 53.1,
-      "best_return_pct": 40.56,
-      "worst_return_pct": -9.87,
+      "best_return_pct": 33.63,
+      "worst_return_pct": -10.0,
       "examples": [
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-23",
+          "symbol": "1326",
+          "name": "台化",
+          "return_pct": 1.56
+        },
         {
           "date": "2026-07-22",
           "target_date": "2026-07-23",
@@ -1924,30 +2078,23 @@
         {
           "date": "2026-07-22",
           "target_date": "2026-07-23",
-          "symbol": "3665",
-          "name": "貿聯-KY",
-          "return_pct": 8.04
+          "symbol": "6669",
+          "name": "緯穎",
+          "return_pct": -0.55
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-23",
+          "symbol": "8039",
+          "name": "台虹",
+          "return_pct": 9.87
         },
         {
           "date": "2026-07-23",
           "target_date": "2026-07-24",
-          "symbol": "2317",
-          "name": "鴻海",
-          "return_pct": -1.94
-        },
-        {
-          "date": "2026-07-23",
-          "target_date": "2026-07-24",
-          "symbol": "3653",
-          "name": "健策",
-          "return_pct": -7.55
-        },
-        {
-          "date": "2026-07-23",
-          "target_date": "2026-07-24",
-          "symbol": "3665",
-          "name": "貿聯-KY",
-          "return_pct": -3.5
+          "symbol": "1301",
+          "name": "台塑",
+          "return_pct": -5.29
         }
       ]
     },
@@ -1955,11 +2102,11 @@
       "tag": "reason:close_above_ma20",
       "horizon_observed_days": 1,
       "eligible_event_count": 298,
-      "coverage_pct": 61.1,
-      "sample_count": 182,
-      "avg_return_pct": 2.13,
-      "median_return_pct": 0.37,
-      "win_rate_pct": 52.7,
+      "coverage_pct": 62.8,
+      "sample_count": 187,
+      "avg_return_pct": 2.12,
+      "median_return_pct": 0.39,
+      "win_rate_pct": 52.9,
       "best_return_pct": 61.0,
       "worst_return_pct": -10.0,
       "examples": [
@@ -2004,11 +2151,11 @@
       "tag": "reason:institutional_net_buying",
       "horizon_observed_days": 1,
       "eligible_event_count": 357,
-      "coverage_pct": 57.7,
-      "sample_count": 206,
+      "coverage_pct": 59.1,
+      "sample_count": 211,
       "avg_return_pct": 1.93,
-      "median_return_pct": 0.37,
-      "win_rate_pct": 52.4,
+      "median_return_pct": 0.39,
+      "win_rate_pct": 52.6,
       "best_return_pct": 61.0,
       "worst_return_pct": -10.0,
       "examples": [
@@ -2053,11 +2200,11 @@
       "tag": "reason:positive_eps",
       "horizon_observed_days": 1,
       "eligible_event_count": 354,
-      "coverage_pct": 58.2,
-      "sample_count": 206,
+      "coverage_pct": 59.6,
+      "sample_count": 211,
       "avg_return_pct": 1.93,
-      "median_return_pct": 0.37,
-      "win_rate_pct": 52.4,
+      "median_return_pct": 0.39,
+      "win_rate_pct": 52.6,
       "best_return_pct": 61.0,
       "worst_return_pct": -10.0,
       "examples": [
@@ -2102,11 +2249,11 @@
       "tag": "reason:high_turnover",
       "horizon_observed_days": 1,
       "eligible_event_count": 359,
-      "coverage_pct": 57.9,
-      "sample_count": 208,
+      "coverage_pct": 59.3,
+      "sample_count": 213,
       "avg_return_pct": 1.87,
-      "median_return_pct": 0.37,
-      "win_rate_pct": 52.4,
+      "median_return_pct": 0.39,
+      "win_rate_pct": 52.6,
       "best_return_pct": 61.0,
       "worst_return_pct": -10.0,
       "examples": [
@@ -2151,11 +2298,11 @@
       "tag": "reason:risk_reward_above_min",
       "horizon_observed_days": 1,
       "eligible_event_count": 359,
-      "coverage_pct": 57.9,
-      "sample_count": 208,
+      "coverage_pct": 59.3,
+      "sample_count": 213,
       "avg_return_pct": 1.87,
-      "median_return_pct": 0.37,
-      "win_rate_pct": 52.4,
+      "median_return_pct": 0.39,
+      "win_rate_pct": 52.6,
       "best_return_pct": 61.0,
       "worst_return_pct": -10.0,
       "examples": [
@@ -2200,11 +2347,11 @@
       "tag": "reason:chip_support",
       "horizon_observed_days": 1,
       "eligible_event_count": 314,
-      "coverage_pct": 59.2,
-      "sample_count": 186,
-      "avg_return_pct": 2.03,
-      "median_return_pct": 0.31,
-      "win_rate_pct": 52.2,
+      "coverage_pct": 60.8,
+      "sample_count": 191,
+      "avg_return_pct": 2.02,
+      "median_return_pct": 0.36,
+      "win_rate_pct": 52.4,
       "best_return_pct": 61.0,
       "worst_return_pct": -9.97,
       "examples": [
@@ -2246,63 +2393,14 @@
       ]
     },
     {
-      "tag": "reason:near_60d_high",
-      "horizon_observed_days": 1,
-      "eligible_event_count": 152,
-      "coverage_pct": 60.5,
-      "sample_count": 92,
-      "avg_return_pct": 1.91,
-      "median_return_pct": 0.27,
-      "win_rate_pct": 52.2,
-      "best_return_pct": 33.63,
-      "worst_return_pct": -10.0,
-      "examples": [
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-23",
-          "symbol": "1326",
-          "name": "台化",
-          "return_pct": 1.56
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-23",
-          "symbol": "2377",
-          "name": "微星",
-          "return_pct": -1.94
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-23",
-          "symbol": "6669",
-          "name": "緯穎",
-          "return_pct": -0.55
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-23",
-          "symbol": "8039",
-          "name": "台虹",
-          "return_pct": 9.87
-        },
-        {
-          "date": "2026-07-23",
-          "target_date": "2026-07-24",
-          "symbol": "1301",
-          "name": "台塑",
-          "return_pct": -5.29
-        }
-      ]
-    },
-    {
       "tag": "reason:institutional_buy_ratio",
       "horizon_observed_days": 1,
       "eligible_event_count": 324,
-      "coverage_pct": 59.3,
-      "sample_count": 192,
+      "coverage_pct": 60.8,
+      "sample_count": 197,
       "avg_return_pct": 1.72,
-      "median_return_pct": 0.31,
-      "win_rate_pct": 52.1,
+      "median_return_pct": 0.36,
+      "win_rate_pct": 52.3,
       "best_return_pct": 61.0,
       "worst_return_pct": -10.0,
       "examples": [
@@ -2396,11 +2494,11 @@
       "tag": "reason:obv_accumulation",
       "horizon_observed_days": 1,
       "eligible_event_count": 282,
-      "coverage_pct": 60.6,
-      "sample_count": 171,
-      "avg_return_pct": 2.07,
-      "median_return_pct": 0.26,
-      "win_rate_pct": 51.5,
+      "coverage_pct": 62.4,
+      "sample_count": 176,
+      "avg_return_pct": 2.06,
+      "median_return_pct": 0.27,
+      "win_rate_pct": 51.7,
       "best_return_pct": 61.0,
       "worst_return_pct": -10.0,
       "examples": [
@@ -2445,11 +2543,11 @@
       "tag": "reason:relative_strength_20d",
       "horizon_observed_days": 1,
       "eligible_event_count": 292,
-      "coverage_pct": 62.0,
-      "sample_count": 181,
-      "avg_return_pct": 1.91,
-      "median_return_pct": 0.26,
-      "win_rate_pct": 51.4,
+      "coverage_pct": 63.7,
+      "sample_count": 186,
+      "avg_return_pct": 1.89,
+      "median_return_pct": 0.27,
+      "win_rate_pct": 51.6,
       "best_return_pct": 61.0,
       "worst_return_pct": -10.0,
       "examples": [
@@ -2494,11 +2592,11 @@
       "tag": "score>=80",
       "horizon_observed_days": 1,
       "eligible_event_count": 205,
-      "coverage_pct": 63.4,
-      "sample_count": 130,
-      "avg_return_pct": 2.31,
-      "median_return_pct": 0.22,
-      "win_rate_pct": 50.8,
+      "coverage_pct": 65.9,
+      "sample_count": 135,
+      "avg_return_pct": 2.28,
+      "median_return_pct": 0.26,
+      "win_rate_pct": 51.1,
       "best_return_pct": 61.0,
       "worst_return_pct": -9.97,
       "examples": [
@@ -2543,11 +2641,11 @@
       "tag": "rs60>0",
       "horizon_observed_days": 1,
       "eligible_event_count": 337,
-      "coverage_pct": 59.6,
-      "sample_count": 201,
-      "avg_return_pct": 1.6,
+      "coverage_pct": 60.5,
+      "sample_count": 204,
+      "avg_return_pct": 1.61,
       "median_return_pct": 0.26,
-      "win_rate_pct": 50.7,
+      "win_rate_pct": 51.0,
       "best_return_pct": 40.56,
       "worst_return_pct": -10.0,
       "examples": [
@@ -2589,112 +2687,14 @@
       ]
     },
     {
-      "tag": "reason:chip_small_cap_foreign_accumulation",
-      "horizon_observed_days": 1,
-      "eligible_event_count": 18,
-      "coverage_pct": 33.3,
-      "sample_count": 6,
-      "avg_return_pct": 6.45,
-      "median_return_pct": -0.2,
-      "win_rate_pct": 50.0,
-      "best_return_pct": 33.63,
-      "worst_return_pct": -1.0,
-      "examples": [
-        {
-          "date": "2026-07-23",
-          "target_date": "2026-07-24",
-          "symbol": "6414",
-          "name": "樺漢",
-          "return_pct": -0.6
-        },
-        {
-          "date": "2026-08-06",
-          "target_date": "2026-08-07",
-          "symbol": "3006",
-          "name": "晶豪科",
-          "return_pct": -0.58
-        },
-        {
-          "date": "2026-09-24",
-          "target_date": "2026-10-05",
-          "symbol": "6672",
-          "name": "騰輝電子-KY",
-          "return_pct": 33.63
-        },
-        {
-          "date": "2026-10-05",
-          "target_date": "2026-10-06",
-          "symbol": "8021",
-          "name": "尖點",
-          "return_pct": 0.18
-        },
-        {
-          "date": "2026-10-06",
-          "target_date": "2026-10-07",
-          "symbol": "6278",
-          "name": "台表科",
-          "return_pct": 7.05
-        }
-      ]
-    },
-    {
-      "tag": "chip:small_cap_foreign_accumulation",
-      "horizon_observed_days": 1,
-      "eligible_event_count": 18,
-      "coverage_pct": 33.3,
-      "sample_count": 6,
-      "avg_return_pct": 6.45,
-      "median_return_pct": -0.2,
-      "win_rate_pct": 50.0,
-      "best_return_pct": 33.63,
-      "worst_return_pct": -1.0,
-      "examples": [
-        {
-          "date": "2026-07-23",
-          "target_date": "2026-07-24",
-          "symbol": "6414",
-          "name": "樺漢",
-          "return_pct": -0.6
-        },
-        {
-          "date": "2026-08-06",
-          "target_date": "2026-08-07",
-          "symbol": "3006",
-          "name": "晶豪科",
-          "return_pct": -0.58
-        },
-        {
-          "date": "2026-09-24",
-          "target_date": "2026-10-05",
-          "symbol": "6672",
-          "name": "騰輝電子-KY",
-          "return_pct": 33.63
-        },
-        {
-          "date": "2026-10-05",
-          "target_date": "2026-10-06",
-          "symbol": "8021",
-          "name": "尖點",
-          "return_pct": 0.18
-        },
-        {
-          "date": "2026-10-06",
-          "target_date": "2026-10-07",
-          "symbol": "6278",
-          "name": "台表科",
-          "return_pct": 7.05
-        }
-      ]
-    },
-    {
       "tag": "reason:relative_strength_60d",
       "horizon_observed_days": 1,
       "eligible_event_count": 244,
-      "coverage_pct": 61.5,
-      "sample_count": 150,
+      "coverage_pct": 62.7,
+      "sample_count": 153,
       "avg_return_pct": 1.81,
-      "median_return_pct": 0.1,
-      "win_rate_pct": 50.0,
+      "median_return_pct": 0.2,
+      "win_rate_pct": 50.3,
       "best_return_pct": 40.56,
       "worst_return_pct": -10.0,
       "examples": [
@@ -2739,11 +2739,11 @@
       "tag": "reason:ma60_uptrend",
       "horizon_observed_days": 1,
       "eligible_event_count": 264,
-      "coverage_pct": 59.1,
-      "sample_count": 156,
-      "avg_return_pct": 1.88,
-      "median_return_pct": 0.0,
-      "win_rate_pct": 49.4,
+      "coverage_pct": 60.6,
+      "sample_count": 160,
+      "avg_return_pct": 1.9,
+      "median_return_pct": 0.1,
+      "win_rate_pct": 50.0,
       "best_return_pct": 61.0,
       "worst_return_pct": -10.0,
       "examples": [
@@ -2788,11 +2788,11 @@
       "tag": "reason:volume_expansion",
       "horizon_observed_days": 1,
       "eligible_event_count": 161,
-      "coverage_pct": 55.3,
-      "sample_count": 89,
-      "avg_return_pct": 1.28,
-      "median_return_pct": -0.48,
-      "win_rate_pct": 49.4,
+      "coverage_pct": 57.1,
+      "sample_count": 92,
+      "avg_return_pct": 1.39,
+      "median_return_pct": -0.15,
+      "win_rate_pct": 50.0,
       "best_return_pct": 33.63,
       "worst_return_pct": -10.0,
       "examples": [
@@ -2837,11 +2837,11 @@
       "tag": "reason:ma20_uptrend",
       "horizon_observed_days": 1,
       "eligible_event_count": 232,
-      "coverage_pct": 60.3,
-      "sample_count": 140,
-      "avg_return_pct": 1.93,
-      "median_return_pct": -0.1,
-      "win_rate_pct": 48.6,
+      "coverage_pct": 62.5,
+      "sample_count": 145,
+      "avg_return_pct": 1.91,
+      "median_return_pct": -0.07,
+      "win_rate_pct": 49.0,
       "best_return_pct": 61.0,
       "worst_return_pct": -10.0,
       "examples": [
@@ -2886,11 +2886,11 @@
       "tag": "reason:chip_institutional_accumulation_watch",
       "horizon_observed_days": 1,
       "eligible_event_count": 30,
-      "coverage_pct": 60.0,
-      "sample_count": 18,
-      "avg_return_pct": 1.81,
-      "median_return_pct": -1.05,
-      "win_rate_pct": 38.9,
+      "coverage_pct": 63.3,
+      "sample_count": 19,
+      "avg_return_pct": 2.08,
+      "median_return_pct": -0.99,
+      "win_rate_pct": 42.1,
       "best_return_pct": 26.22,
       "worst_return_pct": -9.87,
       "examples": [
@@ -2935,11 +2935,11 @@
       "tag": "chip:institutional_accumulation_watch",
       "horizon_observed_days": 1,
       "eligible_event_count": 30,
-      "coverage_pct": 60.0,
-      "sample_count": 18,
-      "avg_return_pct": 1.81,
-      "median_return_pct": -1.05,
-      "win_rate_pct": 38.9,
+      "coverage_pct": 63.3,
+      "sample_count": 19,
+      "avg_return_pct": 2.08,
+      "median_return_pct": -0.99,
+      "win_rate_pct": 42.1,
       "best_return_pct": 26.22,
       "worst_return_pct": -9.87,
       "examples": [
@@ -3203,7 +3203,7 @@
       "eligible_event_count": 235,
       "coverage_pct": 50.2,
       "sample_count": 118,
-      "avg_return_pct": 4.34,
+      "avg_return_pct": 4.36,
       "median_return_pct": 3.68,
       "win_rate_pct": 71.2,
       "best_return_pct": 52.96,
@@ -3345,14 +3345,84 @@
       ]
     },
     {
+      "tag": "reason:chip_small_cap_foreign_accumulation",
+      "horizon_observed_days": 2,
+      "eligible_event_count": 17,
+      "coverage_pct": 17.6,
+      "sample_count": 3,
+      "avg_return_pct": 9.44,
+      "median_return_pct": 16.45,
+      "win_rate_pct": 66.7,
+      "best_return_pct": 18.62,
+      "worst_return_pct": -6.76,
+      "examples": [
+        {
+          "date": "2026-07-23",
+          "target_date": "2026-07-27",
+          "symbol": "6414",
+          "name": "樺漢",
+          "return_pct": -6.76
+        },
+        {
+          "date": "2026-08-04",
+          "target_date": "2026-08-06",
+          "symbol": "3006",
+          "name": "晶豪科",
+          "return_pct": 18.62
+        },
+        {
+          "date": "2026-10-06",
+          "target_date": "2026-10-08",
+          "symbol": "6278",
+          "name": "台表科",
+          "return_pct": 16.45
+        }
+      ]
+    },
+    {
+      "tag": "chip:small_cap_foreign_accumulation",
+      "horizon_observed_days": 2,
+      "eligible_event_count": 17,
+      "coverage_pct": 17.6,
+      "sample_count": 3,
+      "avg_return_pct": 9.44,
+      "median_return_pct": 16.45,
+      "win_rate_pct": 66.7,
+      "best_return_pct": 18.62,
+      "worst_return_pct": -6.76,
+      "examples": [
+        {
+          "date": "2026-07-23",
+          "target_date": "2026-07-27",
+          "symbol": "6414",
+          "name": "樺漢",
+          "return_pct": -6.76
+        },
+        {
+          "date": "2026-08-04",
+          "target_date": "2026-08-06",
+          "symbol": "3006",
+          "name": "晶豪科",
+          "return_pct": 18.62
+        },
+        {
+          "date": "2026-10-06",
+          "target_date": "2026-10-08",
+          "symbol": "6278",
+          "name": "台表科",
+          "return_pct": 16.45
+        }
+      ]
+    },
+    {
       "tag": "roe>=10",
       "horizon_observed_days": 2,
       "eligible_event_count": 333,
-      "coverage_pct": 51.7,
-      "sample_count": 172,
+      "coverage_pct": 52.3,
+      "sample_count": 174,
       "avg_return_pct": 4.4,
-      "median_return_pct": 2.93,
-      "win_rate_pct": 67.4,
+      "median_return_pct": 2.76,
+      "win_rate_pct": 66.7,
       "best_return_pct": 57.99,
       "worst_return_pct": -18.65,
       "examples": [
@@ -3394,84 +3464,14 @@
       ]
     },
     {
-      "tag": "reason:chip_small_cap_foreign_accumulation",
-      "horizon_observed_days": 2,
-      "eligible_event_count": 17,
-      "coverage_pct": 17.6,
-      "sample_count": 3,
-      "avg_return_pct": 5.95,
-      "median_return_pct": 5.98,
-      "win_rate_pct": 66.7,
-      "best_return_pct": 18.62,
-      "worst_return_pct": -6.76,
-      "examples": [
-        {
-          "date": "2026-07-23",
-          "target_date": "2026-07-27",
-          "symbol": "6414",
-          "name": "樺漢",
-          "return_pct": -6.76
-        },
-        {
-          "date": "2026-08-04",
-          "target_date": "2026-08-06",
-          "symbol": "3006",
-          "name": "晶豪科",
-          "return_pct": 18.62
-        },
-        {
-          "date": "2026-10-06",
-          "target_date": "2026-10-08",
-          "symbol": "6278",
-          "name": "台表科",
-          "return_pct": 5.98
-        }
-      ]
-    },
-    {
-      "tag": "chip:small_cap_foreign_accumulation",
-      "horizon_observed_days": 2,
-      "eligible_event_count": 17,
-      "coverage_pct": 17.6,
-      "sample_count": 3,
-      "avg_return_pct": 5.95,
-      "median_return_pct": 5.98,
-      "win_rate_pct": 66.7,
-      "best_return_pct": 18.62,
-      "worst_return_pct": -6.76,
-      "examples": [
-        {
-          "date": "2026-07-23",
-          "target_date": "2026-07-27",
-          "symbol": "6414",
-          "name": "樺漢",
-          "return_pct": -6.76
-        },
-        {
-          "date": "2026-08-04",
-          "target_date": "2026-08-06",
-          "symbol": "3006",
-          "name": "晶豪科",
-          "return_pct": 18.62
-        },
-        {
-          "date": "2026-10-06",
-          "target_date": "2026-10-08",
-          "symbol": "6278",
-          "name": "台表科",
-          "return_pct": 5.98
-        }
-      ]
-    },
-    {
       "tag": "score>=80",
       "horizon_observed_days": 2,
       "eligible_event_count": 185,
-      "coverage_pct": 54.1,
-      "sample_count": 100,
-      "avg_return_pct": 2.97,
-      "median_return_pct": 1.62,
-      "win_rate_pct": 66.0,
+      "coverage_pct": 55.1,
+      "sample_count": 102,
+      "avg_return_pct": 2.99,
+      "median_return_pct": 1.87,
+      "win_rate_pct": 64.7,
       "best_return_pct": 51.5,
       "worst_return_pct": -18.93,
       "examples": [
@@ -3516,108 +3516,10 @@
       "tag": "reason:revenue_yoy_growth",
       "horizon_observed_days": 2,
       "eligible_event_count": 297,
-      "coverage_pct": 48.8,
-      "sample_count": 145,
-      "avg_return_pct": 4.51,
-      "median_return_pct": 2.02,
-      "win_rate_pct": 65.5,
-      "best_return_pct": 57.99,
-      "worst_return_pct": -18.65,
-      "examples": [
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "2059",
-          "name": "川湖",
-          "return_pct": -4.8
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "2301",
-          "name": "光寶科",
-          "return_pct": -1.61
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "2317",
-          "name": "鴻海",
-          "return_pct": 0.4
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "3231",
-          "name": "緯創",
-          "return_pct": 9.15
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "3653",
-          "name": "健策",
-          "return_pct": -2.0
-        }
-      ]
-    },
-    {
-      "tag": "reason:near_60d_high",
-      "horizon_observed_days": 2,
-      "eligible_event_count": 133,
-      "coverage_pct": 51.1,
-      "sample_count": 68,
-      "avg_return_pct": 3.78,
-      "median_return_pct": 1.33,
-      "win_rate_pct": 64.7,
-      "best_return_pct": 57.99,
-      "worst_return_pct": -16.42,
-      "examples": [
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "1326",
-          "name": "台化",
-          "return_pct": -4.39
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "6669",
-          "name": "緯穎",
-          "return_pct": 4.18
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "8039",
-          "name": "台虹",
-          "return_pct": 3.0
-        },
-        {
-          "date": "2026-07-23",
-          "target_date": "2026-07-27",
-          "symbol": "1326",
-          "name": "台化",
-          "return_pct": -9.34
-        },
-        {
-          "date": "2026-07-23",
-          "target_date": "2026-07-27",
-          "symbol": "2059",
-          "name": "川湖",
-          "return_pct": 0.91
-        }
-      ]
-    },
-    {
-      "tag": "reason:healthy_roe",
-      "horizon_observed_days": 2,
-      "eligible_event_count": 291,
-      "coverage_pct": 50.5,
+      "coverage_pct": 49.5,
       "sample_count": 147,
-      "avg_return_pct": 4.01,
-      "median_return_pct": 1.98,
+      "avg_return_pct": 4.5,
+      "median_return_pct": 2.17,
       "win_rate_pct": 64.6,
       "best_return_pct": 57.99,
       "worst_return_pct": -18.65,
@@ -3660,171 +3562,17 @@
       ]
     },
     {
-      "tag": "reason:chip_support",
+      "tag": "reason:healthy_roe",
       "horizon_observed_days": 2,
-      "eligible_event_count": 294,
-      "coverage_pct": 49.7,
-      "sample_count": 146,
-      "avg_return_pct": 4.49,
-      "median_return_pct": 1.89,
-      "win_rate_pct": 64.4,
+      "eligible_event_count": 291,
+      "coverage_pct": 51.2,
+      "sample_count": 149,
+      "avg_return_pct": 4.01,
+      "median_return_pct": 2.01,
+      "win_rate_pct": 63.8,
       "best_return_pct": 57.99,
       "worst_return_pct": -18.65,
       "examples": [
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "1326",
-          "name": "台化",
-          "return_pct": -4.39
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "2059",
-          "name": "川湖",
-          "return_pct": -4.8
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "2317",
-          "name": "鴻海",
-          "return_pct": 0.4
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "3231",
-          "name": "緯創",
-          "return_pct": 9.15
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "3665",
-          "name": "貿聯-KY",
-          "return_pct": 4.26
-        }
-      ]
-    },
-    {
-      "tag": "strategy:momentum",
-      "horizon_observed_days": 2,
-      "eligible_event_count": 465,
-      "coverage_pct": 46.2,
-      "sample_count": 215,
-      "avg_return_pct": 3.62,
-      "median_return_pct": 2.41,
-      "win_rate_pct": 64.2,
-      "best_return_pct": 57.99,
-      "worst_return_pct": -18.93,
-      "examples": [
-        {
-          "date": "2026-07-13",
-          "target_date": "2026-07-15",
-          "symbol": "1303",
-          "name": "南亞",
-          "return_pct": 14.04
-        },
-        {
-          "date": "2026-07-13",
-          "target_date": "2026-07-15",
-          "symbol": "2059",
-          "name": "川湖",
-          "return_pct": 5.2
-        },
-        {
-          "date": "2026-07-13",
-          "target_date": "2026-07-15",
-          "symbol": "2634",
-          "name": "漢翔",
-          "return_pct": 7.05
-        },
-        {
-          "date": "2026-07-13",
-          "target_date": "2026-07-15",
-          "symbol": "3006",
-          "name": "晶豪科",
-          "return_pct": 4.82
-        },
-        {
-          "date": "2026-07-13",
-          "target_date": "2026-07-15",
-          "symbol": "4958",
-          "name": "臻鼎-KY",
-          "return_pct": -4.33
-        }
-      ]
-    },
-    {
-      "tag": "reason:ma20_uptrend",
-      "horizon_observed_days": 2,
-      "eligible_event_count": 214,
-      "coverage_pct": 48.1,
-      "sample_count": 103,
-      "avg_return_pct": 3.94,
-      "median_return_pct": 1.33,
-      "win_rate_pct": 64.1,
-      "best_return_pct": 57.99,
-      "worst_return_pct": -18.23,
-      "examples": [
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "1326",
-          "name": "台化",
-          "return_pct": -4.39
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "2059",
-          "name": "川湖",
-          "return_pct": -4.8
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "2634",
-          "name": "漢翔",
-          "return_pct": 1.55
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "6505",
-          "name": "台塑化",
-          "return_pct": 0.82
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "6669",
-          "name": "緯穎",
-          "return_pct": 4.18
-        }
-      ]
-    },
-    {
-      "tag": "reason:obv_accumulation",
-      "horizon_observed_days": 2,
-      "eligible_event_count": 262,
-      "coverage_pct": 50.0,
-      "sample_count": 131,
-      "avg_return_pct": 3.91,
-      "median_return_pct": 1.55,
-      "win_rate_pct": 64.1,
-      "best_return_pct": 57.99,
-      "worst_return_pct": -16.42,
-      "examples": [
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "1326",
-          "name": "台化",
-          "return_pct": -4.39
-        },
         {
           "date": "2026-07-22",
           "target_date": "2026-07-24",
@@ -3849,9 +3597,16 @@
         {
           "date": "2026-07-22",
           "target_date": "2026-07-24",
-          "symbol": "2634",
-          "name": "漢翔",
-          "return_pct": 1.55
+          "symbol": "3231",
+          "name": "緯創",
+          "return_pct": 9.15
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "3653",
+          "name": "健策",
+          "return_pct": -2.0
         }
       ]
     },
@@ -3905,16 +3660,114 @@
       ]
     },
     {
-      "tag": "reason:relative_strength_60d",
+      "tag": "strategy:momentum",
       "horizon_observed_days": 2,
-      "eligible_event_count": 230,
-      "coverage_pct": 51.3,
-      "sample_count": 118,
-      "avg_return_pct": 4.16,
-      "median_return_pct": 1.87,
+      "eligible_event_count": 465,
+      "coverage_pct": 46.7,
+      "sample_count": 217,
+      "avg_return_pct": 3.63,
+      "median_return_pct": 2.42,
       "win_rate_pct": 63.6,
       "best_return_pct": 57.99,
+      "worst_return_pct": -18.93,
+      "examples": [
+        {
+          "date": "2026-07-13",
+          "target_date": "2026-07-15",
+          "symbol": "1303",
+          "name": "南亞",
+          "return_pct": 14.04
+        },
+        {
+          "date": "2026-07-13",
+          "target_date": "2026-07-15",
+          "symbol": "2059",
+          "name": "川湖",
+          "return_pct": 5.2
+        },
+        {
+          "date": "2026-07-13",
+          "target_date": "2026-07-15",
+          "symbol": "2634",
+          "name": "漢翔",
+          "return_pct": 7.05
+        },
+        {
+          "date": "2026-07-13",
+          "target_date": "2026-07-15",
+          "symbol": "3006",
+          "name": "晶豪科",
+          "return_pct": 4.82
+        },
+        {
+          "date": "2026-07-13",
+          "target_date": "2026-07-15",
+          "symbol": "4958",
+          "name": "臻鼎-KY",
+          "return_pct": -4.33
+        }
+      ]
+    },
+    {
+      "tag": "reason:chip_support",
+      "horizon_observed_days": 2,
+      "eligible_event_count": 294,
+      "coverage_pct": 50.3,
+      "sample_count": 148,
+      "avg_return_pct": 4.48,
+      "median_return_pct": 2.02,
+      "win_rate_pct": 63.5,
+      "best_return_pct": 57.99,
       "worst_return_pct": -18.65,
+      "examples": [
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "1326",
+          "name": "台化",
+          "return_pct": -4.39
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "2059",
+          "name": "川湖",
+          "return_pct": -4.8
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "2317",
+          "name": "鴻海",
+          "return_pct": 0.4
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "3231",
+          "name": "緯創",
+          "return_pct": 9.15
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "3665",
+          "name": "貿聯-KY",
+          "return_pct": 4.26
+        }
+      ]
+    },
+    {
+      "tag": "reason:obv_accumulation",
+      "horizon_observed_days": 2,
+      "eligible_event_count": 262,
+      "coverage_pct": 50.8,
+      "sample_count": 133,
+      "avg_return_pct": 3.91,
+      "median_return_pct": 1.63,
+      "win_rate_pct": 63.2,
+      "best_return_pct": 57.99,
+      "worst_return_pct": -16.42,
       "examples": [
         {
           "date": "2026-07-22",
@@ -3940,6 +3793,34 @@
         {
           "date": "2026-07-22",
           "target_date": "2026-07-24",
+          "symbol": "2317",
+          "name": "鴻海",
+          "return_pct": 0.4
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "2634",
+          "name": "漢翔",
+          "return_pct": 1.55
+        }
+      ]
+    },
+    {
+      "tag": "reason:volume_expansion",
+      "horizon_observed_days": 2,
+      "eligible_event_count": 150,
+      "coverage_pct": 45.3,
+      "sample_count": 68,
+      "avg_return_pct": 3.58,
+      "median_return_pct": 2.15,
+      "win_rate_pct": 63.2,
+      "best_return_pct": 52.96,
+      "worst_return_pct": -16.42,
+      "examples": [
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
           "symbol": "2634",
           "name": "漢翔",
           "return_pct": 1.55
@@ -3950,6 +3831,125 @@
           "symbol": "3231",
           "name": "緯創",
           "return_pct": 9.15
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "3653",
+          "name": "健策",
+          "return_pct": -2.0
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "3665",
+          "name": "貿聯-KY",
+          "return_pct": 4.26
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "6505",
+          "name": "台塑化",
+          "return_pct": 0.82
+        }
+      ]
+    },
+    {
+      "tag": "reason:ma20_uptrend",
+      "horizon_observed_days": 2,
+      "eligible_event_count": 214,
+      "coverage_pct": 49.1,
+      "sample_count": 105,
+      "avg_return_pct": 3.93,
+      "median_return_pct": 1.49,
+      "win_rate_pct": 62.9,
+      "best_return_pct": 57.99,
+      "worst_return_pct": -18.23,
+      "examples": [
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "1326",
+          "name": "台化",
+          "return_pct": -4.39
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "2059",
+          "name": "川湖",
+          "return_pct": -4.8
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "2634",
+          "name": "漢翔",
+          "return_pct": 1.55
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "6505",
+          "name": "台塑化",
+          "return_pct": 0.82
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "6669",
+          "name": "緯穎",
+          "return_pct": 4.18
+        }
+      ]
+    },
+    {
+      "tag": "reason:near_60d_high",
+      "horizon_observed_days": 2,
+      "eligible_event_count": 133,
+      "coverage_pct": 52.6,
+      "sample_count": 70,
+      "avg_return_pct": 3.79,
+      "median_return_pct": 1.54,
+      "win_rate_pct": 62.9,
+      "best_return_pct": 57.99,
+      "worst_return_pct": -16.42,
+      "examples": [
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "1326",
+          "name": "台化",
+          "return_pct": -4.39
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "6669",
+          "name": "緯穎",
+          "return_pct": 4.18
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "8039",
+          "name": "台虹",
+          "return_pct": 3.0
+        },
+        {
+          "date": "2026-07-23",
+          "target_date": "2026-07-27",
+          "symbol": "1326",
+          "name": "台化",
+          "return_pct": -9.34
+        },
+        {
+          "date": "2026-07-23",
+          "target_date": "2026-07-27",
+          "symbol": "2059",
+          "name": "川湖",
+          "return_pct": 0.91
         }
       ]
     },
@@ -3957,11 +3957,11 @@
       "tag": "reason:institutional_net_buying",
       "horizon_observed_days": 2,
       "eligible_event_count": 337,
-      "coverage_pct": 47.2,
-      "sample_count": 159,
+      "coverage_pct": 47.8,
+      "sample_count": 161,
       "avg_return_pct": 4.1,
-      "median_return_pct": 1.76,
-      "win_rate_pct": 63.5,
+      "median_return_pct": 1.98,
+      "win_rate_pct": 62.7,
       "best_return_pct": 57.99,
       "worst_return_pct": -18.65,
       "examples": [
@@ -4006,11 +4006,11 @@
       "tag": "reason:positive_eps",
       "horizon_observed_days": 2,
       "eligible_event_count": 335,
-      "coverage_pct": 47.5,
-      "sample_count": 159,
+      "coverage_pct": 48.1,
+      "sample_count": 161,
       "avg_return_pct": 4.1,
-      "median_return_pct": 1.76,
-      "win_rate_pct": 63.5,
+      "median_return_pct": 1.98,
+      "win_rate_pct": 62.7,
       "best_return_pct": 57.99,
       "worst_return_pct": -18.65,
       "examples": [
@@ -4052,14 +4052,63 @@
       ]
     },
     {
+      "tag": "reason:relative_strength_60d",
+      "horizon_observed_days": 2,
+      "eligible_event_count": 230,
+      "coverage_pct": 52.2,
+      "sample_count": 120,
+      "avg_return_pct": 4.16,
+      "median_return_pct": 2.0,
+      "win_rate_pct": 62.5,
+      "best_return_pct": 57.99,
+      "worst_return_pct": -18.65,
+      "examples": [
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "1326",
+          "name": "台化",
+          "return_pct": -4.39
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "2059",
+          "name": "川湖",
+          "return_pct": -4.8
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "2301",
+          "name": "光寶科",
+          "return_pct": -1.61
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "2634",
+          "name": "漢翔",
+          "return_pct": 1.55
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "3231",
+          "name": "緯創",
+          "return_pct": 9.15
+        }
+      ]
+    },
+    {
       "tag": "reason:close_above_ma20",
       "horizon_observed_days": 2,
       "eligible_event_count": 278,
-      "coverage_pct": 51.1,
-      "sample_count": 142,
+      "coverage_pct": 51.8,
+      "sample_count": 144,
       "avg_return_pct": 4.07,
-      "median_return_pct": 1.52,
-      "win_rate_pct": 63.4,
+      "median_return_pct": 1.59,
+      "win_rate_pct": 62.5,
       "best_return_pct": 57.99,
       "worst_return_pct": -16.42,
       "examples": [
@@ -4104,11 +4153,11 @@
       "tag": "reason:institutional_buy_ratio",
       "horizon_observed_days": 2,
       "eligible_event_count": 304,
-      "coverage_pct": 48.4,
-      "sample_count": 147,
+      "coverage_pct": 49.0,
+      "sample_count": 149,
       "avg_return_pct": 3.76,
-      "median_return_pct": 1.63,
-      "win_rate_pct": 63.3,
+      "median_return_pct": 1.76,
+      "win_rate_pct": 62.4,
       "best_return_pct": 52.96,
       "worst_return_pct": -18.65,
       "examples": [
@@ -4150,63 +4199,14 @@
       ]
     },
     {
-      "tag": "reason:volume_expansion",
-      "horizon_observed_days": 2,
-      "eligible_event_count": 150,
-      "coverage_pct": 45.3,
-      "sample_count": 68,
-      "avg_return_pct": 3.37,
-      "median_return_pct": 2.0,
-      "win_rate_pct": 63.2,
-      "best_return_pct": 52.96,
-      "worst_return_pct": -16.42,
-      "examples": [
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "2634",
-          "name": "漢翔",
-          "return_pct": 1.55
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "3231",
-          "name": "緯創",
-          "return_pct": 9.15
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "3653",
-          "name": "健策",
-          "return_pct": -2.0
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "3665",
-          "name": "貿聯-KY",
-          "return_pct": 4.26
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "6505",
-          "name": "台塑化",
-          "return_pct": 0.82
-        }
-      ]
-    },
-    {
       "tag": "reason:high_turnover",
       "horizon_observed_days": 2,
       "eligible_event_count": 339,
-      "coverage_pct": 47.2,
-      "sample_count": 160,
+      "coverage_pct": 47.8,
+      "sample_count": 162,
       "avg_return_pct": 4.02,
-      "median_return_pct": 1.7,
-      "win_rate_pct": 63.1,
+      "median_return_pct": 1.87,
+      "win_rate_pct": 62.3,
       "best_return_pct": 57.99,
       "worst_return_pct": -18.65,
       "examples": [
@@ -4251,11 +4251,11 @@
       "tag": "reason:risk_reward_above_min",
       "horizon_observed_days": 2,
       "eligible_event_count": 339,
-      "coverage_pct": 47.2,
-      "sample_count": 160,
+      "coverage_pct": 47.8,
+      "sample_count": 162,
       "avg_return_pct": 4.02,
-      "median_return_pct": 1.7,
-      "win_rate_pct": 63.1,
+      "median_return_pct": 1.87,
+      "win_rate_pct": 62.3,
       "best_return_pct": 57.99,
       "worst_return_pct": -18.65,
       "examples": [
@@ -4297,14 +4297,14 @@
       ]
     },
     {
-      "tag": "rs60>0",
+      "tag": "rs20>0",
       "horizon_observed_days": 2,
-      "eligible_event_count": 323,
-      "coverage_pct": 49.5,
-      "sample_count": 160,
-      "avg_return_pct": 3.35,
-      "median_return_pct": 2.13,
-      "win_rate_pct": 63.1,
+      "eligible_event_count": 363,
+      "coverage_pct": 50.4,
+      "sample_count": 183,
+      "avg_return_pct": 3.44,
+      "median_return_pct": 2.02,
+      "win_rate_pct": 62.3,
       "best_return_pct": 57.99,
       "worst_return_pct": -18.93,
       "examples": [
@@ -4346,14 +4346,14 @@
       ]
     },
     {
-      "tag": "rs20>0",
+      "tag": "rs60>0",
       "horizon_observed_days": 2,
-      "eligible_event_count": 363,
-      "coverage_pct": 49.9,
-      "sample_count": 181,
-      "avg_return_pct": 3.44,
-      "median_return_pct": 2.01,
-      "win_rate_pct": 63.0,
+      "eligible_event_count": 323,
+      "coverage_pct": 50.2,
+      "sample_count": 162,
+      "avg_return_pct": 3.36,
+      "median_return_pct": 2.33,
+      "win_rate_pct": 62.3,
       "best_return_pct": 57.99,
       "worst_return_pct": -18.93,
       "examples": [
@@ -4398,11 +4398,11 @@
       "tag": "reason:relative_strength_20d",
       "horizon_observed_days": 2,
       "eligible_event_count": 274,
-      "coverage_pct": 51.1,
-      "sample_count": 140,
+      "coverage_pct": 51.8,
+      "sample_count": 142,
       "avg_return_pct": 4.03,
-      "median_return_pct": 1.59,
-      "win_rate_pct": 62.9,
+      "median_return_pct": 1.7,
+      "win_rate_pct": 62.0,
       "best_return_pct": 57.99,
       "worst_return_pct": -16.42,
       "examples": [
@@ -4440,55 +4440,6 @@
           "symbol": "2634",
           "name": "漢翔",
           "return_pct": 1.55
-        }
-      ]
-    },
-    {
-      "tag": "reason:ma_bullish_alignment",
-      "horizon_observed_days": 2,
-      "eligible_event_count": 194,
-      "coverage_pct": 51.0,
-      "sample_count": 99,
-      "avg_return_pct": 4.01,
-      "median_return_pct": 1.33,
-      "win_rate_pct": 62.6,
-      "best_return_pct": 57.99,
-      "worst_return_pct": -16.42,
-      "examples": [
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "1326",
-          "name": "台化",
-          "return_pct": -4.39
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "2634",
-          "name": "漢翔",
-          "return_pct": 1.55
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "6505",
-          "name": "台塑化",
-          "return_pct": 0.82
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-24",
-          "symbol": "8039",
-          "name": "台虹",
-          "return_pct": 3.0
-        },
-        {
-          "date": "2026-07-23",
-          "target_date": "2026-07-27",
-          "symbol": "1326",
-          "name": "台化",
-          "return_pct": -9.34
         }
       ]
     },
@@ -4542,14 +4493,63 @@
       ]
     },
     {
+      "tag": "reason:ma_bullish_alignment",
+      "horizon_observed_days": 2,
+      "eligible_event_count": 194,
+      "coverage_pct": 52.1,
+      "sample_count": 101,
+      "avg_return_pct": 3.99,
+      "median_return_pct": 0.92,
+      "win_rate_pct": 61.4,
+      "best_return_pct": 57.99,
+      "worst_return_pct": -16.42,
+      "examples": [
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "1326",
+          "name": "台化",
+          "return_pct": -4.39
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "2634",
+          "name": "漢翔",
+          "return_pct": 1.55
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "6505",
+          "name": "台塑化",
+          "return_pct": 0.82
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-24",
+          "symbol": "8039",
+          "name": "台虹",
+          "return_pct": 3.0
+        },
+        {
+          "date": "2026-07-23",
+          "target_date": "2026-07-27",
+          "symbol": "1326",
+          "name": "台化",
+          "return_pct": -9.34
+        }
+      ]
+    },
+    {
       "tag": "reason:ma60_uptrend",
       "horizon_observed_days": 2,
       "eligible_event_count": 247,
-      "coverage_pct": 46.6,
-      "sample_count": 115,
-      "avg_return_pct": 3.12,
-      "median_return_pct": 1.32,
-      "win_rate_pct": 60.9,
+      "coverage_pct": 47.4,
+      "sample_count": 117,
+      "avg_return_pct": 3.11,
+      "median_return_pct": 0.97,
+      "win_rate_pct": 59.8,
       "best_return_pct": 52.96,
       "worst_return_pct": -18.65,
       "examples": [
@@ -4596,7 +4596,7 @@
       "eligible_event_count": 97,
       "coverage_pct": 45.4,
       "sample_count": 44,
-      "avg_return_pct": 4.65,
+      "avg_return_pct": 4.93,
       "median_return_pct": 0.75,
       "win_rate_pct": 59.1,
       "best_return_pct": 57.99,
@@ -4645,7 +4645,7 @@
       "eligible_event_count": 29,
       "coverage_pct": 55.2,
       "sample_count": 16,
-      "avg_return_pct": 3.32,
+      "avg_return_pct": 3.42,
       "median_return_pct": 0.48,
       "win_rate_pct": 56.2,
       "best_return_pct": 32.27,
@@ -4694,7 +4694,7 @@
       "eligible_event_count": 29,
       "coverage_pct": 55.2,
       "sample_count": 16,
-      "avg_return_pct": 3.32,
+      "avg_return_pct": 3.42,
       "median_return_pct": 0.48,
       "win_rate_pct": 56.2,
       "best_return_pct": 32.27,
@@ -6491,11 +6491,11 @@
       "tag": "roe>=10",
       "horizon_observed_days": 3,
       "eligible_event_count": 313,
-      "coverage_pct": 43.5,
-      "sample_count": 136,
-      "avg_return_pct": 6.87,
-      "median_return_pct": 4.7,
-      "win_rate_pct": 72.8,
+      "coverage_pct": 44.1,
+      "sample_count": 138,
+      "avg_return_pct": 6.72,
+      "median_return_pct": 4.62,
+      "win_rate_pct": 71.7,
       "best_return_pct": 55.51,
       "worst_return_pct": -17.62,
       "examples": [
@@ -6540,11 +6540,11 @@
       "tag": "reason:relative_strength_60d",
       "horizon_observed_days": 3,
       "eligible_event_count": 216,
-      "coverage_pct": 40.3,
-      "sample_count": 87,
-      "avg_return_pct": 8.0,
-      "median_return_pct": 5.25,
-      "win_rate_pct": 72.4,
+      "coverage_pct": 41.2,
+      "sample_count": 89,
+      "avg_return_pct": 7.74,
+      "median_return_pct": 4.99,
+      "win_rate_pct": 70.8,
       "best_return_pct": 93.06,
       "worst_return_pct": -17.62,
       "examples": [
@@ -6589,11 +6589,11 @@
       "tag": "reason:chip_support",
       "horizon_observed_days": 3,
       "eligible_event_count": 275,
-      "coverage_pct": 40.0,
-      "sample_count": 110,
-      "avg_return_pct": 7.64,
-      "median_return_pct": 4.65,
-      "win_rate_pct": 70.9,
+      "coverage_pct": 40.7,
+      "sample_count": 112,
+      "avg_return_pct": 7.44,
+      "median_return_pct": 4.56,
+      "win_rate_pct": 69.6,
       "best_return_pct": 93.06,
       "worst_return_pct": -14.71,
       "examples": [
@@ -6638,195 +6638,48 @@
       "tag": "reason:revenue_yoy_growth",
       "horizon_observed_days": 3,
       "eligible_event_count": 277,
-      "coverage_pct": 41.5,
-      "sample_count": 115,
-      "avg_return_pct": 7.46,
-      "median_return_pct": 4.72,
-      "win_rate_pct": 70.4,
-      "best_return_pct": 93.06,
-      "worst_return_pct": -17.62,
-      "examples": [
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2059",
-          "name": "川湖",
-          "return_pct": 1.85
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2301",
-          "name": "光寶科",
-          "return_pct": -2.75
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2317",
-          "name": "鴻海",
-          "return_pct": 0.6
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2357",
-          "name": "華碩",
-          "return_pct": 0.4
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "3231",
-          "name": "緯創",
-          "return_pct": 7.93
-        }
-      ]
-    },
-    {
-      "tag": "reason:institutional_buy_ratio",
-      "horizon_observed_days": 3,
-      "eligible_event_count": 284,
-      "coverage_pct": 39.1,
-      "sample_count": 111,
-      "avg_return_pct": 7.57,
-      "median_return_pct": 4.55,
-      "win_rate_pct": 70.3,
-      "best_return_pct": 93.06,
-      "worst_return_pct": -14.71,
-      "examples": [
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "1326",
-          "name": "台化",
-          "return_pct": -7.93
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2059",
-          "name": "川湖",
-          "return_pct": 1.85
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2301",
-          "name": "光寶科",
-          "return_pct": -2.75
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2317",
-          "name": "鴻海",
-          "return_pct": 0.6
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2357",
-          "name": "華碩",
-          "return_pct": 0.4
-        }
-      ]
-    },
-    {
-      "tag": "reason:healthy_roe",
-      "horizon_observed_days": 3,
-      "eligible_event_count": 271,
-      "coverage_pct": 42.8,
-      "sample_count": 116,
-      "avg_return_pct": 6.6,
-      "median_return_pct": 4.56,
-      "win_rate_pct": 69.8,
-      "best_return_pct": 55.51,
-      "worst_return_pct": -17.62,
-      "examples": [
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2059",
-          "name": "川湖",
-          "return_pct": 1.85
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2301",
-          "name": "光寶科",
-          "return_pct": -2.75
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2317",
-          "name": "鴻海",
-          "return_pct": 0.6
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2357",
-          "name": "華碩",
-          "return_pct": 0.4
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "3231",
-          "name": "緯創",
-          "return_pct": 7.93
-        }
-      ]
-    },
-    {
-      "tag": "peg<1",
-      "horizon_observed_days": 3,
-      "eligible_event_count": 226,
-      "coverage_pct": 46.0,
-      "sample_count": 104,
-      "avg_return_pct": 6.07,
-      "median_return_pct": 3.79,
+      "coverage_pct": 42.2,
+      "sample_count": 117,
+      "avg_return_pct": 7.27,
+      "median_return_pct": 4.58,
       "win_rate_pct": 69.2,
       "best_return_pct": 93.06,
-      "worst_return_pct": -17.06,
+      "worst_return_pct": -17.62,
       "examples": [
         {
-          "date": "2026-07-14",
-          "target_date": "2026-07-17",
-          "symbol": "2368",
-          "name": "金像電",
-          "return_pct": -8.67
-        },
-        {
-          "date": "2026-07-14",
-          "target_date": "2026-07-17",
-          "symbol": "2382",
-          "name": "廣達",
-          "return_pct": -14.34
-        },
-        {
-          "date": "2026-07-14",
-          "target_date": "2026-07-17",
-          "symbol": "6669",
-          "name": "緯穎",
-          "return_pct": -5.81
-        },
-        {
-          "date": "2026-07-15",
-          "target_date": "2026-07-20",
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
           "symbol": "2059",
           "name": "川湖",
-          "return_pct": -8.82
+          "return_pct": 1.85
         },
         {
-          "date": "2026-07-15",
-          "target_date": "2026-07-20",
-          "symbol": "2382",
-          "name": "廣達",
-          "return_pct": -17.06
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2301",
+          "name": "光寶科",
+          "return_pct": -2.75
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2317",
+          "name": "鴻海",
+          "return_pct": 0.6
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2357",
+          "name": "華碩",
+          "return_pct": 0.4
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "3231",
+          "name": "緯創",
+          "return_pct": 7.93
         }
       ]
     },
@@ -6880,14 +6733,161 @@
       ]
     },
     {
+      "tag": "reason:institutional_buy_ratio",
+      "horizon_observed_days": 3,
+      "eligible_event_count": 284,
+      "coverage_pct": 39.8,
+      "sample_count": 113,
+      "avg_return_pct": 7.37,
+      "median_return_pct": 4.45,
+      "win_rate_pct": 69.0,
+      "best_return_pct": 93.06,
+      "worst_return_pct": -14.71,
+      "examples": [
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "1326",
+          "name": "台化",
+          "return_pct": -7.93
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2059",
+          "name": "川湖",
+          "return_pct": 1.85
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2301",
+          "name": "光寶科",
+          "return_pct": -2.75
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2317",
+          "name": "鴻海",
+          "return_pct": 0.6
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2357",
+          "name": "華碩",
+          "return_pct": 0.4
+        }
+      ]
+    },
+    {
+      "tag": "reason:healthy_roe",
+      "horizon_observed_days": 3,
+      "eligible_event_count": 271,
+      "coverage_pct": 43.5,
+      "sample_count": 118,
+      "avg_return_pct": 6.43,
+      "median_return_pct": 4.5,
+      "win_rate_pct": 68.6,
+      "best_return_pct": 55.51,
+      "worst_return_pct": -17.62,
+      "examples": [
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2059",
+          "name": "川湖",
+          "return_pct": 1.85
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2301",
+          "name": "光寶科",
+          "return_pct": -2.75
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2317",
+          "name": "鴻海",
+          "return_pct": 0.6
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2357",
+          "name": "華碩",
+          "return_pct": 0.4
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "3231",
+          "name": "緯創",
+          "return_pct": 7.93
+        }
+      ]
+    },
+    {
+      "tag": "peg<1",
+      "horizon_observed_days": 3,
+      "eligible_event_count": 226,
+      "coverage_pct": 46.0,
+      "sample_count": 104,
+      "avg_return_pct": 6.06,
+      "median_return_pct": 3.79,
+      "win_rate_pct": 68.3,
+      "best_return_pct": 93.06,
+      "worst_return_pct": -17.06,
+      "examples": [
+        {
+          "date": "2026-07-14",
+          "target_date": "2026-07-17",
+          "symbol": "2368",
+          "name": "金像電",
+          "return_pct": -8.67
+        },
+        {
+          "date": "2026-07-14",
+          "target_date": "2026-07-17",
+          "symbol": "2382",
+          "name": "廣達",
+          "return_pct": -14.34
+        },
+        {
+          "date": "2026-07-14",
+          "target_date": "2026-07-17",
+          "symbol": "6669",
+          "name": "緯穎",
+          "return_pct": -5.81
+        },
+        {
+          "date": "2026-07-15",
+          "target_date": "2026-07-20",
+          "symbol": "2059",
+          "name": "川湖",
+          "return_pct": -8.82
+        },
+        {
+          "date": "2026-07-15",
+          "target_date": "2026-07-20",
+          "symbol": "2382",
+          "name": "廣達",
+          "return_pct": -17.06
+        }
+      ]
+    },
+    {
       "tag": "reason:high_turnover",
       "horizon_observed_days": 3,
       "eligible_event_count": 319,
-      "coverage_pct": 38.6,
-      "sample_count": 123,
-      "avg_return_pct": 7.11,
-      "median_return_pct": 4.55,
-      "win_rate_pct": 69.1,
+      "coverage_pct": 39.2,
+      "sample_count": 125,
+      "avg_return_pct": 6.94,
+      "median_return_pct": 4.45,
+      "win_rate_pct": 68.0,
       "best_return_pct": 93.06,
       "worst_return_pct": -17.62,
       "examples": [
@@ -6932,11 +6932,11 @@
       "tag": "reason:institutional_net_buying",
       "horizon_observed_days": 3,
       "eligible_event_count": 317,
-      "coverage_pct": 38.8,
-      "sample_count": 123,
-      "avg_return_pct": 7.11,
-      "median_return_pct": 4.55,
-      "win_rate_pct": 69.1,
+      "coverage_pct": 39.4,
+      "sample_count": 125,
+      "avg_return_pct": 6.94,
+      "median_return_pct": 4.45,
+      "win_rate_pct": 68.0,
       "best_return_pct": 93.06,
       "worst_return_pct": -17.62,
       "examples": [
@@ -6981,11 +6981,11 @@
       "tag": "reason:positive_eps",
       "horizon_observed_days": 3,
       "eligible_event_count": 315,
-      "coverage_pct": 39.0,
-      "sample_count": 123,
-      "avg_return_pct": 7.11,
-      "median_return_pct": 4.55,
-      "win_rate_pct": 69.1,
+      "coverage_pct": 39.7,
+      "sample_count": 125,
+      "avg_return_pct": 6.94,
+      "median_return_pct": 4.45,
+      "win_rate_pct": 68.0,
       "best_return_pct": 93.06,
       "worst_return_pct": -17.62,
       "examples": [
@@ -7030,11 +7030,60 @@
       "tag": "reason:risk_reward_above_min",
       "horizon_observed_days": 3,
       "eligible_event_count": 319,
-      "coverage_pct": 38.6,
-      "sample_count": 123,
-      "avg_return_pct": 7.11,
-      "median_return_pct": 4.55,
-      "win_rate_pct": 69.1,
+      "coverage_pct": 39.2,
+      "sample_count": 125,
+      "avg_return_pct": 6.94,
+      "median_return_pct": 4.45,
+      "win_rate_pct": 68.0,
+      "best_return_pct": 93.06,
+      "worst_return_pct": -17.62,
+      "examples": [
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "1326",
+          "name": "台化",
+          "return_pct": -7.93
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2059",
+          "name": "川湖",
+          "return_pct": 1.85
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2301",
+          "name": "光寶科",
+          "return_pct": -2.75
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2317",
+          "name": "鴻海",
+          "return_pct": 0.6
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2357",
+          "name": "華碩",
+          "return_pct": 0.4
+        }
+      ]
+    },
+    {
+      "tag": "reason:relative_strength_20d",
+      "horizon_observed_days": 3,
+      "eligible_event_count": 259,
+      "coverage_pct": 44.8,
+      "sample_count": 116,
+      "avg_return_pct": 6.74,
+      "median_return_pct": 4.13,
+      "win_rate_pct": 67.2,
       "best_return_pct": 93.06,
       "worst_return_pct": -17.62,
       "examples": [
@@ -7079,11 +7128,11 @@
       "tag": "reason:ma_bullish_alignment",
       "horizon_observed_days": 3,
       "eligible_event_count": 175,
-      "coverage_pct": 42.3,
-      "sample_count": 74,
-      "avg_return_pct": 6.86,
-      "median_return_pct": 4.65,
-      "win_rate_pct": 68.9,
+      "coverage_pct": 43.4,
+      "sample_count": 76,
+      "avg_return_pct": 6.59,
+      "median_return_pct": 4.1,
+      "win_rate_pct": 67.1,
       "best_return_pct": 55.51,
       "worst_return_pct": -14.71,
       "examples": [
@@ -7121,104 +7170,6 @@
           "symbol": "8039",
           "name": "台虹",
           "return_pct": -7.3
-        }
-      ]
-    },
-    {
-      "tag": "reason:relative_strength_20d",
-      "horizon_observed_days": 3,
-      "eligible_event_count": 259,
-      "coverage_pct": 44.0,
-      "sample_count": 114,
-      "avg_return_pct": 6.92,
-      "median_return_pct": 4.36,
-      "win_rate_pct": 68.4,
-      "best_return_pct": 93.06,
-      "worst_return_pct": -17.62,
-      "examples": [
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "1326",
-          "name": "台化",
-          "return_pct": -7.93
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2059",
-          "name": "川湖",
-          "return_pct": 1.85
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2301",
-          "name": "光寶科",
-          "return_pct": -2.75
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2317",
-          "name": "鴻海",
-          "return_pct": 0.6
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2357",
-          "name": "華碩",
-          "return_pct": 0.4
-        }
-      ]
-    },
-    {
-      "tag": "reason:close_above_ma20",
-      "horizon_observed_days": 3,
-      "eligible_event_count": 258,
-      "coverage_pct": 41.9,
-      "sample_count": 108,
-      "avg_return_pct": 6.39,
-      "median_return_pct": 3.79,
-      "win_rate_pct": 66.7,
-      "best_return_pct": 93.06,
-      "worst_return_pct": -17.62,
-      "examples": [
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "1326",
-          "name": "台化",
-          "return_pct": -7.93
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2059",
-          "name": "川湖",
-          "return_pct": 1.85
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2301",
-          "name": "光寶科",
-          "return_pct": -2.75
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2317",
-          "name": "鴻海",
-          "return_pct": 0.6
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2357",
-          "name": "華碩",
-          "return_pct": 0.4
         }
       ]
     },
@@ -7321,55 +7272,6 @@
       ]
     },
     {
-      "tag": "reason:ma60_uptrend",
-      "horizon_observed_days": 3,
-      "eligible_event_count": 233,
-      "coverage_pct": 37.3,
-      "sample_count": 87,
-      "avg_return_pct": 5.69,
-      "median_return_pct": 3.53,
-      "win_rate_pct": 66.7,
-      "best_return_pct": 93.06,
-      "worst_return_pct": -17.62,
-      "examples": [
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "1326",
-          "name": "台化",
-          "return_pct": -7.93
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2059",
-          "name": "川湖",
-          "return_pct": 1.85
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2301",
-          "name": "光寶科",
-          "return_pct": -2.75
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2317",
-          "name": "鴻海",
-          "return_pct": 0.6
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2357",
-          "name": "華碩",
-          "return_pct": 0.4
-        }
-      ]
-    },
-    {
       "tag": "score60-70",
       "horizon_observed_days": 3,
       "eligible_event_count": 174,
@@ -7454,15 +7356,15 @@
       ]
     },
     {
-      "tag": "reason:ma20_uptrend",
+      "tag": "reason:close_above_ma20",
       "horizon_observed_days": 3,
-      "eligible_event_count": 196,
-      "coverage_pct": 40.3,
-      "sample_count": 79,
-      "avg_return_pct": 7.01,
-      "median_return_pct": 4.45,
-      "win_rate_pct": 65.8,
-      "best_return_pct": 55.51,
+      "eligible_event_count": 258,
+      "coverage_pct": 42.6,
+      "sample_count": 110,
+      "avg_return_pct": 6.21,
+      "median_return_pct": 3.56,
+      "win_rate_pct": 65.5,
+      "best_return_pct": 93.06,
       "worst_return_pct": -17.62,
       "examples": [
         {
@@ -7482,84 +7384,35 @@
         {
           "date": "2026-07-22",
           "target_date": "2026-07-27",
-          "symbol": "2634",
-          "name": "漢翔",
-          "return_pct": -4.04
+          "symbol": "2301",
+          "name": "光寶科",
+          "return_pct": -2.75
         },
         {
           "date": "2026-07-22",
           "target_date": "2026-07-27",
-          "symbol": "6505",
-          "name": "台塑化",
-          "return_pct": -8.46
+          "symbol": "2317",
+          "name": "鴻海",
+          "return_pct": 0.6
         },
         {
           "date": "2026-07-22",
           "target_date": "2026-07-27",
-          "symbol": "6669",
-          "name": "緯穎",
-          "return_pct": 4.45
+          "symbol": "2357",
+          "name": "華碩",
+          "return_pct": 0.4
         }
       ]
     },
     {
-      "tag": "rs60>0",
+      "tag": "reason:ma60_uptrend",
       "horizon_observed_days": 3,
-      "eligible_event_count": 309,
-      "coverage_pct": 40.8,
-      "sample_count": 126,
-      "avg_return_pct": 5.32,
-      "median_return_pct": 4.02,
-      "win_rate_pct": 65.1,
-      "best_return_pct": 93.06,
-      "worst_return_pct": -26.91,
-      "examples": [
-        {
-          "date": "2026-07-13",
-          "target_date": "2026-07-16",
-          "symbol": "1303",
-          "name": "南亞",
-          "return_pct": 10.78
-        },
-        {
-          "date": "2026-07-13",
-          "target_date": "2026-07-16",
-          "symbol": "8150",
-          "name": "南茂",
-          "return_pct": 6.52
-        },
-        {
-          "date": "2026-07-14",
-          "target_date": "2026-07-17",
-          "symbol": "1303",
-          "name": "南亞",
-          "return_pct": -5.24
-        },
-        {
-          "date": "2026-07-14",
-          "target_date": "2026-07-17",
-          "symbol": "1326",
-          "name": "台化",
-          "return_pct": -1.34
-        },
-        {
-          "date": "2026-07-14",
-          "target_date": "2026-07-17",
-          "symbol": "3026",
-          "name": "禾伸堂",
-          "return_pct": -15.34
-        }
-      ]
-    },
-    {
-      "tag": "reason:obv_accumulation",
-      "horizon_observed_days": 3,
-      "eligible_event_count": 242,
-      "coverage_pct": 41.3,
-      "sample_count": 100,
-      "avg_return_pct": 5.69,
-      "median_return_pct": 3.49,
-      "win_rate_pct": 65.0,
+      "eligible_event_count": 233,
+      "coverage_pct": 38.2,
+      "sample_count": 89,
+      "avg_return_pct": 5.48,
+      "median_return_pct": 3.46,
+      "win_rate_pct": 65.2,
       "best_return_pct": 93.06,
       "worst_return_pct": -17.62,
       "examples": [
@@ -7699,14 +7552,161 @@
       ]
     },
     {
+      "tag": "reason:ma20_uptrend",
+      "horizon_observed_days": 3,
+      "eligible_event_count": 196,
+      "coverage_pct": 41.3,
+      "sample_count": 81,
+      "avg_return_pct": 6.75,
+      "median_return_pct": 4.0,
+      "win_rate_pct": 64.2,
+      "best_return_pct": 55.51,
+      "worst_return_pct": -17.62,
+      "examples": [
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "1326",
+          "name": "台化",
+          "return_pct": -7.93
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2059",
+          "name": "川湖",
+          "return_pct": 1.85
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2634",
+          "name": "漢翔",
+          "return_pct": -4.04
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "6505",
+          "name": "台塑化",
+          "return_pct": -8.46
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "6669",
+          "name": "緯穎",
+          "return_pct": 4.45
+        }
+      ]
+    },
+    {
+      "tag": "rs60>0",
+      "horizon_observed_days": 3,
+      "eligible_event_count": 309,
+      "coverage_pct": 41.4,
+      "sample_count": 128,
+      "avg_return_pct": 5.18,
+      "median_return_pct": 3.7,
+      "win_rate_pct": 64.1,
+      "best_return_pct": 93.06,
+      "worst_return_pct": -26.91,
+      "examples": [
+        {
+          "date": "2026-07-13",
+          "target_date": "2026-07-16",
+          "symbol": "1303",
+          "name": "南亞",
+          "return_pct": 10.78
+        },
+        {
+          "date": "2026-07-13",
+          "target_date": "2026-07-16",
+          "symbol": "8150",
+          "name": "南茂",
+          "return_pct": 6.52
+        },
+        {
+          "date": "2026-07-14",
+          "target_date": "2026-07-17",
+          "symbol": "1303",
+          "name": "南亞",
+          "return_pct": -5.24
+        },
+        {
+          "date": "2026-07-14",
+          "target_date": "2026-07-17",
+          "symbol": "1326",
+          "name": "台化",
+          "return_pct": -1.34
+        },
+        {
+          "date": "2026-07-14",
+          "target_date": "2026-07-17",
+          "symbol": "3026",
+          "name": "禾伸堂",
+          "return_pct": -15.34
+        }
+      ]
+    },
+    {
+      "tag": "reason:obv_accumulation",
+      "horizon_observed_days": 3,
+      "eligible_event_count": 242,
+      "coverage_pct": 42.1,
+      "sample_count": 102,
+      "avg_return_pct": 5.51,
+      "median_return_pct": 3.35,
+      "win_rate_pct": 63.7,
+      "best_return_pct": 93.06,
+      "worst_return_pct": -17.62,
+      "examples": [
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "1326",
+          "name": "台化",
+          "return_pct": -7.93
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2059",
+          "name": "川湖",
+          "return_pct": 1.85
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2301",
+          "name": "光寶科",
+          "return_pct": -2.75
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2317",
+          "name": "鴻海",
+          "return_pct": 0.6
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "2357",
+          "name": "華碩",
+          "return_pct": 0.4
+        }
+      ]
+    },
+    {
       "tag": "strategy:momentum",
       "horizon_observed_days": 3,
       "eligible_event_count": 445,
-      "coverage_pct": 39.6,
-      "sample_count": 176,
-      "avg_return_pct": 5.18,
-      "median_return_pct": 3.7,
-      "win_rate_pct": 64.2,
+      "coverage_pct": 40.0,
+      "sample_count": 178,
+      "avg_return_pct": 5.08,
+      "median_return_pct": 3.61,
+      "win_rate_pct": 63.5,
       "best_return_pct": 93.06,
       "worst_return_pct": -26.91,
       "examples": [
@@ -7748,112 +7748,14 @@
       ]
     },
     {
-      "tag": "reason:volume_expansion",
-      "horizon_observed_days": 3,
-      "eligible_event_count": 138,
-      "coverage_pct": 34.1,
-      "sample_count": 47,
-      "avg_return_pct": 6.85,
-      "median_return_pct": 4.27,
-      "win_rate_pct": 63.8,
-      "best_return_pct": 93.06,
-      "worst_return_pct": -12.82,
-      "examples": [
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "2634",
-          "name": "漢翔",
-          "return_pct": -4.04
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "3231",
-          "name": "緯創",
-          "return_pct": 7.93
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "3653",
-          "name": "健策",
-          "return_pct": 0.71
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "3665",
-          "name": "貿聯-KY",
-          "return_pct": 1.65
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-27",
-          "symbol": "6505",
-          "name": "台塑化",
-          "return_pct": -8.46
-        }
-      ]
-    },
-    {
-      "tag": "score>=80",
-      "horizon_observed_days": 3,
-      "eligible_event_count": 165,
-      "coverage_pct": 44.8,
-      "sample_count": 74,
-      "avg_return_pct": 5.03,
-      "median_return_pct": 3.35,
-      "win_rate_pct": 63.5,
-      "best_return_pct": 55.51,
-      "worst_return_pct": -16.86,
-      "examples": [
-        {
-          "date": "2026-07-14",
-          "target_date": "2026-07-17",
-          "symbol": "1301",
-          "name": "台塑",
-          "return_pct": -1.26
-        },
-        {
-          "date": "2026-07-14",
-          "target_date": "2026-07-17",
-          "symbol": "3532",
-          "name": "台勝科",
-          "return_pct": -16.86
-        },
-        {
-          "date": "2026-07-14",
-          "target_date": "2026-07-17",
-          "symbol": "8039",
-          "name": "台虹",
-          "return_pct": 3.77
-        },
-        {
-          "date": "2026-07-14",
-          "target_date": "2026-07-17",
-          "symbol": "8046",
-          "name": "南電",
-          "return_pct": -10.85
-        },
-        {
-          "date": "2026-07-15",
-          "target_date": "2026-07-20",
-          "symbol": "2634",
-          "name": "漢翔",
-          "return_pct": -4.83
-        }
-      ]
-    },
-    {
       "tag": "rs20>0",
       "horizon_observed_days": 3,
       "eligible_event_count": 348,
-      "coverage_pct": 44.0,
-      "sample_count": 153,
-      "avg_return_pct": 5.16,
-      "median_return_pct": 3.63,
-      "win_rate_pct": 63.4,
+      "coverage_pct": 44.5,
+      "sample_count": 155,
+      "avg_return_pct": 5.05,
+      "median_return_pct": 3.59,
+      "win_rate_pct": 62.6,
       "best_return_pct": 93.06,
       "worst_return_pct": -21.91,
       "examples": [
@@ -7944,51 +7846,51 @@
       ]
     },
     {
-      "tag": "reason:near_60d_high",
+      "tag": "reason:volume_expansion",
       "horizon_observed_days": 3,
-      "eligible_event_count": 113,
-      "coverage_pct": 35.4,
-      "sample_count": 40,
-      "avg_return_pct": 6.76,
-      "median_return_pct": 3.85,
+      "eligible_event_count": 138,
+      "coverage_pct": 34.8,
+      "sample_count": 48,
+      "avg_return_pct": 6.57,
+      "median_return_pct": 3.86,
       "win_rate_pct": 62.5,
-      "best_return_pct": 55.51,
-      "worst_return_pct": -17.62,
+      "best_return_pct": 93.06,
+      "worst_return_pct": -12.82,
       "examples": [
         {
           "date": "2026-07-22",
           "target_date": "2026-07-27",
-          "symbol": "1326",
-          "name": "台化",
-          "return_pct": -7.93
+          "symbol": "2634",
+          "name": "漢翔",
+          "return_pct": -4.04
         },
         {
           "date": "2026-07-22",
           "target_date": "2026-07-27",
-          "symbol": "6669",
-          "name": "緯穎",
-          "return_pct": 4.45
+          "symbol": "3231",
+          "name": "緯創",
+          "return_pct": 7.93
         },
         {
           "date": "2026-07-22",
           "target_date": "2026-07-27",
-          "symbol": "8039",
-          "name": "台虹",
-          "return_pct": -7.3
+          "symbol": "3653",
+          "name": "健策",
+          "return_pct": 0.71
         },
         {
           "date": "2026-07-22",
           "target_date": "2026-07-27",
-          "symbol": "8046",
-          "name": "南電",
-          "return_pct": -17.62
+          "symbol": "3665",
+          "name": "貿聯-KY",
+          "return_pct": 1.65
         },
         {
-          "date": "2026-07-23",
-          "target_date": "2026-07-28",
-          "symbol": "2059",
-          "name": "川湖",
-          "return_pct": -9.15
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "6505",
+          "name": "台塑化",
+          "return_pct": -8.46
         }
       ]
     },
@@ -8038,6 +7940,55 @@
           "symbol": "6525",
           "name": "捷敏-KY",
           "return_pct": 9.02
+        }
+      ]
+    },
+    {
+      "tag": "score>=80",
+      "horizon_observed_days": 3,
+      "eligible_event_count": 165,
+      "coverage_pct": 46.1,
+      "sample_count": 76,
+      "avg_return_pct": 4.8,
+      "median_return_pct": 3.23,
+      "win_rate_pct": 61.8,
+      "best_return_pct": 55.51,
+      "worst_return_pct": -16.86,
+      "examples": [
+        {
+          "date": "2026-07-14",
+          "target_date": "2026-07-17",
+          "symbol": "1301",
+          "name": "台塑",
+          "return_pct": -1.26
+        },
+        {
+          "date": "2026-07-14",
+          "target_date": "2026-07-17",
+          "symbol": "3532",
+          "name": "台勝科",
+          "return_pct": -16.86
+        },
+        {
+          "date": "2026-07-14",
+          "target_date": "2026-07-17",
+          "symbol": "8039",
+          "name": "台虹",
+          "return_pct": 3.77
+        },
+        {
+          "date": "2026-07-14",
+          "target_date": "2026-07-17",
+          "symbol": "8046",
+          "name": "南電",
+          "return_pct": -10.85
+        },
+        {
+          "date": "2026-07-15",
+          "target_date": "2026-07-20",
+          "symbol": "2634",
+          "name": "漢翔",
+          "return_pct": -4.83
         }
       ]
     },
@@ -8283,6 +8234,55 @@
           "symbol": "6531",
           "name": "愛普*",
           "return_pct": 10.33
+        }
+      ]
+    },
+    {
+      "tag": "reason:near_60d_high",
+      "horizon_observed_days": 3,
+      "eligible_event_count": 113,
+      "coverage_pct": 37.2,
+      "sample_count": 42,
+      "avg_return_pct": 6.27,
+      "median_return_pct": 3.23,
+      "win_rate_pct": 59.5,
+      "best_return_pct": 55.51,
+      "worst_return_pct": -17.62,
+      "examples": [
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "1326",
+          "name": "台化",
+          "return_pct": -7.93
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "6669",
+          "name": "緯穎",
+          "return_pct": 4.45
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "8039",
+          "name": "台虹",
+          "return_pct": -7.3
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-27",
+          "symbol": "8046",
+          "name": "南電",
+          "return_pct": -17.62
+        },
+        {
+          "date": "2026-07-23",
+          "target_date": "2026-07-28",
+          "symbol": "2059",
+          "name": "川湖",
+          "return_pct": -9.15
         }
       ]
     },
@@ -9088,11 +9088,11 @@
       "tag": "reason:chip_support",
       "horizon_observed_days": 5,
       "eligible_event_count": 239,
-      "coverage_pct": 36.0,
-      "sample_count": 86,
-      "avg_return_pct": 15.29,
-      "median_return_pct": 9.89,
-      "win_rate_pct": 77.9,
+      "coverage_pct": 36.4,
+      "sample_count": 87,
+      "avg_return_pct": 15.21,
+      "median_return_pct": 10.12,
+      "win_rate_pct": 78.2,
       "best_return_pct": 105.67,
       "worst_return_pct": -28.59,
       "examples": [
@@ -9137,11 +9137,11 @@
       "tag": "reason:relative_strength_60d",
       "horizon_observed_days": 5,
       "eligible_event_count": 189,
-      "coverage_pct": 33.3,
-      "sample_count": 63,
+      "coverage_pct": 33.9,
+      "sample_count": 64,
       "avg_return_pct": 13.47,
-      "median_return_pct": 10.99,
-      "win_rate_pct": 77.8,
+      "median_return_pct": 11.03,
+      "win_rate_pct": 78.1,
       "best_return_pct": 104.63,
       "worst_return_pct": -32.64,
       "examples": [
@@ -9183,14 +9183,63 @@
       ]
     },
     {
+      "tag": "reason:ma_bullish_alignment",
+      "horizon_observed_days": 5,
+      "eligible_event_count": 136,
+      "coverage_pct": 33.1,
+      "sample_count": 45,
+      "avg_return_pct": 9.63,
+      "median_return_pct": 6.95,
+      "win_rate_pct": 77.8,
+      "best_return_pct": 66.95,
+      "worst_return_pct": -31.97,
+      "examples": [
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-29",
+          "symbol": "1303",
+          "name": "南亞",
+          "return_pct": -31.97
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-29",
+          "symbol": "2357",
+          "name": "華碩",
+          "return_pct": 0.53
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-29",
+          "symbol": "6505",
+          "name": "台塑化",
+          "return_pct": -12.1
+        },
+        {
+          "date": "2026-07-23",
+          "target_date": "2026-07-30",
+          "symbol": "2357",
+          "name": "華碩",
+          "return_pct": -4.16
+        },
+        {
+          "date": "2026-07-23",
+          "target_date": "2026-07-30",
+          "symbol": "6505",
+          "name": "台塑化",
+          "return_pct": -23.18
+        }
+      ]
+    },
+    {
       "tag": "reason:high_turnover",
       "horizon_observed_days": 5,
       "eligible_event_count": 279,
-      "coverage_pct": 34.8,
-      "sample_count": 97,
-      "avg_return_pct": 14.95,
-      "median_return_pct": 12.61,
-      "win_rate_pct": 77.3,
+      "coverage_pct": 35.1,
+      "sample_count": 98,
+      "avg_return_pct": 14.89,
+      "median_return_pct": 11.84,
+      "win_rate_pct": 77.6,
       "best_return_pct": 105.67,
       "worst_return_pct": -32.64,
       "examples": [
@@ -9235,11 +9284,11 @@
       "tag": "reason:institutional_net_buying",
       "horizon_observed_days": 5,
       "eligible_event_count": 277,
-      "coverage_pct": 35.0,
-      "sample_count": 97,
-      "avg_return_pct": 14.95,
-      "median_return_pct": 12.61,
-      "win_rate_pct": 77.3,
+      "coverage_pct": 35.4,
+      "sample_count": 98,
+      "avg_return_pct": 14.89,
+      "median_return_pct": 11.84,
+      "win_rate_pct": 77.6,
       "best_return_pct": 105.67,
       "worst_return_pct": -32.64,
       "examples": [
@@ -9284,11 +9333,11 @@
       "tag": "reason:positive_eps",
       "horizon_observed_days": 5,
       "eligible_event_count": 275,
-      "coverage_pct": 35.3,
-      "sample_count": 97,
-      "avg_return_pct": 14.95,
-      "median_return_pct": 12.61,
-      "win_rate_pct": 77.3,
+      "coverage_pct": 35.6,
+      "sample_count": 98,
+      "avg_return_pct": 14.89,
+      "median_return_pct": 11.84,
+      "win_rate_pct": 77.6,
       "best_return_pct": 105.67,
       "worst_return_pct": -32.64,
       "examples": [
@@ -9333,11 +9382,11 @@
       "tag": "reason:risk_reward_above_min",
       "horizon_observed_days": 5,
       "eligible_event_count": 279,
-      "coverage_pct": 34.8,
-      "sample_count": 97,
-      "avg_return_pct": 14.95,
-      "median_return_pct": 12.61,
-      "win_rate_pct": 77.3,
+      "coverage_pct": 35.1,
+      "sample_count": 98,
+      "avg_return_pct": 14.89,
+      "median_return_pct": 11.84,
+      "win_rate_pct": 77.6,
       "best_return_pct": 105.67,
       "worst_return_pct": -32.64,
       "examples": [
@@ -9379,63 +9428,14 @@
       ]
     },
     {
-      "tag": "reason:ma_bullish_alignment",
-      "horizon_observed_days": 5,
-      "eligible_event_count": 136,
-      "coverage_pct": 32.4,
-      "sample_count": 44,
-      "avg_return_pct": 9.65,
-      "median_return_pct": 6.04,
-      "win_rate_pct": 77.3,
-      "best_return_pct": 66.95,
-      "worst_return_pct": -31.97,
-      "examples": [
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-29",
-          "symbol": "1303",
-          "name": "南亞",
-          "return_pct": -31.97
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-29",
-          "symbol": "2357",
-          "name": "華碩",
-          "return_pct": 0.53
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-29",
-          "symbol": "6505",
-          "name": "台塑化",
-          "return_pct": -12.1
-        },
-        {
-          "date": "2026-07-23",
-          "target_date": "2026-07-30",
-          "symbol": "2357",
-          "name": "華碩",
-          "return_pct": -4.16
-        },
-        {
-          "date": "2026-07-23",
-          "target_date": "2026-07-30",
-          "symbol": "6505",
-          "name": "台塑化",
-          "return_pct": -23.18
-        }
-      ]
-    },
-    {
       "tag": "reason:institutional_buy_ratio",
       "horizon_observed_days": 5,
       "eligible_event_count": 246,
-      "coverage_pct": 35.0,
-      "sample_count": 86,
-      "avg_return_pct": 16.06,
-      "median_return_pct": 12.93,
-      "win_rate_pct": 76.7,
+      "coverage_pct": 35.4,
+      "sample_count": 87,
+      "avg_return_pct": 15.98,
+      "median_return_pct": 12.68,
+      "win_rate_pct": 77.0,
       "best_return_pct": 105.67,
       "worst_return_pct": -28.59,
       "examples": [
@@ -9480,11 +9480,11 @@
       "tag": "reason:healthy_roe",
       "horizon_observed_days": 5,
       "eligible_event_count": 233,
-      "coverage_pct": 38.6,
-      "sample_count": 90,
-      "avg_return_pct": 13.88,
-      "median_return_pct": 10.55,
-      "win_rate_pct": 76.7,
+      "coverage_pct": 39.1,
+      "sample_count": 91,
+      "avg_return_pct": 13.82,
+      "median_return_pct": 10.99,
+      "win_rate_pct": 76.9,
       "best_return_pct": 105.67,
       "worst_return_pct": -32.64,
       "examples": [
@@ -9529,11 +9529,11 @@
       "tag": "reason:revenue_yoy_growth",
       "horizon_observed_days": 5,
       "eligible_event_count": 238,
-      "coverage_pct": 39.5,
-      "sample_count": 94,
-      "avg_return_pct": 14.74,
-      "median_return_pct": 11.8,
-      "win_rate_pct": 76.6,
+      "coverage_pct": 39.9,
+      "sample_count": 95,
+      "avg_return_pct": 14.67,
+      "median_return_pct": 11.06,
+      "win_rate_pct": 76.8,
       "best_return_pct": 105.67,
       "worst_return_pct": -32.64,
       "examples": [
@@ -9578,11 +9578,11 @@
       "tag": "reason:ma20_uptrend",
       "horizon_observed_days": 5,
       "eligible_event_count": 157,
-      "coverage_pct": 34.4,
-      "sample_count": 54,
-      "avg_return_pct": 10.12,
-      "median_return_pct": 8.96,
-      "win_rate_pct": 75.9,
+      "coverage_pct": 35.0,
+      "sample_count": 55,
+      "avg_return_pct": 10.1,
+      "median_return_pct": 9.66,
+      "win_rate_pct": 76.4,
       "best_return_pct": 66.95,
       "worst_return_pct": -32.64,
       "examples": [
@@ -9627,11 +9627,11 @@
       "tag": "reason:relative_strength_20d",
       "horizon_observed_days": 5,
       "eligible_event_count": 223,
-      "coverage_pct": 36.8,
-      "sample_count": 82,
-      "avg_return_pct": 13.37,
-      "median_return_pct": 9.37,
-      "win_rate_pct": 75.6,
+      "coverage_pct": 37.2,
+      "sample_count": 83,
+      "avg_return_pct": 13.32,
+      "median_return_pct": 9.66,
+      "win_rate_pct": 75.9,
       "best_return_pct": 104.63,
       "worst_return_pct": -32.64,
       "examples": [
@@ -9809,11 +9809,11 @@
       "tag": "reason:close_above_ma20",
       "horizon_observed_days": 5,
       "eligible_event_count": 218,
-      "coverage_pct": 36.2,
-      "sample_count": 79,
-      "avg_return_pct": 13.62,
-      "median_return_pct": 7.59,
-      "win_rate_pct": 73.4,
+      "coverage_pct": 36.7,
+      "sample_count": 80,
+      "avg_return_pct": 13.56,
+      "median_return_pct": 8.63,
+      "win_rate_pct": 73.8,
       "best_return_pct": 105.67,
       "worst_return_pct": -32.64,
       "examples": [
@@ -9858,11 +9858,11 @@
       "tag": "reason:ma60_uptrend",
       "horizon_observed_days": 5,
       "eligible_event_count": 204,
-      "coverage_pct": 31.4,
-      "sample_count": 64,
-      "avg_return_pct": 10.77,
-      "median_return_pct": 7.92,
-      "win_rate_pct": 73.4,
+      "coverage_pct": 31.9,
+      "sample_count": 65,
+      "avg_return_pct": 10.74,
+      "median_return_pct": 8.25,
+      "win_rate_pct": 73.8,
       "best_return_pct": 104.63,
       "worst_return_pct": -32.64,
       "examples": [
@@ -9907,11 +9907,11 @@
       "tag": "roe>=10",
       "horizon_observed_days": 5,
       "eligible_event_count": 275,
-      "coverage_pct": 40.7,
-      "sample_count": 112,
-      "avg_return_pct": 11.75,
-      "median_return_pct": 7.54,
-      "win_rate_pct": 72.3,
+      "coverage_pct": 41.1,
+      "sample_count": 113,
+      "avg_return_pct": 11.72,
+      "median_return_pct": 7.59,
+      "win_rate_pct": 72.6,
       "best_return_pct": 105.67,
       "worst_return_pct": -32.64,
       "examples": [
@@ -9956,11 +9956,11 @@
       "tag": "reason:obv_accumulation",
       "horizon_observed_days": 5,
       "eligible_event_count": 202,
-      "coverage_pct": 35.6,
-      "sample_count": 72,
-      "avg_return_pct": 11.22,
-      "median_return_pct": 7.35,
-      "win_rate_pct": 72.2,
+      "coverage_pct": 36.1,
+      "sample_count": 73,
+      "avg_return_pct": 11.19,
+      "median_return_pct": 7.59,
+      "win_rate_pct": 72.6,
       "best_return_pct": 104.63,
       "worst_return_pct": -32.64,
       "examples": [
@@ -10056,7 +10056,7 @@
       "eligible_event_count": 208,
       "coverage_pct": 44.7,
       "sample_count": 93,
-      "avg_return_pct": 9.2,
+      "avg_return_pct": 9.18,
       "median_return_pct": 6.25,
       "win_rate_pct": 67.7,
       "best_return_pct": 104.63,
@@ -10376,11 +10376,11 @@
       "tag": "score>=80",
       "horizon_observed_days": 5,
       "eligible_event_count": 125,
-      "coverage_pct": 36.0,
-      "sample_count": 45,
-      "avg_return_pct": 5.25,
-      "median_return_pct": 3.35,
-      "win_rate_pct": 64.4,
+      "coverage_pct": 36.8,
+      "sample_count": 46,
+      "avg_return_pct": 5.33,
+      "median_return_pct": 4.03,
+      "win_rate_pct": 65.2,
       "best_return_pct": 66.95,
       "worst_return_pct": -23.18,
       "examples": [
@@ -10425,11 +10425,11 @@
       "tag": "strategy:momentum",
       "horizon_observed_days": 5,
       "eligible_event_count": 405,
-      "coverage_pct": 38.5,
-      "sample_count": 156,
+      "coverage_pct": 38.8,
+      "sample_count": 157,
       "avg_return_pct": 9.33,
-      "median_return_pct": 5.33,
-      "win_rate_pct": 64.1,
+      "median_return_pct": 5.52,
+      "win_rate_pct": 64.3,
       "best_return_pct": 105.67,
       "worst_return_pct": -32.64,
       "examples": [
@@ -10474,11 +10474,11 @@
       "tag": "rs20>0",
       "horizon_observed_days": 5,
       "eligible_event_count": 312,
-      "coverage_pct": 40.7,
-      "sample_count": 127,
-      "avg_return_pct": 8.04,
-      "median_return_pct": 4.26,
-      "win_rate_pct": 62.2,
+      "coverage_pct": 41.0,
+      "sample_count": 128,
+      "avg_return_pct": 8.05,
+      "median_return_pct": 4.47,
+      "win_rate_pct": 62.5,
       "best_return_pct": 104.63,
       "worst_return_pct": -32.64,
       "examples": [
@@ -10618,6 +10618,55 @@
       ]
     },
     {
+      "tag": "rs60>0",
+      "horizon_observed_days": 5,
+      "eligible_event_count": 282,
+      "coverage_pct": 39.0,
+      "sample_count": 110,
+      "avg_return_pct": 7.18,
+      "median_return_pct": 4.31,
+      "win_rate_pct": 60.9,
+      "best_return_pct": 104.63,
+      "worst_return_pct": -32.64,
+      "examples": [
+        {
+          "date": "2026-07-13",
+          "target_date": "2026-07-20",
+          "symbol": "1303",
+          "name": "南亞",
+          "return_pct": -6.52
+        },
+        {
+          "date": "2026-07-13",
+          "target_date": "2026-07-20",
+          "symbol": "2059",
+          "name": "川湖",
+          "return_pct": -4.08
+        },
+        {
+          "date": "2026-07-13",
+          "target_date": "2026-07-20",
+          "symbol": "2301",
+          "name": "光寶科",
+          "return_pct": -12.84
+        },
+        {
+          "date": "2026-07-13",
+          "target_date": "2026-07-20",
+          "symbol": "2634",
+          "name": "漢翔",
+          "return_pct": 1.88
+        },
+        {
+          "date": "2026-07-13",
+          "target_date": "2026-07-20",
+          "symbol": "2887",
+          "name": "台新新光金",
+          "return_pct": -1.68
+        }
+      ]
+    },
+    {
       "tag": "score70-80",
       "horizon_observed_days": 5,
       "eligible_event_count": 116,
@@ -10667,55 +10716,6 @@
       ]
     },
     {
-      "tag": "rs60>0",
-      "horizon_observed_days": 5,
-      "eligible_event_count": 282,
-      "coverage_pct": 38.7,
-      "sample_count": 109,
-      "avg_return_pct": 7.12,
-      "median_return_pct": 4.06,
-      "win_rate_pct": 60.6,
-      "best_return_pct": 104.63,
-      "worst_return_pct": -32.64,
-      "examples": [
-        {
-          "date": "2026-07-13",
-          "target_date": "2026-07-20",
-          "symbol": "1303",
-          "name": "南亞",
-          "return_pct": -6.52
-        },
-        {
-          "date": "2026-07-13",
-          "target_date": "2026-07-20",
-          "symbol": "2059",
-          "name": "川湖",
-          "return_pct": -4.08
-        },
-        {
-          "date": "2026-07-13",
-          "target_date": "2026-07-20",
-          "symbol": "2301",
-          "name": "光寶科",
-          "return_pct": -12.84
-        },
-        {
-          "date": "2026-07-13",
-          "target_date": "2026-07-20",
-          "symbol": "2634",
-          "name": "漢翔",
-          "return_pct": 1.88
-        },
-        {
-          "date": "2026-07-13",
-          "target_date": "2026-07-20",
-          "symbol": "2887",
-          "name": "台新新光金",
-          "return_pct": -1.68
-        }
-      ]
-    },
-    {
       "tag": "reason:low_base",
       "horizon_observed_days": 5,
       "eligible_event_count": 82,
@@ -10761,6 +10761,55 @@
           "symbol": "2375",
           "name": "凱美",
           "return_pct": 2.03
+        }
+      ]
+    },
+    {
+      "tag": "reason:near_60d_high",
+      "horizon_observed_days": 5,
+      "eligible_event_count": 77,
+      "coverage_pct": 18.2,
+      "sample_count": 14,
+      "avg_return_pct": 8.66,
+      "median_return_pct": 3.74,
+      "win_rate_pct": 57.1,
+      "best_return_pct": 66.95,
+      "worst_return_pct": -32.64,
+      "examples": [
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-29",
+          "symbol": "6669",
+          "name": "緯穎",
+          "return_pct": -6.64
+        },
+        {
+          "date": "2026-07-22",
+          "target_date": "2026-07-29",
+          "symbol": "8046",
+          "name": "南電",
+          "return_pct": -32.64
+        },
+        {
+          "date": "2026-07-23",
+          "target_date": "2026-07-30",
+          "symbol": "2059",
+          "name": "川湖",
+          "return_pct": -12.93
+        },
+        {
+          "date": "2026-07-23",
+          "target_date": "2026-07-30",
+          "symbol": "6505",
+          "name": "台塑化",
+          "return_pct": -23.18
+        },
+        {
+          "date": "2026-07-23",
+          "target_date": "2026-07-30",
+          "symbol": "6669",
+          "name": "緯穎",
+          "return_pct": -10.42
         }
       ]
     },
@@ -10859,55 +10908,6 @@
           "symbol": "00713",
           "name": "元大台灣高息低波",
           "return_pct": 0.66
-        }
-      ]
-    },
-    {
-      "tag": "reason:near_60d_high",
-      "horizon_observed_days": 5,
-      "eligible_event_count": 77,
-      "coverage_pct": 16.9,
-      "sample_count": 13,
-      "avg_return_pct": 8.48,
-      "median_return_pct": 3.13,
-      "win_rate_pct": 53.8,
-      "best_return_pct": 66.95,
-      "worst_return_pct": -32.64,
-      "examples": [
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-29",
-          "symbol": "6669",
-          "name": "緯穎",
-          "return_pct": -6.64
-        },
-        {
-          "date": "2026-07-22",
-          "target_date": "2026-07-29",
-          "symbol": "8046",
-          "name": "南電",
-          "return_pct": -32.64
-        },
-        {
-          "date": "2026-07-23",
-          "target_date": "2026-07-30",
-          "symbol": "2059",
-          "name": "川湖",
-          "return_pct": -12.93
-        },
-        {
-          "date": "2026-07-23",
-          "target_date": "2026-07-30",
-          "symbol": "6505",
-          "name": "台塑化",
-          "return_pct": -23.18
-        },
-        {
-          "date": "2026-07-23",
-          "target_date": "2026-07-30",
-          "symbol": "6669",
-          "name": "緯穎",
-          "return_pct": -10.42
         }
       ]
     },
@@ -11783,38 +11783,81 @@
       "matched_evidence": [
         {
           "tag": "roe>=10",
-          "sample_count": 136,
-          "avg_return_pct": 6.87,
-          "median_return_pct": 4.7,
-          "win_rate_pct": 72.8
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
         },
         {
           "tag": "reason:relative_strength_60d",
-          "sample_count": 87,
-          "avg_return_pct": 8.0,
-          "median_return_pct": 5.25,
-          "win_rate_pct": 72.4
+          "sample_count": 89,
+          "avg_return_pct": 7.74,
+          "median_return_pct": 4.99,
+          "win_rate_pct": 70.8
         },
         {
           "tag": "reason:chip_support",
-          "sample_count": 110,
-          "avg_return_pct": 7.64,
-          "median_return_pct": 4.65,
-          "win_rate_pct": 70.9
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
         },
         {
           "tag": "reason:revenue_yoy_growth",
-          "sample_count": 115,
-          "avg_return_pct": 7.46,
-          "median_return_pct": 4.72,
-          "win_rate_pct": 70.4
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
         },
         {
           "tag": "reason:institutional_buy_ratio",
-          "sample_count": 111,
-          "avg_return_pct": 7.57,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 70.3
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
+        }
+      ]
+    },
+    {
+      "symbol": "2360",
+      "name": "致茂",
+      "strategy": "momentum",
+      "total_score": 86.75,
+      "matched_evidence": [
+        {
+          "tag": "roe>=10",
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
+        },
+        {
+          "tag": "reason:relative_strength_60d",
+          "sample_count": 89,
+          "avg_return_pct": 7.74,
+          "median_return_pct": 4.99,
+          "win_rate_pct": 70.8
+        },
+        {
+          "tag": "reason:chip_support",
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
+        },
+        {
+          "tag": "reason:revenue_yoy_growth",
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
+        },
+        {
+          "tag": "reason:institutional_buy_ratio",
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
         }
       ]
     },
@@ -11826,38 +11869,38 @@
       "matched_evidence": [
         {
           "tag": "roe>=10",
-          "sample_count": 136,
-          "avg_return_pct": 6.87,
-          "median_return_pct": 4.7,
-          "win_rate_pct": 72.8
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
         },
         {
           "tag": "reason:relative_strength_60d",
-          "sample_count": 87,
-          "avg_return_pct": 8.0,
-          "median_return_pct": 5.25,
-          "win_rate_pct": 72.4
+          "sample_count": 89,
+          "avg_return_pct": 7.74,
+          "median_return_pct": 4.99,
+          "win_rate_pct": 70.8
         },
         {
           "tag": "reason:chip_support",
-          "sample_count": 110,
-          "avg_return_pct": 7.64,
-          "median_return_pct": 4.65,
-          "win_rate_pct": 70.9
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
         },
         {
           "tag": "reason:revenue_yoy_growth",
-          "sample_count": 115,
-          "avg_return_pct": 7.46,
-          "median_return_pct": 4.72,
-          "win_rate_pct": 70.4
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
         },
         {
           "tag": "reason:institutional_buy_ratio",
-          "sample_count": 111,
-          "avg_return_pct": 7.57,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 70.3
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
         }
       ]
     },
@@ -11869,81 +11912,81 @@
       "matched_evidence": [
         {
           "tag": "roe>=10",
-          "sample_count": 136,
-          "avg_return_pct": 6.87,
-          "median_return_pct": 4.7,
-          "win_rate_pct": 72.8
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
         },
         {
           "tag": "reason:relative_strength_60d",
-          "sample_count": 87,
-          "avg_return_pct": 8.0,
-          "median_return_pct": 5.25,
-          "win_rate_pct": 72.4
+          "sample_count": 89,
+          "avg_return_pct": 7.74,
+          "median_return_pct": 4.99,
+          "win_rate_pct": 70.8
         },
         {
           "tag": "reason:chip_support",
-          "sample_count": 110,
-          "avg_return_pct": 7.64,
-          "median_return_pct": 4.65,
-          "win_rate_pct": 70.9
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
         },
         {
           "tag": "reason:revenue_yoy_growth",
-          "sample_count": 115,
-          "avg_return_pct": 7.46,
-          "median_return_pct": 4.72,
-          "win_rate_pct": 70.4
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
         },
         {
           "tag": "reason:institutional_buy_ratio",
-          "sample_count": 111,
-          "avg_return_pct": 7.57,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 70.3
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
         }
       ]
     },
     {
-      "symbol": "2408",
-      "name": "南亞科",
+      "symbol": "3037",
+      "name": "欣興",
       "strategy": "momentum",
-      "total_score": 86.75,
+      "total_score": 83.0,
       "matched_evidence": [
         {
           "tag": "roe>=10",
-          "sample_count": 136,
-          "avg_return_pct": 6.87,
-          "median_return_pct": 4.7,
-          "win_rate_pct": 72.8
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
         },
         {
           "tag": "reason:relative_strength_60d",
-          "sample_count": 87,
-          "avg_return_pct": 8.0,
-          "median_return_pct": 5.25,
-          "win_rate_pct": 72.4
+          "sample_count": 89,
+          "avg_return_pct": 7.74,
+          "median_return_pct": 4.99,
+          "win_rate_pct": 70.8
         },
         {
           "tag": "reason:chip_support",
-          "sample_count": 110,
-          "avg_return_pct": 7.64,
-          "median_return_pct": 4.65,
-          "win_rate_pct": 70.9
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
         },
         {
           "tag": "reason:revenue_yoy_growth",
-          "sample_count": 115,
-          "avg_return_pct": 7.46,
-          "median_return_pct": 4.72,
-          "win_rate_pct": 70.4
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
         },
         {
           "tag": "reason:institutional_buy_ratio",
-          "sample_count": 111,
-          "avg_return_pct": 7.57,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 70.3
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
         }
       ]
     },
@@ -11955,38 +11998,81 @@
       "matched_evidence": [
         {
           "tag": "roe>=10",
-          "sample_count": 136,
-          "avg_return_pct": 6.87,
-          "median_return_pct": 4.7,
-          "win_rate_pct": 72.8
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
         },
         {
           "tag": "reason:relative_strength_60d",
-          "sample_count": 87,
-          "avg_return_pct": 8.0,
-          "median_return_pct": 5.25,
-          "win_rate_pct": 72.4
+          "sample_count": 89,
+          "avg_return_pct": 7.74,
+          "median_return_pct": 4.99,
+          "win_rate_pct": 70.8
         },
         {
           "tag": "reason:chip_support",
-          "sample_count": 110,
-          "avg_return_pct": 7.64,
-          "median_return_pct": 4.65,
-          "win_rate_pct": 70.9
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
         },
         {
           "tag": "reason:revenue_yoy_growth",
-          "sample_count": 115,
-          "avg_return_pct": 7.46,
-          "median_return_pct": 4.72,
-          "win_rate_pct": 70.4
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
         },
         {
           "tag": "reason:institutional_buy_ratio",
-          "sample_count": 111,
-          "avg_return_pct": 7.57,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 70.3
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
+        }
+      ]
+    },
+    {
+      "symbol": "3231",
+      "name": "緯創",
+      "strategy": "momentum",
+      "total_score": 78.0,
+      "matched_evidence": [
+        {
+          "tag": "roe>=10",
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
+        },
+        {
+          "tag": "reason:relative_strength_60d",
+          "sample_count": 89,
+          "avg_return_pct": 7.74,
+          "median_return_pct": 4.99,
+          "win_rate_pct": 70.8
+        },
+        {
+          "tag": "reason:chip_support",
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
+        },
+        {
+          "tag": "reason:revenue_yoy_growth",
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
+        },
+        {
+          "tag": "reason:institutional_buy_ratio",
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
         }
       ]
     },
@@ -11998,38 +12084,38 @@
       "matched_evidence": [
         {
           "tag": "roe>=10",
-          "sample_count": 136,
-          "avg_return_pct": 6.87,
-          "median_return_pct": 4.7,
-          "win_rate_pct": 72.8
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
         },
         {
           "tag": "reason:relative_strength_60d",
-          "sample_count": 87,
-          "avg_return_pct": 8.0,
-          "median_return_pct": 5.25,
-          "win_rate_pct": 72.4
+          "sample_count": 89,
+          "avg_return_pct": 7.74,
+          "median_return_pct": 4.99,
+          "win_rate_pct": 70.8
         },
         {
           "tag": "reason:chip_support",
-          "sample_count": 110,
-          "avg_return_pct": 7.64,
-          "median_return_pct": 4.65,
-          "win_rate_pct": 70.9
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
         },
         {
           "tag": "reason:revenue_yoy_growth",
-          "sample_count": 115,
-          "avg_return_pct": 7.46,
-          "median_return_pct": 4.72,
-          "win_rate_pct": 70.4
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
         },
         {
           "tag": "reason:institutional_buy_ratio",
-          "sample_count": 111,
-          "avg_return_pct": 7.57,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 70.3
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
         }
       ]
     },
@@ -12041,38 +12127,81 @@
       "matched_evidence": [
         {
           "tag": "roe>=10",
-          "sample_count": 136,
-          "avg_return_pct": 6.87,
-          "median_return_pct": 4.7,
-          "win_rate_pct": 72.8
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
         },
         {
           "tag": "reason:relative_strength_60d",
-          "sample_count": 87,
-          "avg_return_pct": 8.0,
-          "median_return_pct": 5.25,
-          "win_rate_pct": 72.4
+          "sample_count": 89,
+          "avg_return_pct": 7.74,
+          "median_return_pct": 4.99,
+          "win_rate_pct": 70.8
         },
         {
           "tag": "reason:chip_support",
-          "sample_count": 110,
-          "avg_return_pct": 7.64,
-          "median_return_pct": 4.65,
-          "win_rate_pct": 70.9
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
         },
         {
           "tag": "reason:revenue_yoy_growth",
-          "sample_count": 115,
-          "avg_return_pct": 7.46,
-          "median_return_pct": 4.72,
-          "win_rate_pct": 70.4
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
         },
         {
           "tag": "reason:institutional_buy_ratio",
-          "sample_count": 111,
-          "avg_return_pct": 7.57,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 70.3
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
+        }
+      ]
+    },
+    {
+      "symbol": "3711",
+      "name": "日月光投控",
+      "strategy": "momentum",
+      "total_score": 86.75,
+      "matched_evidence": [
+        {
+          "tag": "roe>=10",
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
+        },
+        {
+          "tag": "reason:relative_strength_60d",
+          "sample_count": 89,
+          "avg_return_pct": 7.74,
+          "median_return_pct": 4.99,
+          "win_rate_pct": 70.8
+        },
+        {
+          "tag": "reason:chip_support",
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
+        },
+        {
+          "tag": "reason:revenue_yoy_growth",
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
+        },
+        {
+          "tag": "reason:institutional_buy_ratio",
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
         }
       ]
     },
@@ -12084,38 +12213,38 @@
       "matched_evidence": [
         {
           "tag": "roe>=10",
-          "sample_count": 136,
-          "avg_return_pct": 6.87,
-          "median_return_pct": 4.7,
-          "win_rate_pct": 72.8
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
         },
         {
           "tag": "reason:relative_strength_60d",
-          "sample_count": 87,
-          "avg_return_pct": 8.0,
-          "median_return_pct": 5.25,
-          "win_rate_pct": 72.4
+          "sample_count": 89,
+          "avg_return_pct": 7.74,
+          "median_return_pct": 4.99,
+          "win_rate_pct": 70.8
         },
         {
           "tag": "reason:chip_support",
-          "sample_count": 110,
-          "avg_return_pct": 7.64,
-          "median_return_pct": 4.65,
-          "win_rate_pct": 70.9
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
         },
         {
           "tag": "reason:revenue_yoy_growth",
-          "sample_count": 115,
-          "avg_return_pct": 7.46,
-          "median_return_pct": 4.72,
-          "win_rate_pct": 70.4
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
         },
         {
           "tag": "reason:institutional_buy_ratio",
-          "sample_count": 111,
-          "avg_return_pct": 7.57,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 70.3
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
         }
       ]
     },
@@ -12127,38 +12256,38 @@
       "matched_evidence": [
         {
           "tag": "roe>=10",
-          "sample_count": 136,
-          "avg_return_pct": 6.87,
-          "median_return_pct": 4.7,
-          "win_rate_pct": 72.8
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
         },
         {
           "tag": "reason:relative_strength_60d",
-          "sample_count": 87,
-          "avg_return_pct": 8.0,
-          "median_return_pct": 5.25,
-          "win_rate_pct": 72.4
+          "sample_count": 89,
+          "avg_return_pct": 7.74,
+          "median_return_pct": 4.99,
+          "win_rate_pct": 70.8
         },
         {
           "tag": "reason:chip_support",
-          "sample_count": 110,
-          "avg_return_pct": 7.64,
-          "median_return_pct": 4.65,
-          "win_rate_pct": 70.9
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
         },
         {
           "tag": "reason:revenue_yoy_growth",
-          "sample_count": 115,
-          "avg_return_pct": 7.46,
-          "median_return_pct": 4.72,
-          "win_rate_pct": 70.4
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
         },
         {
           "tag": "reason:institutional_buy_ratio",
-          "sample_count": 111,
-          "avg_return_pct": 7.57,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 70.3
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
         }
       ]
     },
@@ -12170,38 +12299,38 @@
       "matched_evidence": [
         {
           "tag": "roe>=10",
-          "sample_count": 136,
-          "avg_return_pct": 6.87,
-          "median_return_pct": 4.7,
-          "win_rate_pct": 72.8
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
         },
         {
           "tag": "reason:relative_strength_60d",
-          "sample_count": 87,
-          "avg_return_pct": 8.0,
-          "median_return_pct": 5.25,
-          "win_rate_pct": 72.4
+          "sample_count": 89,
+          "avg_return_pct": 7.74,
+          "median_return_pct": 4.99,
+          "win_rate_pct": 70.8
         },
         {
           "tag": "reason:chip_support",
-          "sample_count": 110,
-          "avg_return_pct": 7.64,
-          "median_return_pct": 4.65,
-          "win_rate_pct": 70.9
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
         },
         {
           "tag": "reason:revenue_yoy_growth",
-          "sample_count": 115,
-          "avg_return_pct": 7.46,
-          "median_return_pct": 4.72,
-          "win_rate_pct": 70.4
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
         },
         {
           "tag": "reason:institutional_buy_ratio",
-          "sample_count": 111,
-          "avg_return_pct": 7.57,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 70.3
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
         }
       ]
     },
@@ -12213,38 +12342,38 @@
       "matched_evidence": [
         {
           "tag": "roe>=10",
-          "sample_count": 136,
-          "avg_return_pct": 6.87,
-          "median_return_pct": 4.7,
-          "win_rate_pct": 72.8
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
         },
         {
           "tag": "reason:relative_strength_60d",
-          "sample_count": 87,
-          "avg_return_pct": 8.0,
-          "median_return_pct": 5.25,
-          "win_rate_pct": 72.4
+          "sample_count": 89,
+          "avg_return_pct": 7.74,
+          "median_return_pct": 4.99,
+          "win_rate_pct": 70.8
         },
         {
           "tag": "reason:chip_support",
-          "sample_count": 110,
-          "avg_return_pct": 7.64,
-          "median_return_pct": 4.65,
-          "win_rate_pct": 70.9
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
         },
         {
           "tag": "reason:revenue_yoy_growth",
-          "sample_count": 115,
-          "avg_return_pct": 7.46,
-          "median_return_pct": 4.72,
-          "win_rate_pct": 70.4
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
         },
         {
           "tag": "reason:institutional_buy_ratio",
-          "sample_count": 111,
-          "avg_return_pct": 7.57,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 70.3
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
         }
       ]
     },
@@ -12256,38 +12385,38 @@
       "matched_evidence": [
         {
           "tag": "roe>=10",
-          "sample_count": 136,
-          "avg_return_pct": 6.87,
-          "median_return_pct": 4.7,
-          "win_rate_pct": 72.8
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
         },
         {
           "tag": "reason:relative_strength_60d",
-          "sample_count": 87,
-          "avg_return_pct": 8.0,
-          "median_return_pct": 5.25,
-          "win_rate_pct": 72.4
+          "sample_count": 89,
+          "avg_return_pct": 7.74,
+          "median_return_pct": 4.99,
+          "win_rate_pct": 70.8
         },
         {
           "tag": "reason:chip_support",
-          "sample_count": 110,
-          "avg_return_pct": 7.64,
-          "median_return_pct": 4.65,
-          "win_rate_pct": 70.9
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
         },
         {
           "tag": "reason:revenue_yoy_growth",
-          "sample_count": 115,
-          "avg_return_pct": 7.46,
-          "median_return_pct": 4.72,
-          "win_rate_pct": 70.4
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
         },
         {
           "tag": "reason:institutional_buy_ratio",
-          "sample_count": 111,
-          "avg_return_pct": 7.57,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 70.3
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
         }
       ]
     },
@@ -12299,81 +12428,38 @@
       "matched_evidence": [
         {
           "tag": "roe>=10",
-          "sample_count": 136,
-          "avg_return_pct": 6.87,
-          "median_return_pct": 4.7,
-          "win_rate_pct": 72.8
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
         },
         {
           "tag": "reason:relative_strength_60d",
-          "sample_count": 87,
-          "avg_return_pct": 8.0,
-          "median_return_pct": 5.25,
-          "win_rate_pct": 72.4
+          "sample_count": 89,
+          "avg_return_pct": 7.74,
+          "median_return_pct": 4.99,
+          "win_rate_pct": 70.8
         },
         {
           "tag": "reason:chip_support",
-          "sample_count": 110,
-          "avg_return_pct": 7.64,
-          "median_return_pct": 4.65,
-          "win_rate_pct": 70.9
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
         },
         {
           "tag": "reason:revenue_yoy_growth",
-          "sample_count": 115,
-          "avg_return_pct": 7.46,
-          "median_return_pct": 4.72,
-          "win_rate_pct": 70.4
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
         },
         {
           "tag": "reason:healthy_roe",
-          "sample_count": 116,
-          "avg_return_pct": 6.6,
-          "median_return_pct": 4.56,
-          "win_rate_pct": 69.8
-        }
-      ]
-    },
-    {
-      "symbol": "8046",
-      "name": "南電",
-      "strategy": "momentum",
-      "total_score": 86.75,
-      "matched_evidence": [
-        {
-          "tag": "roe>=10",
-          "sample_count": 136,
-          "avg_return_pct": 6.87,
-          "median_return_pct": 4.7,
-          "win_rate_pct": 72.8
-        },
-        {
-          "tag": "reason:relative_strength_60d",
-          "sample_count": 87,
-          "avg_return_pct": 8.0,
-          "median_return_pct": 5.25,
-          "win_rate_pct": 72.4
-        },
-        {
-          "tag": "reason:chip_support",
-          "sample_count": 110,
-          "avg_return_pct": 7.64,
-          "median_return_pct": 4.65,
-          "win_rate_pct": 70.9
-        },
-        {
-          "tag": "reason:revenue_yoy_growth",
-          "sample_count": 115,
-          "avg_return_pct": 7.46,
-          "median_return_pct": 4.72,
-          "win_rate_pct": 70.4
-        },
-        {
-          "tag": "reason:institutional_buy_ratio",
-          "sample_count": 111,
-          "avg_return_pct": 7.57,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 70.3
+          "sample_count": 118,
+          "avg_return_pct": 6.43,
+          "median_return_pct": 4.5,
+          "win_rate_pct": 68.6
         }
       ]
     },
@@ -12385,38 +12471,38 @@
       "matched_evidence": [
         {
           "tag": "roe>=10",
-          "sample_count": 136,
-          "avg_return_pct": 6.87,
-          "median_return_pct": 4.7,
-          "win_rate_pct": 72.8
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
         },
         {
           "tag": "reason:relative_strength_60d",
-          "sample_count": 87,
-          "avg_return_pct": 8.0,
-          "median_return_pct": 5.25,
-          "win_rate_pct": 72.4
+          "sample_count": 89,
+          "avg_return_pct": 7.74,
+          "median_return_pct": 4.99,
+          "win_rate_pct": 70.8
         },
         {
           "tag": "reason:chip_support",
-          "sample_count": 110,
-          "avg_return_pct": 7.64,
-          "median_return_pct": 4.65,
-          "win_rate_pct": 70.9
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
         },
         {
           "tag": "reason:revenue_yoy_growth",
-          "sample_count": 115,
-          "avg_return_pct": 7.46,
-          "median_return_pct": 4.72,
-          "win_rate_pct": 70.4
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
         },
         {
           "tag": "reason:institutional_buy_ratio",
-          "sample_count": 111,
-          "avg_return_pct": 7.57,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 70.3
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
         }
       ]
     },
@@ -12424,42 +12510,128 @@
       "symbol": "2313",
       "name": "華通",
       "strategy": "momentum",
+      "total_score": 95.0,
+      "matched_evidence": [
+        {
+          "tag": "roe>=10",
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
+        },
+        {
+          "tag": "reason:chip_support",
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
+        },
+        {
+          "tag": "reason:revenue_yoy_growth",
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
+        },
+        {
+          "tag": "reason:institutional_buy_ratio",
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
+        },
+        {
+          "tag": "reason:healthy_roe",
+          "sample_count": 118,
+          "avg_return_pct": 6.43,
+          "median_return_pct": 4.5,
+          "win_rate_pct": 68.6
+        }
+      ]
+    },
+    {
+      "symbol": "2408",
+      "name": "南亞科",
+      "strategy": "momentum",
       "total_score": 86.75,
       "matched_evidence": [
         {
           "tag": "roe>=10",
-          "sample_count": 136,
-          "avg_return_pct": 6.87,
-          "median_return_pct": 4.7,
-          "win_rate_pct": 72.8
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
         },
         {
           "tag": "reason:chip_support",
-          "sample_count": 110,
-          "avg_return_pct": 7.64,
-          "median_return_pct": 4.65,
-          "win_rate_pct": 70.9
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
         },
         {
           "tag": "reason:revenue_yoy_growth",
-          "sample_count": 115,
-          "avg_return_pct": 7.46,
-          "median_return_pct": 4.72,
-          "win_rate_pct": 70.4
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
         },
         {
           "tag": "reason:institutional_buy_ratio",
-          "sample_count": 111,
-          "avg_return_pct": 7.57,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 70.3
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
         },
         {
           "tag": "reason:healthy_roe",
-          "sample_count": 116,
-          "avg_return_pct": 6.6,
+          "sample_count": 118,
+          "avg_return_pct": 6.43,
+          "median_return_pct": 4.5,
+          "win_rate_pct": 68.6
+        }
+      ]
+    },
+    {
+      "symbol": "3026",
+      "name": "禾伸堂",
+      "strategy": "momentum",
+      "total_score": 78.0,
+      "matched_evidence": [
+        {
+          "tag": "roe>=10",
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
+        },
+        {
+          "tag": "reason:chip_support",
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
           "median_return_pct": 4.56,
-          "win_rate_pct": 69.8
+          "win_rate_pct": 69.6
+        },
+        {
+          "tag": "reason:revenue_yoy_growth",
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
+        },
+        {
+          "tag": "reason:institutional_buy_ratio",
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
+        },
+        {
+          "tag": "reason:healthy_roe",
+          "sample_count": 118,
+          "avg_return_pct": 6.43,
+          "median_return_pct": 4.5,
+          "win_rate_pct": 68.6
         }
       ]
     },
@@ -12471,38 +12643,124 @@
       "matched_evidence": [
         {
           "tag": "roe>=10",
-          "sample_count": 136,
-          "avg_return_pct": 6.87,
-          "median_return_pct": 4.7,
-          "win_rate_pct": 72.8
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
         },
         {
           "tag": "reason:chip_support",
-          "sample_count": 110,
-          "avg_return_pct": 7.64,
-          "median_return_pct": 4.65,
-          "win_rate_pct": 70.9
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
         },
         {
           "tag": "reason:revenue_yoy_growth",
-          "sample_count": 115,
-          "avg_return_pct": 7.46,
-          "median_return_pct": 4.72,
-          "win_rate_pct": 70.4
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
         },
         {
           "tag": "reason:institutional_buy_ratio",
-          "sample_count": 111,
-          "avg_return_pct": 7.57,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 70.3
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
         },
         {
           "tag": "reason:healthy_roe",
-          "sample_count": 116,
-          "avg_return_pct": 6.6,
+          "sample_count": 118,
+          "avg_return_pct": 6.43,
+          "median_return_pct": 4.5,
+          "win_rate_pct": 68.6
+        }
+      ]
+    },
+    {
+      "symbol": "8046",
+      "name": "南電",
+      "strategy": "momentum",
+      "total_score": 86.75,
+      "matched_evidence": [
+        {
+          "tag": "roe>=10",
+          "sample_count": 138,
+          "avg_return_pct": 6.72,
+          "median_return_pct": 4.62,
+          "win_rate_pct": 71.7
+        },
+        {
+          "tag": "reason:chip_support",
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
           "median_return_pct": 4.56,
-          "win_rate_pct": 69.8
+          "win_rate_pct": 69.6
+        },
+        {
+          "tag": "reason:revenue_yoy_growth",
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
+        },
+        {
+          "tag": "reason:institutional_buy_ratio",
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
+        },
+        {
+          "tag": "reason:healthy_roe",
+          "sample_count": 118,
+          "avg_return_pct": 6.43,
+          "median_return_pct": 4.5,
+          "win_rate_pct": 68.6
+        }
+      ]
+    },
+    {
+      "symbol": "1301",
+      "name": "台塑",
+      "strategy": "momentum",
+      "total_score": 84.5,
+      "matched_evidence": [
+        {
+          "tag": "reason:relative_strength_60d",
+          "sample_count": 89,
+          "avg_return_pct": 7.74,
+          "median_return_pct": 4.99,
+          "win_rate_pct": 70.8
+        },
+        {
+          "tag": "reason:chip_support",
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
+        },
+        {
+          "tag": "reason:institutional_buy_ratio",
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
+        },
+        {
+          "tag": "reason:high_turnover",
+          "sample_count": 125,
+          "avg_return_pct": 6.94,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 68.0
+        },
+        {
+          "tag": "reason:institutional_net_buying",
+          "sample_count": 125,
+          "avg_return_pct": 6.94,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 68.0
         }
       ]
     },
@@ -12514,38 +12772,81 @@
       "matched_evidence": [
         {
           "tag": "reason:relative_strength_60d",
-          "sample_count": 87,
-          "avg_return_pct": 8.0,
-          "median_return_pct": 5.25,
-          "win_rate_pct": 72.4
+          "sample_count": 89,
+          "avg_return_pct": 7.74,
+          "median_return_pct": 4.99,
+          "win_rate_pct": 70.8
         },
         {
           "tag": "reason:chip_support",
-          "sample_count": 110,
-          "avg_return_pct": 7.64,
-          "median_return_pct": 4.65,
-          "win_rate_pct": 70.9
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
         },
         {
           "tag": "reason:revenue_yoy_growth",
-          "sample_count": 115,
-          "avg_return_pct": 7.46,
-          "median_return_pct": 4.72,
-          "win_rate_pct": 70.4
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
         },
         {
           "tag": "reason:institutional_buy_ratio",
-          "sample_count": 111,
-          "avg_return_pct": 7.57,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 70.3
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
         },
         {
           "tag": "reason:high_turnover",
-          "sample_count": 123,
-          "avg_return_pct": 7.11,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 69.1
+          "sample_count": 125,
+          "avg_return_pct": 6.94,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 68.0
+        }
+      ]
+    },
+    {
+      "symbol": "1802",
+      "name": "台玻",
+      "strategy": "momentum",
+      "total_score": 81.0,
+      "matched_evidence": [
+        {
+          "tag": "reason:chip_support",
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
+        },
+        {
+          "tag": "reason:revenue_yoy_growth",
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
+        },
+        {
+          "tag": "reason:institutional_buy_ratio",
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
+        },
+        {
+          "tag": "reason:high_turnover",
+          "sample_count": 125,
+          "avg_return_pct": 6.94,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 68.0
+        },
+        {
+          "tag": "reason:institutional_net_buying",
+          "sample_count": 125,
+          "avg_return_pct": 6.94,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 68.0
         }
       ]
     },
@@ -12557,38 +12858,38 @@
       "matched_evidence": [
         {
           "tag": "reason:chip_support",
-          "sample_count": 110,
-          "avg_return_pct": 7.64,
-          "median_return_pct": 4.65,
-          "win_rate_pct": 70.9
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
         },
         {
           "tag": "reason:revenue_yoy_growth",
-          "sample_count": 115,
-          "avg_return_pct": 7.46,
-          "median_return_pct": 4.72,
-          "win_rate_pct": 70.4
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
         },
         {
           "tag": "reason:institutional_buy_ratio",
-          "sample_count": 111,
-          "avg_return_pct": 7.57,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 70.3
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
         },
         {
           "tag": "peg<1",
           "sample_count": 104,
-          "avg_return_pct": 6.07,
+          "avg_return_pct": 6.06,
           "median_return_pct": 3.79,
-          "win_rate_pct": 69.2
+          "win_rate_pct": 68.3
         },
         {
           "tag": "reason:high_turnover",
-          "sample_count": 123,
-          "avg_return_pct": 7.11,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 69.1
+          "sample_count": 125,
+          "avg_return_pct": 6.94,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 68.0
         }
       ]
     },
@@ -12600,38 +12901,38 @@
       "matched_evidence": [
         {
           "tag": "reason:chip_support",
-          "sample_count": 110,
-          "avg_return_pct": 7.64,
-          "median_return_pct": 4.65,
-          "win_rate_pct": 70.9
+          "sample_count": 112,
+          "avg_return_pct": 7.44,
+          "median_return_pct": 4.56,
+          "win_rate_pct": 69.6
         },
         {
           "tag": "reason:revenue_yoy_growth",
-          "sample_count": 115,
-          "avg_return_pct": 7.46,
-          "median_return_pct": 4.72,
-          "win_rate_pct": 70.4
+          "sample_count": 117,
+          "avg_return_pct": 7.27,
+          "median_return_pct": 4.58,
+          "win_rate_pct": 69.2
         },
         {
           "tag": "reason:institutional_buy_ratio",
-          "sample_count": 111,
-          "avg_return_pct": 7.57,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 70.3
+          "sample_count": 113,
+          "avg_return_pct": 7.37,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 69.0
         },
         {
           "tag": "reason:high_turnover",
-          "sample_count": 123,
-          "avg_return_pct": 7.11,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 69.1
+          "sample_count": 125,
+          "avg_return_pct": 6.94,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 68.0
         },
         {
           "tag": "reason:institutional_net_buying",
-          "sample_count": 123,
-          "avg_return_pct": 7.11,
-          "median_return_pct": 4.55,
-          "win_rate_pct": 69.1
+          "sample_count": 125,
+          "avg_return_pct": 6.94,
+          "median_return_pct": 4.45,
+          "win_rate_pct": 68.0
         }
       ]
     }
